@@ -201,8 +201,10 @@ export const TicketCard: React.FC<TicketCardProps> = ({
                     e.stopPropagation();
                     onInspectWorker?.(name);
                   }}
-                  className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-200 font-semibold cursor-pointer transition-colors shadow-2xs select-none"
-                  title="Двойной клик — карточка сотрудника"
+                  className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs bg-purple-100 text-purple-900 border border-purple-200 font-semibold transition-colors shadow-2xs select-none ${
+                    onInspectWorker ? 'hover:bg-purple-200 cursor-pointer' : 'cursor-default'
+                  }`}
+                  title={onInspectWorker ? 'Двойной клик — карточка сотрудника' : undefined}
                 >
                   {name}
                 </span>

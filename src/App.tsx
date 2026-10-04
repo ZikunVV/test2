@@ -322,6 +322,13 @@ export default function App() {
   const canEditCoordinates = hasPermission('edit_house') || (currentUser.role === 'editor' && hasPermission('map'));
 
   const canViewPeople = hasPermission('people_view') || hasPermission('internal') || hasPermission('add_employee');
+  const canViewEmployeeCard =
+    isAdmin ||
+    hasPermission('view_employee_card') ||
+    (currentUser.role !== 'viewer' &&
+      (hasPermission('people_view') ||
+        hasPermission('internal') ||
+        hasPermission('add_employee')));
   const canAddPeople = hasPermission('add_employee') || hasPermission('internal');
   const canEditPeople = hasPermission('internal');
   const canDeletePeople = hasPermission('delete_employee') || hasPermission('internal');
@@ -601,6 +608,9 @@ export default function App() {
   const [inspectedWorker, setInspectedWorker] = useState<InspectedWorkerInfo | null>(null);
 
   const handleInspectWorker = (workerName: string) => {
+    if (!canViewEmployeeCard) {
+      return;
+    }
     if (!workerName || workerName.trim() === '' || workerName === 'Не назначен') return;
     const cleanName = workerName.trim();
     const foundInPersonal = personalPeople.find(
@@ -1390,6 +1400,7 @@ export default function App() {
             'planned',
             'my_tasks_view',
             'people_view',
+            'view_employee_card',
             'add_employee',
             'internal',
             'delete_employee',
@@ -1414,6 +1425,7 @@ export default function App() {
             'planned',
             'my_tasks_view',
             'people_view',
+            'view_employee_card',
             'add_employee',
             'internal',
             'search',
@@ -1461,6 +1473,7 @@ export default function App() {
             'planned',
             'my_tasks_view',
             'people_view',
+            'view_employee_card',
             'add_employee',
             'internal',
             'delete_employee',
@@ -1485,6 +1498,7 @@ export default function App() {
             'planned',
             'my_tasks_view',
             'people_view',
+            'view_employee_card',
             'add_employee',
             'internal',
             'search',
@@ -1840,7 +1854,7 @@ export default function App() {
                   canAccept={canAcceptTicket}
                   canComplete={canCompleteTicket}
                   canSendMessenger={canSendMessenger}
-                  onInspectWorker={handleInspectWorker}
+                  onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
                   onNewPlannedTicket={(prefilledDate) => {
                     setNewTicketPrefilledDate(prefilledDate);
                     setIsNewTicketPlanned(true);
@@ -1895,7 +1909,7 @@ export default function App() {
                   showFlatFallback={showFlatFallback}
                   tickets={currentOrgTickets}
                   onOpenTicket={(t) => setSelectedTicketForDetail(t)}
-                  onInspectWorker={handleInspectWorker}
+                  onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
                   onBackToHome={() => setActiveSidebarNav('home')}
                 />
               )}
@@ -2099,7 +2113,7 @@ export default function App() {
                           onComplete={(id) => handleUpdateStatus(id, 'completed')}
                           onOpenDetails={(t) => setSelectedTicketForDetail(t)}
                           onEditTicket={(t) => handleOpenEditTicket(t)}
-                          onInspectWorker={handleInspectWorker}
+                          onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
                         />
                       ))}
                     </div>
@@ -2149,6 +2163,7 @@ export default function App() {
         prefilledDate={newTicketPrefilledDate}
         isPlannedDefault={isNewTicketPlanned}
         onCreateTicket={handleCreateTicket}
+        canInspectWorker={canViewEmployeeCard}
       />
 
       {/* Ticket Details / Edit Form Modal (Opens on Double Click) */}
@@ -2167,7 +2182,7 @@ export default function App() {
         onSubmitReport={handleSubmitReport}
         onWithdrawTicket={handleWithdrawTicket}
         onAddWork={handleAddWork}
-        onInspectWorker={handleInspectWorker}
+        onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
       />
 
       {/* Edit Ticket Modal (for editing ready/completed tickets from Список работ) */}
@@ -2181,7 +2196,7 @@ export default function App() {
         onSaveTicket={handleUpdateTicket}
         theme={theme}
         people={personalPeople}
-        onInspectWorker={handleInspectWorker}
+        onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
       />
 
       {/* Notifications Drawer */}
@@ -2213,12 +2228,14 @@ export default function App() {
         />
       )}
 
-      {/* Global Employee Detail Modal (opens on double-click on any employee badge/pill) */}
-      <EmployeeDetailModal
-        worker={inspectedWorker}
-        onClose={() => setInspectedWorker(null)}
-        canSendMessenger={canSendMessenger}
-      />
+      {/* Global Employee Detail Modal (opens on double-click on any employee badge/pill, only if user has permission) */}
+      {canViewEmployeeCard && (
+        <EmployeeDetailModal
+          worker={inspectedWorker}
+          onClose={() => setInspectedWorker(null)}
+          canSendMessenger={canSendMessenger}
+        />
+      )}
 
       {/* Admin Messages Modal ("Написать администратору" & "Сообщения") */}
       <AdminMessagesModal

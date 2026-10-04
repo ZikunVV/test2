@@ -402,7 +402,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                         type="text"
                         value={phone}
                         onChange={(e) => handlePhoneChange(idx, e.target.value)}
-                        placeholder="+38 (050) 000-00-00"
+                        placeholder="+38 (067) 123-45-67"
                         className="flex-1 px-3 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-mono text-xs"
                       />
                       {phones.length > 1 && (

@@ -1,1329 +1,1326 @@
 {
   "tickets": [
     {
-      "description": "Замена кнализации.",
-      "category": "water",
+      "urgency": "normal",
+      "works": [],
       "assignees": [
         "Зикун Алексей Витальевич",
         "Зикун Виталий Володимирович"
       ],
-      "additional_phones": [],
-      "location_type": "apartment",
-      "title": "Замена кнализации.",
-      "createdTime": "13:06",
-      "residentName": "Житель дома",
-      "id": "ticket-1790676364237",
-      "photos": [],
-      "street": "Рокосовского",
-      "works": [],
-      "work_materials": "диаметр 100:  1м-1шт. переход. 2редукции. компенсатор, металлическая лейка, хомут.",
-      "apartment": "80",
+      "planned": true,
       "number": "№29.09.2026-008",
+      "location_value": "",
+      "work_materials": "диаметр 100:  1м-1шт. переход. 2редукции. компенсатор, металлическая лейка, хомут.",
+      "residentName": "Житель дома",
+      "description": "Замена кнализации.",
+      "title": "Замена кнализации.",
+      "category": "water",
       "address": "ул. Рокосовского, д. 20",
-      "date": "2026-09-29",
-      "urgency": "normal",
+      "photos": [],
+      "apartment": "80",
+      "status": "completed",
+      "location_type": "apartment",
       "house_number": "20",
       "assignee": "Зикун Алексей Витальевич",
-      "status": "completed",
-      "location_value": "",
-      "planned": true
-    },
-    {
-      "category": "water",
-      "apartment": "Подвал",
-      "date": "2026-09-29",
-      "address": "ул. 1 Мая, д. 159",
-      "house_number": "159",
-      "street": "1 Мая",
-      "planned": true,
-      "photos": [],
-      "work_materials": "диаметр 100:  2м-1шт. 1м-2шт. колено 45*-4шт.переход. 2редукции. ревизия.",
-      "urgency": "normal",
-      "id": "ticket-1790675924036",
-      "status": "in_waiting",
-      "works": [],
-      "location_value": "",
-      "number": "№29.09.2026-007",
-      "residentName": "Житель дома",
-      "location_type": "basement",
-      "assignees": [],
-      "title": "Замена кнализации.",
-      "createdTime": "12:58",
+      "id": "ticket-1790676364237",
       "additional_phones": [],
-      "description": "Замена кнализации.",
-      "assignee": "Не назначен"
+      "createdTime": "13:06",
+      "street": "Рокосовского",
+      "date": "2026-09-29"
     },
     {
-      "house_number": "132",
-      "category": "water",
-      "id": "ticket-1790623620298",
-      "location_type": "basement",
-      "assignees": [
-        "Главный администратор"
-      ],
-      "works": [],
       "residentName": "Житель дома",
-      "date": "2026-09-28",
-      "planned": false,
+      "urgency": "normal",
+      "category": "water",
+      "createdTime": "12:58",
+      "planned": true,
+      "id": "ticket-1790675924036",
+      "photos": [],
+      "apartment": "Подвал",
+      "address": "ул. 1 Мая, д. 159",
+      "number": "№29.09.2026-007",
+      "title": "Замена кнализации.",
+      "additional_phones": [],
+      "date": "2026-09-29",
       "status": "in_waiting",
       "location_value": "",
-      "urgency": "normal",
-      "title": "течь холодной водыв подвале",
-      "createdTime": "22:27",
+      "work_materials": "диаметр 100:  2м-1шт. 1м-2шт. колено 45*-4шт.переход. 2редукции. ревизия.",
+      "location_type": "basement",
+      "house_number": "159",
+      "assignee": "Не назначен",
+      "street": "1 Мая",
+      "works": [],
+      "description": "Замена кнализации.",
+      "assignees": []
+    },
+    {
+      "id": "ticket-1790623620298",
+      "planned": false,
       "number": "№28.09.2026-006",
+      "assignee": "Главный администратор",
+      "urgency": "normal",
+      "photos": [],
       "apartment": "Подвал",
       "address": "ул. Пухова, д. 132",
-      "assignee": "Главный администратор",
       "description": "течь холодной водыв подвале",
-      "additional_phones": [],
+      "residentName": "Житель дома",
+      "location_type": "basement",
+      "date": "2026-09-28",
+      "house_number": "132",
+      "createdTime": "22:27",
+      "works": [],
       "street": "Пухова",
-      "photos": []
-    },
-    {
-      "house_number": "159",
+      "additional_phones": [],
+      "status": "in_waiting",
       "assignees": [
         "Главный администратор"
       ],
-      "assignee": "Главный администратор",
-      "title": "течь холодной воды в подвале",
-      "residentName": "Житель дома",
-      "createdTime": "19:31",
-      "urgency": "normal",
-      "number": "№28.09.2026-005",
-      "planned": false,
+      "title": "течь холодной водыв подвале",
       "category": "water",
+      "location_value": ""
+    },
+    {
+      "status": "in_waiting",
       "location_type": "apartment",
+      "apartment": "60",
+      "category": "water",
+      "description": "течь холодной воды в подвале",
+      "residentName": "Житель дома",
+      "id": "ticket-1790613085395",
+      "street": "1 мая",
+      "additional_phones": [],
       "address": "ул. 1 мая, д. 159",
       "works": [],
-      "location_value": "",
-      "status": "in_waiting",
-      "apartment": "60",
-      "additional_phones": [],
-      "id": "ticket-1790613085395",
-      "photos": [],
-      "description": "течь холодной воды в подвале",
-      "street": "1 мая",
-      "date": "2026-09-28"
-    },
-    {
-      "location_value": "",
       "date": "2026-09-28",
-      "additional_phones": [],
-      "works": [],
-      "residentName": "Житель дома",
-      "apartment": "117",
-      "house_number": "30",
-      "category": "water",
-      "photos": [],
-      "location_type": "apartment",
-      "createdTime": "19:29",
-      "street": "Рокосовского",
+      "createdTime": "19:31",
+      "house_number": "159",
+      "assignee": "Главный администратор",
+      "location_value": "",
+      "title": "течь холодной воды в подвале",
+      "urgency": "normal",
       "assignees": [
         "Главный администратор"
       ],
-      "assignee": "Главный администратор",
-      "address": "ул. Рокосовского, д. 30",
-      "number": "№28.09.2026-004",
+      "number": "№28.09.2026-005",
+      "photos": [],
+      "planned": false
+    },
+    {
+      "house_number": "30",
+      "street": "Рокосовского",
+      "location_type": "apartment",
+      "planned": false,
       "title": "сняли плитку, обследовать канализационную трубу",
       "urgency": "normal",
-      "status": "in_waiting",
-      "planned": false,
+      "assignee": "Главный администратор",
       "description": "сняли плитку, обследовать канализационную трубу",
-      "id": "ticket-1790612984163"
-    },
-    {
-      "street": "Рокосовского",
-      "address": "ул. Рокосовского, д. 20",
-      "planned": false,
+      "id": "ticket-1790612984163",
+      "location_value": "",
+      "address": "ул. Рокосовского, д. 30",
+      "additional_phones": [],
+      "works": [],
+      "apartment": "117",
+      "status": "in_waiting",
+      "date": "2026-09-28",
       "photos": [],
-      "title": "Сняли щит обследовать канализационную прубу.",
-      "urgency": "normal",
+      "createdTime": "19:29",
       "category": "water",
+      "number": "№28.09.2026-004",
+      "residentName": "Житель дома",
       "assignees": [
         "Главный администратор"
-      ],
-      "additional_phones": [],
-      "date": "2026-09-28",
-      "status": "in_waiting",
-      "number": "№28.09.2026-003",
-      "location_type": "apartment",
-      "house_number": "20",
-      "assignee": "Главный администратор",
-      "description": "Сняли щит обследовать канализационную прубу.",
+      ]
+    },
+    {
       "id": "ticket-1790602223709",
+      "planned": false,
+      "number": "№28.09.2026-003",
+      "assignee": "Главный администратор",
+      "urgency": "normal",
+      "photos": [],
+      "house_number": "20",
+      "address": "ул. Рокосовского, д. 20",
+      "additional_phones": [],
+      "assignees": [
+        "Главный администратор"
+      ],
+      "description": "Сняли щит обследовать канализационную прубу.",
+      "date": "2026-09-28",
+      "works": [],
+      "residentName": "Житель дома",
+      "street": "Рокосовского",
+      "createdTime": "16:30",
+      "status": "in_waiting",
+      "location_value": "",
+      "location_type": "apartment",
+      "title": "Сняли щит обследовать канализационную прубу.",
       "apartment": "80",
-      "residentName": "Житель дома",
-      "works": [],
-      "location_value": "",
-      "createdTime": "16:30"
+      "category": "water"
     },
     {
-      "location_type": "apartment",
       "category": "water",
-      "title": "Запах канализации с подвала.",
-      "building": "1",
-      "assignees": [
-        "Главный администратор"
-      ],
-      "createdTime": "16:26",
-      "house_number": "169",
-      "status": "in_waiting",
-      "number": "№28.09.2026-002",
-      "date": "2026-09-28",
-      "street": "1 Мая",
-      "planned": false,
       "location_value": "",
-      "urgency": "normal",
-      "assignee": "Главный администратор",
-      "id": "ticket-1790601999261",
-      "description": "Запах канализации с подвала.",
-      "residentName": "Житель дома",
       "apartment": "40",
-      "additional_phones": [],
-      "photos": [],
-      "address": "ул. 1 Мая, д. 169 корп. 1",
-      "works": []
-    },
-    {
-      "additional_phones": [],
-      "id": "ticket-1790584365830",
-      "assignee": "Главный администратор",
-      "number": "№28.09.2026-001",
-      "works": [],
-      "location_value": "",
       "status": "in_waiting",
-      "photos": [],
+      "address": "ул. 1 Мая, д. 169 корп. 1",
+      "id": "ticket-1790601999261",
+      "house_number": "169",
+      "street": "1 Мая",
+      "location_type": "apartment",
+      "urgency": "normal",
+      "description": "Запах канализации с подвала.",
+      "planned": false,
+      "title": "Запах канализации с подвала.",
+      "residentName": "Житель дома",
+      "createdTime": "16:26",
+      "date": "2026-09-28",
       "assignees": [
         "Главный администратор"
       ],
-      "location_type": "apartment",
-      "street": "Белова",
+      "photos": [],
+      "works": [],
+      "building": "1",
+      "assignee": "Главный администратор",
+      "number": "№28.09.2026-002",
+      "additional_phones": []
+    },
+    {
       "createdTime": "11:32",
-      "urgency": "normal",
-      "planned": false,
-      "date": "2026-09-28",
-      "address": "Белова, 213",
-      "building": "3",
-      "residentName": "Житель дома",
-      "apartment": "47",
-      "title": "обследовать канализационную трубу, мокрая стена.",
+      "status": "in_waiting",
       "house_number": "21",
+      "id": "ticket-1790584365830",
+      "date": "2026-09-28",
+      "location_type": "apartment",
+      "assignees": [
+        "Главный администратор"
+      ],
+      "works": [],
+      "title": "обследовать канализационную трубу, мокрая стена.",
+      "location_value": "",
       "category": "water",
-      "description": "обследовать канализационную трубу, мокрая стена."
+      "street": "Белова",
+      "building": "3",
+      "urgency": "normal",
+      "assignee": "Главный администратор",
+      "apartment": "47",
+      "planned": false,
+      "residentName": "Житель дома",
+      "description": "обследовать канализационную трубу, мокрая стена.",
+      "number": "№28.09.2026-001",
+      "address": "Белова, 213",
+      "photos": [],
+      "additional_phones": []
     }
   ],
   "houses": [
     {
-      "apartments": 0,
-      "street": "1 Мая",
       "managing_organization": "КП \"ЖЭК-10\"",
-      "longitude": 31.311507,
+      "floors": 9,
       "entrances_count": 1,
-      "id": "h-1790882973444",
+      "street": "1 Мая",
+      "latitude": 51.51617,
       "entrances": [
         {
           "description": "",
           "apartment_from": 1,
           "floors": 9,
-          "entrance_no": 1,
-          "apartment_to": 0
+          "apartment_to": 0,
+          "entrance_no": 1
         }
       ],
+      "id": "h-1790882973444",
       "house_number": "161а",
-      "floors": 9,
-      "latitude": 51.51617
+      "apartments": 0,
+      "longitude": 31.311507
     },
     {
       "apartments": 0,
       "entrances": [
         {
-          "apartment_to": 0,
           "entrance_no": 1,
+          "apartment_to": 0,
           "floors": 9,
           "apartment_from": 1,
           "description": ""
         }
       ],
-      "floors": 9,
-      "latitude": 51.518038,
-      "house_number": "171",
       "entrances_count": 1,
-      "managing_organization": "КП \"ЖЭК-10\"",
+      "floors": 9,
       "street": "1 Мая",
+      "longitude": 31.312194,
+      "house_number": "171",
       "id": "h-1790882677748",
-      "longitude": 31.312194
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "latitude": 51.518038
     },
     {
-      "house_number": "169",
-      "id": "h-1790882636373",
+      "floors": 9,
+      "apartments": 0,
+      "longitude": 31.31287,
+      "latitude": 51.516564,
       "entrances": [
         {
           "floors": 9,
-          "apartment_to": 0,
-          "description": "",
-          "apartment_from": 1,
-          "entrance_no": 1
-        },
-        {
-          "floors": 9,
+          "entrance_no": 1,
           "apartment_from": 1,
           "description": "",
-          "entrance_no": 2,
           "apartment_to": 0
         },
         {
           "apartment_from": 1,
           "description": "",
           "apartment_to": 0,
-          "floors": 9,
-          "entrance_no": 3
-        }
-      ],
-      "street": "1 Мая",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "building": "2",
-      "latitude": 51.516564,
-      "floors": 9,
-      "entrances_count": 3,
-      "apartments": 0,
-      "longitude": 31.31287
-    },
-    {
-      "house_number": "165",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "longitude": 31.311572,
-      "entrances_count": 3,
-      "floors": 9,
-      "id": "h-1790882598772",
-      "entrances": [
-        {
-          "entrance_no": 1,
-          "apartment_to": 0,
-          "floors": 9,
-          "description": "",
-          "apartment_from": 1
-        },
-        {
-          "description": "",
-          "apartment_from": 1,
           "entrance_no": 2,
-          "apartment_to": 0,
           "floors": 9
         },
         {
-          "description": "",
-          "apartment_to": 0,
-          "floors": 9,
           "apartment_from": 1,
-          "entrance_no": 3
+          "apartment_to": 0,
+          "entrance_no": 3,
+          "description": "",
+          "floors": 9
         }
       ],
-      "building": "2",
-      "latitude": 51.516851,
-      "apartments": 0,
-      "street": "1 Мая"
-    },
-    {
-      "entrances_count": 2,
-      "id": "h-1790882574629",
-      "building": "1",
-      "latitude": 51.516437,
-      "longitude": 31.31199,
-      "floors": 9,
-      "house_number": "165",
       "street": "1 Мая",
-      "entrances": [
-        {
-          "entrance_no": 1,
-          "apartment_to": 0,
-          "floors": 9,
-          "description": "",
-          "apartment_from": 1
-        },
-        {
-          "description": "",
-          "apartment_from": 1,
-          "floors": 9,
-          "apartment_to": 0,
-          "entrance_no": 2
-        }
-      ],
-      "apartments": 0,
+      "entrances_count": 3,
+      "house_number": "169",
+      "id": "h-1790882636373",
+      "building": "2",
       "managing_organization": "КП \"ЖЭК-10\""
     },
     {
+      "floors": 9,
+      "apartments": 0,
+      "building": "2",
+      "entrances": [
+        {
+          "entrance_no": 1,
+          "floors": 9,
+          "apartment_from": 1,
+          "apartment_to": 0,
+          "description": ""
+        },
+        {
+          "description": "",
+          "entrance_no": 2,
+          "floors": 9,
+          "apartment_to": 0,
+          "apartment_from": 1
+        },
+        {
+          "apartment_from": 1,
+          "entrance_no": 3,
+          "apartment_to": 0,
+          "description": "",
+          "floors": 9
+        }
+      ],
+      "longitude": 31.311572,
       "street": "1 Мая",
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "id": "h-1790882598772",
       "entrances_count": 3,
-      "latitude": 51.516243,
-      "longitude": 31.310708,
-      "floors": 9,
-      "id": "h-1790882528060",
-      "apartments": 0,
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "entrances": [
-        {
-          "apartment_to": 0,
-          "floors": 9,
-          "entrance_no": 1,
-          "apartment_from": 1,
-          "description": ""
-        },
-        {
-          "floors": 9,
-          "apartment_from": 1,
-          "entrance_no": 2,
-          "apartment_to": 0,
-          "description": ""
-        },
-        {
-          "apartment_from": 1,
-          "entrance_no": 3,
-          "floors": 9,
-          "apartment_to": 0,
-          "description": ""
-        }
-      ],
-      "house_number": "163"
+      "latitude": 51.516851,
+      "house_number": "165"
     },
     {
-      "floors": 9,
-      "latitude": 51.515733,
-      "apartments": 0,
-      "longitude": 31.311218,
-      "id": "h-1790882484076",
-      "house_number": "161",
+      "longitude": 31.31199,
       "street": "1 Мая",
-      "managing_organization": "КП \"ЖЭК-10\"",
+      "entrances_count": 2,
       "entrances": [
         {
-          "apartment_to": 0,
-          "description": "",
-          "floors": 9,
-          "apartment_from": 1,
-          "entrance_no": 1
-        },
-        {
-          "entrance_no": 2,
-          "description": "",
-          "apartment_from": 1,
-          "apartment_to": 0,
-          "floors": 9
-        },
-        {
-          "description": "",
-          "apartment_from": 1,
-          "apartment_to": 0,
-          "entrance_no": 3,
-          "floors": 9
-        },
-        {
-          "apartment_from": 1,
-          "apartment_to": 0,
-          "description": "",
-          "floors": 9,
-          "entrance_no": 4
-        }
-      ],
-      "entrances_count": 4
-    },
-    {
-      "house_number": "157",
-      "floors": 9,
-      "id": "h-1790882446907",
-      "entrances_count": 4,
-      "latitude": 51.515162,
-      "longitude": 31.310853,
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "street": "1 Мая",
-      "entrances": [
-        {
-          "description": "",
-          "apartment_to": 0,
           "apartment_from": 1,
           "entrance_no": 1,
+          "apartment_to": 0,
+          "description": "",
           "floors": 9
         },
         {
-          "apartment_from": 1,
+          "description": "",
           "floors": 9,
-          "description": "",
           "apartment_to": 0,
-          "entrance_no": 2
-        },
-        {
-          "floors": 9,
-          "apartment_from": 1,
-          "description": "",
-          "apartment_to": 0,
-          "entrance_no": 3
-        },
-        {
-          "apartment_to": 0,
-          "description": "",
-          "apartment_from": 1,
-          "entrance_no": 4,
-          "floors": 9
+          "entrance_no": 2,
+          "apartment_from": 1
         }
       ],
+      "floors": 9,
+      "building": "1",
+      "latitude": 51.516437,
+      "house_number": "165",
+      "id": "h-1790882574629",
+      "managing_organization": "КП \"ЖЭК-10\"",
       "apartments": 0
     },
     {
-      "id": "h-1790882422804",
-      "longitude": 31.312248,
-      "floors": 9,
-      "entrances_count": 2,
       "managing_organization": "КП \"ЖЭК-10\"",
-      "apartments": 0,
+      "latitude": 51.516243,
+      "street": "1 Мая",
+      "entrances_count": 3,
       "entrances": [
+        {
+          "apartment_to": 0,
+          "floors": 9,
+          "description": "",
+          "apartment_from": 1,
+          "entrance_no": 1
+        },
+        {
+          "entrance_no": 2,
+          "description": "",
+          "apartment_from": 1,
+          "floors": 9,
+          "apartment_to": 0
+        },
+        {
+          "apartment_from": 1,
+          "entrance_no": 3,
+          "apartment_to": 0,
+          "floors": 9,
+          "description": ""
+        }
+      ],
+      "id": "h-1790882528060",
+      "apartments": 0,
+      "longitude": 31.310708,
+      "floors": 9,
+      "house_number": "163"
+    },
+    {
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "street": "1 Мая",
+      "house_number": "161",
+      "floors": 9,
+      "apartments": 0,
+      "longitude": 31.311218,
+      "entrances_count": 4,
+      "latitude": 51.515733,
+      "id": "h-1790882484076",
+      "entrances": [
+        {
+          "description": "",
+          "apartment_to": 0,
+          "floors": 9,
+          "apartment_from": 1,
+          "entrance_no": 1
+        },
+        {
+          "apartment_to": 0,
+          "description": "",
+          "entrance_no": 2,
+          "floors": 9,
+          "apartment_from": 1
+        },
+        {
+          "description": "",
+          "apartment_to": 0,
+          "apartment_from": 1,
+          "floors": 9,
+          "entrance_no": 3
+        },
+        {
+          "description": "",
+          "floors": 9,
+          "apartment_to": 0,
+          "entrance_no": 4,
+          "apartment_from": 1
+        }
+      ]
+    },
+    {
+      "entrances": [
+        {
+          "floors": 9,
+          "description": "",
+          "apartment_to": 0,
+          "entrance_no": 1,
+          "apartment_from": 1
+        },
+        {
+          "entrance_no": 2,
+          "apartment_from": 1,
+          "floors": 9,
+          "description": "",
+          "apartment_to": 0
+        },
+        {
+          "apartment_from": 1,
+          "entrance_no": 3,
+          "apartment_to": 0,
+          "description": "",
+          "floors": 9
+        },
         {
           "apartment_to": 0,
           "floors": 9,
           "apartment_from": 1,
           "description": "",
-          "entrance_no": 1
+          "entrance_no": 4
+        }
+      ],
+      "house_number": "157",
+      "longitude": 31.310853,
+      "floors": 9,
+      "entrances_count": 4,
+      "apartments": 0,
+      "latitude": 51.515162,
+      "street": "1 Мая",
+      "id": "h-1790882446907",
+      "managing_organization": "КП \"ЖЭК-10\""
+    },
+    {
+      "id": "h-1790882422804",
+      "entrances_count": 2,
+      "apartments": 0,
+      "house_number": "155",
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "entrances": [
+        {
+          "floors": 9,
+          "apartment_to": 0,
+          "description": "",
+          "entrance_no": 1,
+          "apartment_from": 1
         },
         {
-          "entrance_no": 2,
           "apartment_to": 0,
           "description": "",
           "apartment_from": 1,
+          "entrance_no": 2,
           "floors": 9
         }
       ],
       "latitude": 51.515102,
-      "street": "1 Мая",
-      "house_number": "155"
+      "floors": 9,
+      "longitude": 31.312248,
+      "street": "1 Мая"
     },
     {
-      "street": "Рокосовского",
       "house_number": "38",
-      "longitude": 31.316593,
-      "id": "h-1790708645434",
       "latitude": 51.515476,
-      "entrances_count": 4,
+      "id": "h-1790708645434",
       "apartments": 60,
       "entrances": [
         {
+          "entrance_no": 1,
+          "floors": 5,
           "apartment_to": 0,
           "apartment_from": 1,
+          "description": ""
+        },
+        {
           "floors": 5,
-          "entrance_no": 1,
+          "entrance_no": 2,
+          "apartment_from": 1,
+          "apartment_to": 0,
+          "description": ""
+        },
+        {
+          "entrance_no": 3,
+          "apartment_from": 1,
+          "floors": 5,
+          "apartment_to": 0,
           "description": ""
         },
         {
           "apartment_to": 0,
-          "description": "",
           "floors": 5,
-          "apartment_from": 1,
-          "entrance_no": 2
-        },
-        {
-          "floors": 5,
-          "description": "",
-          "apartment_to": 0,
-          "apartment_from": 1,
-          "entrance_no": 3
-        },
-        {
           "entrance_no": 4,
           "apartment_from": 1,
-          "description": "",
-          "apartment_to": 0,
-          "floors": 5
+          "description": ""
         }
       ],
-      "floors": 5,
-      "managing_organization": "КП \"ЖЭК-10\""
+      "entrances_count": 4,
+      "street": "Рокосовского",
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "longitude": 31.316593,
+      "floors": 5
     },
     {
+      "longitude": 31.317633,
       "house_number": "36",
       "entrances_count": 1,
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "entrances": [
+        {
+          "description": "",
+          "apartment_to": 36,
+          "floors": 5,
+          "entrance_no": 1,
+          "apartment_from": 1
+        }
+      ],
       "latitude": 51.515743,
       "floors": 5,
       "apartments": 0,
-      "longitude": 31.317633,
-      "id": "h-1790708612290",
       "street": "Рокосовского",
+      "id": "h-1790708612290"
+    },
+    {
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "floors": 5,
+      "latitude": 51.515162,
+      "id": "h-1790708592729",
+      "entrances_count": 4,
+      "street": "Рокосовского",
+      "house_number": "34",
+      "entrances": [
+        {
+          "description": "",
+          "floors": 5,
+          "apartment_to": 0,
+          "apartment_from": 1,
+          "entrance_no": 1
+        },
+        {
+          "description": "",
+          "floors": 5,
+          "apartment_from": 1,
+          "apartment_to": 0,
+          "entrance_no": 2
+        },
+        {
+          "apartment_from": 1,
+          "entrance_no": 3,
+          "floors": 5,
+          "apartment_to": 0,
+          "description": ""
+        },
+        {
+          "entrance_no": 4,
+          "apartment_from": 1,
+          "floors": 5,
+          "description": "",
+          "apartment_to": 0
+        }
+      ],
+      "longitude": 31.317328,
+      "apartments": 60
+    },
+    {
+      "latitude": 51.515096,
+      "floors": 5,
+      "entrances": [
+        {
+          "apartment_to": 0,
+          "apartment_from": 1,
+          "description": "",
+          "floors": 5,
+          "entrance_no": 1
+        },
+        {
+          "description": "",
+          "apartment_to": 0,
+          "apartment_from": 1,
+          "floors": 5,
+          "entrance_no": 2
+        },
+        {
+          "apartment_to": 0,
+          "description": "",
+          "apartment_from": 1,
+          "floors": 5,
+          "entrance_no": 3
+        },
+        {
+          "description": "",
+          "floors": 5,
+          "apartment_to": 0,
+          "entrance_no": 4,
+          "apartment_from": 1
+        }
+      ],
+      "entrances_count": 4,
+      "house_number": "32",
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "street": "Рокосовского",
+      "longitude": 31.318175,
+      "id": "h-1790708572242",
+      "apartments": 60
+    },
+    {
+      "id": "h-1790708522210",
+      "latitude": 51.514265,
+      "entrances_count": 1,
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "floors": 0,
+      "longitude": 31.318202,
+      "entrances": [
+        {
+          "entrance_no": 1,
+          "apartment_from": 1,
+          "floors": 0,
+          "apartment_to": 0,
+          "description": ""
+        }
+      ],
+      "street": "Рокосовского",
+      "house_number": "28",
+      "apartments": 0
+    },
+    {
+      "floors": 5,
+      "latitude": 51.514422,
+      "street": "Рокосовского",
+      "longitude": 31.322258,
+      "house_number": "22",
+      "id": "h-1790708488242",
+      "entrances_count": 1,
+      "apartments": 0,
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "entrances": [
+        {
+          "description": "",
+          "floors": 5,
+          "apartment_to": 36,
+          "apartment_from": 1,
+          "entrance_no": 1
+        }
+      ]
+    },
+    {
+      "entrances": [
+        {
+          "entrance_no": 1,
+          "apartment_from": 1,
+          "apartment_to": 36,
+          "description": "",
+          "floors": 5
+        }
+      ],
+      "apartments": 0,
+      "latitude": 51.513584,
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "longitude": 31.32517,
+      "id": "h-1790708452762",
+      "floors": 5,
+      "house_number": "18",
+      "entrances_count": 1,
+      "street": "Рокосовского"
+    },
+    {
+      "house_number": "26",
+      "longitude": 31.316169,
+      "apartments": 108,
+      "id": "h-1790708396746",
+      "entrances": [
+        {
+          "floors": 5,
+          "apartment_from": 1,
+          "entrance_no": 1,
+          "apartment_to": 36,
+          "description": ""
+        },
+        {
+          "apartment_from": 37,
+          "entrance_no": 2,
+          "apartment_to": 72,
+          "floors": 5,
+          "description": ""
+        },
+        {
+          "floors": 5,
+          "apartment_to": 108,
+          "description": "",
+          "entrance_no": 3,
+          "apartment_from": 73
+        }
+      ],
+      "entrances_count": 3,
+      "floors": 5,
+      "latitude": 51.516347,
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "street": "Дмитрия Романченко"
+    },
+    {
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "house_number": "24",
+      "entrances_count": 3,
+      "apartments": 108,
+      "street": "Дмитрия Романченко",
+      "id": "h-1790708359834",
+      "longitude": 31.316373,
+      "latitude": 51.516914,
+      "floors": 9,
+      "entrances": [
+        {
+          "floors": 9,
+          "entrance_no": 1,
+          "description": "",
+          "apartment_from": 1,
+          "apartment_to": 36
+        },
+        {
+          "description": "",
+          "apartment_from": 37,
+          "floors": 9,
+          "apartment_to": 72,
+          "entrance_no": 2
+        },
+        {
+          "entrance_no": 3,
+          "apartment_to": 108,
+          "floors": 9,
+          "apartment_from": 73,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "entrances": [
+        {
+          "description": "",
+          "apartment_to": 36,
+          "apartment_from": 1,
+          "floors": 5,
+          "entrance_no": 1
+        }
+      ],
+      "id": "h-1790708282938",
+      "house_number": "22",
+      "longitude": 31.318175,
+      "latitude": 51.519633,
+      "apartments": 0,
+      "street": "Дмитрия Романченко",
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "entrances_count": 1,
+      "floors": 5
+    },
+    {
+      "apartments": 0,
+      "latitude": 51.51951,
+      "floors": 5,
+      "entrances": [
+        {
+          "description": "",
+          "apartment_from": 1,
+          "floors": 5,
+          "apartment_to": 36,
+          "entrance_no": 1
+        }
+      ],
+      "house_number": "20",
+      "longitude": 31.31751,
+      "entrances_count": 1,
+      "street": "Дмитрия Романченко",
+      "id": "h-1790708265586",
+      "managing_organization": "КП \"ЖЭК-10\""
+    },
+    {
+      "apartments": 90,
+      "entrances_count": 6,
+      "house_number": "12",
+      "longitude": 31.317156,
+      "floors": 5,
+      "id": "h-1790708176426",
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "latitude": 51.518335,
+      "street": "Дмитрия Романченко",
+      "entrances": [
+        {
+          "description": "",
+          "apartment_from": 1,
+          "floors": 5,
+          "apartment_to": 15,
+          "entrance_no": 1
+        },
+        {
+          "entrance_no": 2,
+          "floors": 5,
+          "description": "",
+          "apartment_from": 16,
+          "apartment_to": 30
+        },
+        {
+          "entrance_no": 3,
+          "apartment_from": 31,
+          "floors": 5,
+          "description": "",
+          "apartment_to": 45
+        },
+        {
+          "description": "",
+          "entrance_no": 4,
+          "apartment_to": 60,
+          "floors": 5,
+          "apartment_from": 46
+        },
+        {
+          "entrance_no": 5,
+          "apartment_from": 61,
+          "floors": 5,
+          "apartment_to": 75,
+          "description": ""
+        },
+        {
+          "apartment_to": 90,
+          "floors": 5,
+          "description": "",
+          "entrance_no": 6,
+          "apartment_from": 76
+        }
+      ]
+    },
+    {
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "entrances": [
+        {
+          "entrance_no": 1,
+          "apartment_to": 0,
+          "description": "",
+          "apartment_from": 1,
+          "floors": 5
+        },
+        {
+          "description": "",
+          "apartment_from": 1,
+          "floors": 5,
+          "apartment_to": 0,
+          "entrance_no": 2
+        },
+        {
+          "apartment_to": 0,
+          "description": "",
+          "entrance_no": 3,
+          "floors": 5,
+          "apartment_from": 1
+        },
+        {
+          "description": "",
+          "apartment_to": 0,
+          "entrance_no": 4,
+          "floors": 5,
+          "apartment_from": 1
+        }
+      ],
+      "longitude": 31.316426,
+      "id": "h-1790708151146",
+      "entrances_count": 4,
+      "street": "Дмитрия Романченко",
+      "apartments": 0,
+      "house_number": "10а",
+      "latitude": 51.518012,
+      "floors": 5
+    },
+    {
+      "id": "h-1790708133690",
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "apartments": 0,
+      "longitude": 31.316389,
+      "entrances_count": 4,
+      "floors": 5,
+      "entrances": [
+        {
+          "entrance_no": 1,
+          "floors": 5,
+          "apartment_to": 0,
+          "description": "",
+          "apartment_from": 1
+        },
+        {
+          "apartment_to": 0,
+          "entrance_no": 2,
+          "floors": 5,
+          "apartment_from": 1,
+          "description": ""
+        },
+        {
+          "apartment_from": 1,
+          "apartment_to": 0,
+          "entrance_no": 3,
+          "floors": 5,
+          "description": ""
+        },
+        {
+          "floors": 5,
+          "description": "",
+          "entrance_no": 4,
+          "apartment_to": 0,
+          "apartment_from": 1
+        }
+      ],
+      "latitude": 51.517511,
+      "street": "Дмитрия Романченко",
+      "house_number": "10"
+    },
+    {
+      "apartments": 60,
+      "latitude": 51.518779,
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "house_number": "8",
+      "floors": 5,
+      "id": "h-1790708040002",
+      "entrances": [
+        {
+          "apartment_to": 15,
+          "description": "",
+          "apartment_from": 1,
+          "floors": 5,
+          "entrance_no": 1
+        },
+        {
+          "entrance_no": 2,
+          "description": "",
+          "apartment_from": 16,
+          "floors": 5,
+          "apartment_to": 30
+        },
+        {
+          "apartment_from": 31,
+          "apartment_to": 45,
+          "entrance_no": 3,
+          "floors": 5,
+          "description": ""
+        },
+        {
+          "entrance_no": 4,
+          "floors": 5,
+          "apartment_to": 60,
+          "apartment_from": 46,
+          "description": ""
+        }
+      ],
+      "street": "Дмитрия Романченко",
+      "entrances_count": 4,
+      "longitude": 31.318358
+    },
+    {
+      "floors": 5,
+      "house_number": "6",
+      "street": "Дмитрия Романченко",
+      "id": "h-1790708015090",
+      "latitude": 51.518566,
+      "longitude": 31.318856,
+      "apartments": 0,
+      "entrances_count": 2,
       "entrances": [
         {
           "apartment_from": 1,
           "description": "",
-          "apartment_to": 36,
-          "entrance_no": 1,
-          "floors": 5
+          "apartment_to": 0,
+          "floors": 5,
+          "entrance_no": 1
+        },
+        {
+          "floors": 5,
+          "entrance_no": 2,
+          "apartment_to": 0,
+          "description": "",
+          "apartment_from": 1
         }
       ],
       "managing_organization": "КП \"ЖЭК-10\""
     },
     {
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "longitude": 31.317328,
-      "id": "h-1790708592729",
-      "floors": 5,
-      "house_number": "34",
-      "latitude": 51.515162,
-      "entrances": [
-        {
-          "floors": 5,
-          "description": "",
-          "apartment_from": 1,
-          "apartment_to": 0,
-          "entrance_no": 1
-        },
-        {
-          "description": "",
-          "apartment_from": 1,
-          "entrance_no": 2,
-          "floors": 5,
-          "apartment_to": 0
-        },
-        {
-          "description": "",
-          "apartment_from": 1,
-          "apartment_to": 0,
-          "entrance_no": 3,
-          "floors": 5
-        },
-        {
-          "apartment_to": 0,
-          "description": "",
-          "floors": 5,
-          "entrance_no": 4,
-          "apartment_from": 1
-        }
-      ],
-      "street": "Рокосовского",
-      "apartments": 60,
-      "entrances_count": 4
-    },
-    {
-      "floors": 5,
-      "apartments": 60,
+      "id": "h-1790707991705",
       "entrances_count": 4,
-      "longitude": 31.318175,
-      "id": "h-1790708572242",
-      "house_number": "32",
-      "entrances": [
-        {
-          "entrance_no": 1,
-          "apartment_to": 0,
-          "floors": 5,
-          "apartment_from": 1,
-          "description": ""
-        },
-        {
-          "description": "",
-          "apartment_to": 0,
-          "floors": 5,
-          "entrance_no": 2,
-          "apartment_from": 1
-        },
-        {
-          "apartment_from": 1,
-          "entrance_no": 3,
-          "apartment_to": 0,
-          "floors": 5,
-          "description": ""
-        },
-        {
-          "entrance_no": 4,
-          "floors": 5,
-          "apartment_from": 1,
-          "apartment_to": 0,
-          "description": ""
-        }
-      ],
-      "street": "Рокосовского",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "latitude": 51.515096
-    },
-    {
-      "street": "Рокосовского",
-      "house_number": "28",
-      "longitude": 31.318202,
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "apartments": 0,
-      "floors": 0,
-      "latitude": 51.514265,
-      "id": "h-1790708522210",
-      "entrances": [
-        {
-          "apartment_to": 0,
-          "description": "",
-          "floors": 0,
-          "apartment_from": 1,
-          "entrance_no": 1
-        }
-      ],
-      "entrances_count": 1
-    },
-    {
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "street": "Рокосовского",
-      "id": "h-1790708488242",
-      "apartments": 0,
-      "longitude": 31.322258,
-      "house_number": "22",
-      "floors": 5,
-      "latitude": 51.514422,
-      "entrances_count": 1,
-      "entrances": [
-        {
-          "entrance_no": 1,
-          "floors": 5,
-          "apartment_to": 36,
-          "apartment_from": 1,
-          "description": ""
-        }
-      ]
-    },
-    {
-      "longitude": 31.32517,
-      "street": "Рокосовского",
-      "apartments": 0,
-      "house_number": "18",
-      "entrances": [
-        {
-          "entrance_no": 1,
-          "floors": 5,
-          "apartment_to": 36,
-          "description": "",
-          "apartment_from": 1
-        }
-      ],
-      "entrances_count": 1,
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "id": "h-1790708452762",
-      "latitude": 51.513584,
-      "floors": 5
-    },
-    {
-      "entrances_count": 3,
-      "latitude": 51.516347,
-      "longitude": 31.316169,
-      "floors": 5,
-      "id": "h-1790708396746",
-      "apartments": 108,
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "house_number": "26",
-      "entrances": [
-        {
-          "entrance_no": 1,
-          "floors": 5,
-          "description": "",
-          "apartment_to": 36,
-          "apartment_from": 1
-        },
-        {
-          "description": "",
-          "entrance_no": 2,
-          "apartment_from": 37,
-          "floors": 5,
-          "apartment_to": 72
-        },
-        {
-          "apartment_to": 108,
-          "entrance_no": 3,
-          "floors": 5,
-          "description": "",
-          "apartment_from": 73
-        }
-      ],
-      "street": "Дмитрия Романченко"
-    },
-    {
-      "id": "h-1790708359834",
-      "entrances_count": 3,
-      "entrances": [
-        {
-          "entrance_no": 1,
-          "apartment_from": 1,
-          "description": "",
-          "floors": 9,
-          "apartment_to": 36
-        },
-        {
-          "floors": 9,
-          "apartment_from": 37,
-          "entrance_no": 2,
-          "apartment_to": 72,
-          "description": ""
-        },
-        {
-          "entrance_no": 3,
-          "floors": 9,
-          "apartment_from": 73,
-          "description": "",
-          "apartment_to": 108
-        }
-      ],
-      "apartments": 108,
+      "latitude": 51.518152,
+      "house_number": "4а",
+      "longitude": 31.319044,
       "street": "Дмитрия Романченко",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "longitude": 31.316373,
-      "floors": 9,
-      "house_number": "24",
-      "latitude": 51.516914
-    },
-    {
       "apartments": 0,
-      "house_number": "22",
-      "street": "Дмитрия Романченко",
-      "longitude": 31.318175,
-      "id": "h-1790708282938",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "entrances_count": 1,
       "floors": 5,
-      "latitude": 51.519633,
       "entrances": [
         {
-          "description": "",
-          "apartment_to": 36,
-          "apartment_from": 1,
-          "entrance_no": 1,
-          "floors": 5
-        }
-      ]
-    },
-    {
-      "apartments": 0,
-      "entrances": [
-        {
+          "apartment_from": 0,
           "floors": 5,
-          "description": "",
-          "apartment_from": 1,
           "entrance_no": 1,
-          "apartment_to": 36
-        }
-      ],
-      "floors": 5,
-      "house_number": "20",
-      "entrances_count": 1,
-      "longitude": 31.31751,
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "latitude": 51.51951,
-      "street": "Дмитрия Романченко",
-      "id": "h-1790708265586"
-    },
-    {
-      "entrances_count": 6,
-      "entrances": [
-        {
-          "apartment_to": 15,
-          "description": "",
-          "floors": 5,
-          "apartment_from": 1,
-          "entrance_no": 1
+          "apartment_to": 0,
+          "description": ""
         },
         {
+          "apartment_to": 0,
           "description": "",
+          "apartment_from": 1,
           "floors": 5,
-          "apartment_from": 16,
-          "apartment_to": 30,
           "entrance_no": 2
         },
         {
-          "apartment_to": 45,
-          "description": "",
-          "floors": 5,
-          "entrance_no": 3,
-          "apartment_from": 31
-        },
-        {
-          "description": "",
-          "apartment_from": 46,
-          "apartment_to": 60,
-          "entrance_no": 4,
-          "floors": 5
-        },
-        {
-          "description": "",
-          "apartment_from": 61,
-          "floors": 5,
-          "apartment_to": 75,
-          "entrance_no": 5
-        },
-        {
-          "apartment_from": 76,
-          "description": "",
-          "floors": 5,
-          "entrance_no": 6,
-          "apartment_to": 90
-        }
-      ],
-      "floors": 5,
-      "longitude": 31.317156,
-      "apartments": 90,
-      "latitude": 51.518335,
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "house_number": "12",
-      "id": "h-1790708176426",
-      "street": "Дмитрия Романченко"
-    },
-    {
-      "apartments": 0,
-      "latitude": 51.518012,
-      "house_number": "10а",
-      "floors": 5,
-      "entrances_count": 4,
-      "entrances": [
-        {
           "apartment_to": 0,
-          "entrance_no": 1,
+          "description": "",
           "apartment_from": 1,
           "floors": 5,
-          "description": ""
-        },
-        {
-          "apartment_to": 0,
-          "apartment_from": 1,
-          "entrance_no": 2,
-          "floors": 5,
-          "description": ""
-        },
-        {
-          "apartment_to": 0,
-          "apartment_from": 1,
-          "floors": 5,
-          "description": "",
           "entrance_no": 3
         },
         {
-          "floors": 5,
-          "apartment_to": 0,
           "description": "",
+          "apartment_to": 0,
           "apartment_from": 1,
+          "floors": 5,
           "entrance_no": 4
         }
       ],
-      "id": "h-1790708151146",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "street": "Дмитрия Романченко",
-      "longitude": 31.316426
-    },
-    {
-      "house_number": "10",
-      "floors": 5,
-      "id": "h-1790708133690",
-      "entrances": [
-        {
-          "description": "",
-          "floors": 5,
-          "apartment_from": 1,
-          "entrance_no": 1,
-          "apartment_to": 0
-        },
-        {
-          "entrance_no": 2,
-          "apartment_from": 1,
-          "description": "",
-          "apartment_to": 0,
-          "floors": 5
-        },
-        {
-          "apartment_to": 0,
-          "floors": 5,
-          "entrance_no": 3,
-          "apartment_from": 1,
-          "description": ""
-        },
-        {
-          "floors": 5,
-          "apartment_from": 1,
-          "apartment_to": 0,
-          "description": "",
-          "entrance_no": 4
-        }
-      ],
-      "latitude": 51.517511,
-      "apartments": 0,
-      "street": "Дмитрия Романченко",
-      "entrances_count": 4,
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "longitude": 31.316389
-    },
-    {
-      "apartments": 60,
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "entrances": [
-        {
-          "floors": 5,
-          "entrance_no": 1,
-          "apartment_to": 15,
-          "description": "",
-          "apartment_from": 1
-        },
-        {
-          "description": "",
-          "apartment_to": 30,
-          "entrance_no": 2,
-          "apartment_from": 16,
-          "floors": 5
-        },
-        {
-          "apartment_from": 31,
-          "floors": 5,
-          "entrance_no": 3,
-          "apartment_to": 45,
-          "description": ""
-        },
-        {
-          "entrance_no": 4,
-          "apartment_from": 46,
-          "description": "",
-          "floors": 5,
-          "apartment_to": 60
-        }
-      ],
-      "house_number": "8",
-      "street": "Дмитрия Романченко",
-      "id": "h-1790708040002",
-      "longitude": 31.318358,
-      "latitude": 51.518779,
-      "floors": 5,
-      "entrances_count": 4
+      "managing_organization": "КП \"ЖЭК-10\""
     },
     {
       "apartments": 0,
-      "street": "Дмитрия Романченко",
       "entrances": [
         {
-          "entrance_no": 1,
+          "apartment_from": 1,
           "apartment_to": 0,
-          "apartment_from": 1,
-          "floors": 5,
-          "description": ""
-        },
-        {
-          "apartment_from": 1,
           "description": "",
           "floors": 5,
-          "entrance_no": 2,
-          "apartment_to": 0
-        }
-      ],
-      "entrances_count": 2,
-      "latitude": 51.518566,
-      "house_number": "6",
-      "id": "h-1790708015090",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "longitude": 31.318856,
-      "floors": 5
-    },
-    {
-      "latitude": 51.518152,
-      "entrances_count": 4,
-      "apartments": 0,
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "entrances": [
-        {
-          "apartment_to": 0,
-          "floors": 5,
-          "description": "",
-          "apartment_from": 0,
           "entrance_no": 1
         },
         {
-          "entrance_no": 2,
-          "apartment_to": 0,
-          "floors": 5,
           "description": "",
+          "entrance_no": 2,
+          "floors": 5,
+          "apartment_to": 0,
           "apartment_from": 1
         },
         {
-          "apartment_from": 1,
           "entrance_no": 3,
           "apartment_to": 0,
-          "floors": 5,
-          "description": ""
+          "apartment_from": 1,
+          "description": "",
+          "floors": 5
         },
         {
-          "description": "",
           "apartment_to": 0,
-          "entrance_no": 4,
           "apartment_from": 1,
+          "description": "",
+          "entrance_no": 4,
           "floors": 5
         }
       ],
-      "street": "Дмитрия Романченко",
-      "id": "h-1790707991705",
-      "floors": 5,
-      "house_number": "4а",
-      "longitude": 31.319044
-    },
-    {
       "entrances_count": 4,
-      "house_number": "4",
-      "entrances": [
-        {
-          "apartment_to": 0,
-          "entrance_no": 1,
-          "apartment_from": 1,
-          "floors": 5,
-          "description": ""
-        },
-        {
-          "apartment_from": 1,
-          "apartment_to": 0,
-          "description": "",
-          "floors": 5,
-          "entrance_no": 2
-        },
-        {
-          "description": "",
-          "floors": 5,
-          "apartment_to": 0,
-          "entrance_no": 3,
-          "apartment_from": 1
-        },
-        {
-          "apartment_to": 0,
-          "entrance_no": 4,
-          "floors": 5,
-          "apartment_from": 1,
-          "description": ""
-        }
-      ],
-      "street": "Дмитрия Романченко",
-      "id": "h-1790675163627",
-      "latitude": 51.517647,
       "longitude": 31.319441,
       "managing_organization": "КП \"ЖЭК-10\"",
-      "floors": 5,
-      "apartments": 0
+      "street": "Дмитрия Романченко",
+      "latitude": 51.517647,
+      "id": "h-1790675163627",
+      "house_number": "4",
+      "floors": 5
     },
     {
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "longitude": 31.319607,
-      "floors": 5,
-      "id": "h-1790623847201",
-      "latitude": 51.517135,
       "house_number": "2",
+      "street": "Дмитрия Романченко",
+      "latitude": 51.517135,
+      "apartments": 60,
+      "floors": 5,
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "entrances_count": 4,
       "entrances": [
         {
-          "apartment_to": 15,
           "apartment_from": 1,
           "floors": 5,
           "description": "",
-          "entrance_no": 1
-        },
-        {
-          "apartment_from": 16,
-          "apartment_to": 30,
-          "entrance_no": 2,
-          "floors": 5,
-          "description": ""
+          "entrance_no": 1,
+          "apartment_to": 15
         },
         {
           "description": "",
+          "apartment_from": 16,
           "floors": 5,
+          "apartment_to": 30,
+          "entrance_no": 2
+        },
+        {
           "apartment_from": 31,
+          "floors": 5,
+          "description": "",
           "apartment_to": 45,
           "entrance_no": 3
         },
         {
           "description": "",
           "floors": 5,
-          "apartment_from": 46,
+          "apartment_to": 60,
           "entrance_no": 4,
-          "apartment_to": 60
+          "apartment_from": 46
         }
       ],
-      "apartments": 60,
-      "entrances_count": 4,
-      "street": "Дмитрия Романченко"
+      "longitude": 31.319607,
+      "id": "h-1790623847201"
     },
     {
+      "house_number": "132",
+      "longitude": 31.329977,
       "apartments": 0,
-      "entrances_count": 2,
-      "latitude": 51.521194,
-      "id": "h-1790623660513",
+      "managing_organization": "КП \"ЖЭК-10\"",
       "entrances": [
         {
-          "apartment_to": 0,
           "description": "",
-          "entrance_no": 1,
           "floors": 9,
-          "apartment_from": 1
+          "apartment_from": 1,
+          "apartment_to": 0,
+          "entrance_no": 1
         },
         {
           "description": "",
+          "floors": 9,
           "apartment_from": 1,
           "entrance_no": 2,
-          "floors": 9,
           "apartment_to": 0
         }
       ],
+      "id": "h-1790623660513",
       "floors": 9,
-      "house_number": "132",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "longitude": 31.329977,
-      "street": "Пухова"
+      "latitude": 51.521194,
+      "street": "Пухова",
+      "entrances_count": 2
     },
     {
       "floors": 9,
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "latitude": 51.515425,
-      "longitude": 31.31045,
-      "house_number": "159",
-      "id": "h-1790623490049",
       "entrances": [
         {
           "floors": 9,
-          "apartment_to": 36,
           "entrance_no": 1,
+          "description": "",
           "apartment_from": 1,
-          "description": ""
+          "apartment_to": 36
         },
         {
+          "apartment_to": 72,
           "description": "",
-          "apartment_from": 37,
-          "entrance_no": 2,
           "floors": 9,
-          "apartment_to": 72
+          "entrance_no": 2,
+          "apartment_from": 37
         }
       ],
+      "latitude": 51.515425,
+      "longitude": 31.31045,
       "street": "1 Мая",
       "entrances_count": 2,
+      "id": "h-1790623490049",
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "house_number": "159",
       "apartments": 72
     },
     {
-      "latitude": 51.514357,
-      "street": "Рокосовского",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "house_number": "30",
-      "entrances": [
-        {
-          "apartment_from": 1,
-          "apartment_to": 36,
-          "description": "",
-          "floors": 9,
-          "entrance_no": 1
-        },
-        {
-          "apartment_from": 37,
-          "floors": 9,
-          "entrance_no": 2,
-          "apartment_to": 72,
-          "description": ""
-        },
-        {
-          "description": "",
-          "entrance_no": 3,
-          "floors": 9,
-          "apartment_from": 73,
-          "apartment_to": 108
-        },
-        {
-          "entrance_no": 4,
-          "floors": 9,
-          "apartment_to": 144,
-          "description": "",
-          "apartment_from": 109
-        }
-      ],
-      "apartments": 144,
-      "floors": 9,
-      "id": "h-1790602342108",
       "longitude": 31.317279,
-      "entrances_count": 4
-    },
-    {
-      "entrances_count": 6,
-      "floors": 5,
-      "apartments": 90,
-      "latitude": 51.514023,
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "latitude": 51.514357,
+      "house_number": "30",
+      "id": "h-1790602342108",
       "entrances": [
         {
-          "apartment_to": 15,
-          "floors": 5,
+          "floors": 9,
           "entrance_no": 1,
+          "apartment_to": 36,
           "description": "",
           "apartment_from": 1
         },
         {
-          "floors": 5,
-          "entrance_no": 2,
-          "apartment_to": 30,
-          "description": "",
-          "apartment_from": 16
-        },
-        {
-          "entrance_no": 3,
-          "apartment_to": 45,
-          "description": "",
-          "apartment_from": 31,
-          "floors": 5
-        },
-        {
-          "entrance_no": 4,
-          "floors": 5,
-          "apartment_from": 46,
-          "description": "",
-          "apartment_to": 60
-        },
-        {
-          "apartment_to": 75,
-          "description": "",
-          "floors": 5,
-          "apartment_from": 61,
-          "entrance_no": 5
-        },
-        {
-          "entrance_no": 6,
-          "apartment_from": 76,
-          "apartment_to": 90,
-          "floors": 5,
-          "description": ""
-        }
-      ],
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "id": "h-1790602125197",
-      "street": "Рокосовского",
-      "house_number": "20",
-      "longitude": 31.323802
-    },
-    {
-      "building": "1",
-      "apartments": 108,
-      "latitude": 51.517366,
-      "id": "h-1790601891356",
-      "floors": 9,
-      "longitude": 31.313063,
-      "entrances_count": 3,
-      "house_number": "169",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "street": "1 Мая",
-      "entrances": [
-        {
-          "apartment_to": 36,
-          "description": "",
-          "apartment_from": 1,
-          "entrance_no": 1,
-          "floors": 9
-        },
-        {
+          "floors": 9,
           "description": "",
           "apartment_to": 72,
           "entrance_no": 2,
-          "floors": 9,
           "apartment_from": 37
         },
         {
-          "description": "",
-          "apartment_from": 73,
           "entrance_no": 3,
+          "apartment_to": 108,
+          "description": "",
           "floors": 9,
-          "apartment_to": 108
+          "apartment_from": 73
+        },
+        {
+          "apartment_to": 144,
+          "entrance_no": 4,
+          "apartment_from": 109,
+          "floors": 9,
+          "description": ""
         }
-      ]
+      ],
+      "floors": 9,
+      "street": "Рокосовского",
+      "entrances_count": 4,
+      "apartments": 144
     },
     {
+      "latitude": 51.514023,
+      "floors": 5,
+      "house_number": "20",
+      "id": "h-1790602125197",
+      "street": "Рокосовского",
+      "entrances_count": 6,
+      "entrances": [
+        {
+          "entrance_no": 1,
+          "apartment_to": 15,
+          "floors": 5,
+          "apartment_from": 1,
+          "description": ""
+        },
+        {
+          "floors": 5,
+          "entrance_no": 2,
+          "description": "",
+          "apartment_from": 16,
+          "apartment_to": 30
+        },
+        {
+          "apartment_from": 31,
+          "description": "",
+          "floors": 5,
+          "entrance_no": 3,
+          "apartment_to": 45
+        },
+        {
+          "apartment_to": 60,
+          "entrance_no": 4,
+          "apartment_from": 46,
+          "floors": 5,
+          "description": ""
+        },
+        {
+          "floors": 5,
+          "entrance_no": 5,
+          "apartment_to": 75,
+          "apartment_from": 61,
+          "description": ""
+        },
+        {
+          "apartment_to": 90,
+          "floors": 5,
+          "description": "",
+          "apartment_from": 76,
+          "entrance_no": 6
+        }
+      ],
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "longitude": 31.323802,
+      "apartments": 90
+    },
+    {
+      "longitude": 31.313063,
+      "building": "1",
+      "house_number": "169",
+      "id": "h-1790601891356",
+      "entrances": [
+        {
+          "apartment_from": 1,
+          "apartment_to": 36,
+          "description": "",
+          "entrance_no": 1,
+          "floors": 9
+        },
+        {
+          "apartment_from": 37,
+          "entrance_no": 2,
+          "apartment_to": 72,
+          "floors": 9,
+          "description": ""
+        },
+        {
+          "entrance_no": 3,
+          "apartment_to": 108,
+          "floors": 9,
+          "apartment_from": 73,
+          "description": ""
+        }
+      ],
+      "entrances_count": 3,
       "floors": 9,
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "latitude": 51.517366,
+      "street": "1 Мая",
+      "apartments": 108
+    },
+    {
+      "latitude": 51.523561,
       "longitude": 31.325208,
-      "house_number": "21",
-      "street": "Белова",
-      "apartments": 0,
       "entrances": [
         {
           "description": "",
@@ -1335,94 +1332,91 @@
         {
           "description": "",
           "apartment_to": 0,
-          "entrance_no": 2,
+          "apartment_from": 1,
           "floors": 9,
-          "apartment_from": 1
+          "entrance_no": 2
         }
       ],
-      "latitude": 51.523561,
-      "entrances_count": 2,
-      "building": "3",
+      "apartments": 0,
       "managing_organization": "КП \"ЖЭК-10\"",
-      "id": "h-1790584263863"
+      "entrances_count": 2,
+      "house_number": "21",
+      "floors": 9,
+      "id": "h-1790584263863",
+      "street": "Белова",
+      "building": "3"
     },
     {
-      "id": "h-1790532399368",
       "managing_organization": "КП \"ЖЭК-10\"",
-      "street": "Соборности",
-      "longitude": 31.319532,
-      "entrances_count": 2,
       "latitude": 51.516205,
       "apartments": 60,
       "floors": 5,
-      "house_number": "7в",
       "entrances": [
         {
-          "floors": 5,
-          "apartment_to": 30,
-          "description": "",
           "entrance_no": 1,
-          "apartment_from": 1
+          "apartment_to": 30,
+          "apartment_from": 1,
+          "description": "",
+          "floors": 5
         },
         {
-          "entrance_no": 2,
           "description": "",
-          "apartment_from": 31,
           "apartment_to": 60,
-          "floors": 5
+          "floors": 5,
+          "entrance_no": 2,
+          "apartment_from": 31
         }
-      ]
+      ],
+      "house_number": "7в",
+      "longitude": 31.319532,
+      "street": "Соборности",
+      "id": "h-1790532399368",
+      "entrances_count": 2
     },
     {
-      "house_number": "7а",
+      "id": "h-1790532367679",
+      "floors": 9,
       "street": "Соборности",
       "latitude": 51.516192,
       "apartments": 72,
-      "longitude": 31.320342,
-      "id": "h-1790532367679",
-      "floors": 9,
       "entrances_count": 2,
       "managing_organization": "КП \"ЖЭК-10\"",
       "entrances": [
         {
+          "entrance_no": 1,
           "apartment_to": 36,
-          "floors": 9,
           "apartment_from": 1,
           "description": "",
+          "floors": 9
+        },
+        {
+          "description": "",
+          "apartment_from": 37,
+          "entrance_no": 2,
+          "apartment_to": 72,
+          "floors": 9
+        }
+      ],
+      "house_number": "7а",
+      "longitude": 31.320342
+    },
+    {
+      "house_number": "7",
+      "longitude": 31.319801,
+      "apartments": 60,
+      "entrances": [
+        {
+          "apartment_to": 15,
+          "floors": 5,
+          "description": "",
+          "apartment_from": 1,
           "entrance_no": 1
         },
         {
           "description": "",
-          "apartment_to": 72,
-          "floors": 9,
-          "apartment_from": 37,
-          "entrance_no": 2
-        }
-      ]
-    },
-    {
-      "id": "h-1790532343720",
-      "longitude": 31.319801,
-      "apartments": 60,
-      "street": "Соборности",
-      "entrances_count": 4,
-      "latitude": 51.515738,
-      "house_number": "7",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "floors": 5,
-      "entrances": [
-        {
-          "entrance_no": 1,
-          "apartment_to": 15,
-          "description": "",
           "floors": 5,
-          "apartment_from": 1
-        },
-        {
-          "description": "",
-          "apartment_from": 16,
           "apartment_to": 30,
-          "floors": 5,
+          "apartment_from": 16,
           "entrance_no": 2
         },
         {
@@ -1433,123 +1427,165 @@
           "apartment_to": 45
         },
         {
+          "floors": 5,
+          "entrance_no": 4,
+          "description": "",
+          "apartment_from": 46,
+          "apartment_to": 60
+        }
+      ],
+      "floors": 5,
+      "id": "h-1790532343720",
+      "entrances_count": 4,
+      "latitude": 51.515738,
+      "street": "Соборности",
+      "managing_organization": "КП \"ЖЭК-10\""
+    },
+    {
+      "floors": 5,
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "id": "h-1790532269760",
+      "street": "Соборности",
+      "latitude": 51.515051,
+      "house_number": "5а",
+      "longitude": 31.319232,
+      "apartments": 90,
+      "entrances_count": 6,
+      "entrances": [
+        {
+          "entrance_no": 1,
+          "apartment_to": 15,
+          "floors": 5,
+          "apartment_from": 1,
+          "description": ""
+        },
+        {
+          "description": "",
+          "apartment_from": 16,
+          "floors": 5,
+          "apartment_to": 30,
+          "entrance_no": 2
+        },
+        {
+          "floors": 5,
+          "entrance_no": 3,
+          "description": "",
+          "apartment_from": 31,
+          "apartment_to": 45
+        },
+        {
           "entrance_no": 4,
           "apartment_to": 60,
           "apartment_from": 46,
           "floors": 5,
           "description": ""
+        },
+        {
+          "floors": 5,
+          "apartment_to": 75,
+          "description": "",
+          "apartment_from": 61,
+          "entrance_no": 5
+        },
+        {
+          "entrance_no": 6,
+          "apartment_from": 76,
+          "apartment_to": 90,
+          "description": "",
+          "floors": 5
         }
       ]
     },
     {
-      "id": "h-1790532269760",
-      "entrances": [
-        {
-          "floors": 5,
-          "apartment_from": 1,
-          "description": "",
-          "apartment_to": 15,
-          "entrance_no": 1
-        },
-        {
-          "entrance_no": 2,
-          "floors": 5,
-          "apartment_to": 30,
-          "description": "",
-          "apartment_from": 16
-        },
-        {
-          "apartment_to": 45,
-          "description": "",
-          "apartment_from": 31,
-          "floors": 5,
-          "entrance_no": 3
-        },
-        {
-          "floors": 5,
-          "apartment_to": 60,
-          "description": "",
-          "apartment_from": 46,
-          "entrance_no": 4
-        },
-        {
-          "floors": 5,
-          "entrance_no": 5,
-          "apartment_from": 61,
-          "apartment_to": 75,
-          "description": ""
-        },
-        {
-          "apartment_to": 90,
-          "description": "",
-          "floors": 5,
-          "entrance_no": 6,
-          "apartment_from": 76
-        }
-      ],
-      "street": "Соборности",
-      "longitude": 31.319232,
-      "latitude": 51.515051,
-      "apartments": 90,
-      "floors": 5,
-      "house_number": "5а",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "entrances_count": 6
-    },
-    {
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "entrances_count": 2,
-      "street": "Соборности",
-      "longitude": 31.319624,
-      "house_number": "3а",
-      "latitude": 51.514614,
-      "apartments": 40,
-      "floors": 5,
       "id": "h-1790532171936",
       "entrances": [
         {
-          "apartment_from": 1,
           "description": "",
-          "apartment_to": 20,
           "floors": 5,
+          "apartment_from": 1,
+          "apartment_to": 20,
           "entrance_no": 1
         },
         {
-          "floors": 5,
-          "apartment_from": 21,
-          "description": "",
           "entrance_no": 2,
-          "apartment_to": 40
+          "apartment_to": 40,
+          "description": "",
+          "apartment_from": 21,
+          "floors": 5
         }
-      ]
+      ],
+      "latitude": 51.514614,
+      "street": "Соборности",
+      "house_number": "3а",
+      "floors": 5,
+      "longitude": 31.319624,
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "apartments": 40,
+      "entrances_count": 2
     },
     {
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "house_number": "5",
-      "apartments": 1,
-      "floors": 5,
-      "id": "h-1790532132904",
+      "entrances_count": 4,
+      "street": "Соборности",
       "longitude": 31.320342,
-      "latitude": 51.515415,
       "entrances": [
         {
-          "floors": 5,
-          "apartment_from": 1,
           "entrance_no": 1,
+          "floors": 5,
           "apartment_to": 1,
-          "description": ""
+          "description": "",
+          "apartment_from": 1
+        },
+        {
+          "apartment_from": 2,
+          "floors": 5,
+          "description": "",
+          "apartment_to": 2,
+          "entrance_no": 2
+        },
+        {
+          "floors": 5,
+          "description": "",
+          "apartment_to": 3,
+          "entrance_no": 3,
+          "apartment_from": 3
         },
         {
           "description": "",
+          "apartment_to": 1,
           "floors": 5,
-          "entrance_no": 2,
+          "apartment_from": 4,
+          "entrance_no": 4
+        }
+      ],
+      "id": "h-1790532132904",
+      "floors": 5,
+      "latitude": 51.515415,
+      "house_number": "5",
+      "apartments": 1,
+      "managing_organization": "КП \"ЖЭК-10\""
+    },
+    {
+      "latitude": 51.514928,
+      "id": "h-1790531970960",
+      "entrances": [
+        {
+          "apartment_to": 1,
+          "floors": 5,
+          "apartment_from": 1,
+          "description": "",
+          "entrance_no": 1
+        },
+        {
           "apartment_from": 2,
+          "entrance_no": 2,
+          "description": "",
+          "floors": 5,
           "apartment_to": 2
         },
         {
           "description": "",
-          "floors": 5,
           "apartment_from": 3,
+          "floors": 5,
           "apartment_to": 3,
           "entrance_no": 3
         },
@@ -1561,101 +1597,67 @@
           "description": ""
         }
       ],
-      "street": "Соборности",
-      "entrances_count": 4
-    },
-    {
-      "id": "h-1790531970960",
-      "street": "Соборности",
-      "longitude": 31.32031,
-      "house_number": "3",
-      "managing_organization": "КП \"ЖЭК-10\"",
-      "apartments": 1,
-      "entrances": [
-        {
-          "apartment_from": 1,
-          "description": "",
-          "entrance_no": 1,
-          "apartment_to": 1,
-          "floors": 5
-        },
-        {
-          "entrance_no": 2,
-          "apartment_from": 2,
-          "floors": 5,
-          "apartment_to": 2,
-          "description": ""
-        },
-        {
-          "entrance_no": 3,
-          "floors": 5,
-          "apartment_from": 3,
-          "description": "",
-          "apartment_to": 3
-        },
-        {
-          "entrance_no": 4,
-          "apartment_from": 4,
-          "apartment_to": 1,
-          "floors": 5,
-          "description": ""
-        }
-      ],
       "floors": 5,
-      "latitude": 51.514928,
-      "entrances_count": 4
-    },
-    {
-      "house_number": "1",
-      "entrances": [
-        {
-          "description": "",
-          "floors": 5,
-          "entrance_no": 1,
-          "apartment_from": 1,
-          "apartment_to": 15
-        },
-        {
-          "description": "",
-          "apartment_from": 16,
-          "entrance_no": 2,
-          "floors": 5,
-          "apartment_to": 30
-        },
-        {
-          "apartment_to": 45,
-          "entrance_no": 3,
-          "apartment_from": 31,
-          "description": "",
-          "floors": 5
-        },
-        {
-          "description": "",
-          "floors": 5,
-          "apartment_to": 60,
-          "entrance_no": 4,
-          "apartment_from": 46
-        }
-      ],
-      "latitude": 51.514303,
-      "street": "Соборности",
       "entrances_count": 4,
-      "id": "h-1790531754136",
-      "longitude": 31.320278,
       "managing_organization": "КП \"ЖЭК-10\"",
-      "floors": 5,
+      "longitude": 31.32031,
+      "street": "Соборности",
+      "house_number": "3",
       "apartments": 1
+    },
+    {
+      "apartments": 1,
+      "id": "h-1790531754136",
+      "latitude": 51.514303,
+      "house_number": "1",
+      "managing_organization": "КП \"ЖЭК-10\"",
+      "entrances_count": 4,
+      "street": "Соборности",
+      "entrances": [
+        {
+          "description": "",
+          "floors": 5,
+          "apartment_to": 15,
+          "entrance_no": 1,
+          "apartment_from": 1
+        },
+        {
+          "entrance_no": 2,
+          "apartment_from": 16,
+          "apartment_to": 30,
+          "floors": 5,
+          "description": ""
+        },
+        {
+          "description": "",
+          "apartment_to": 45,
+          "floors": 5,
+          "apartment_from": 31,
+          "entrance_no": 3
+        },
+        {
+          "floors": 5,
+          "entrance_no": 4,
+          "description": "",
+          "apartment_from": 46,
+          "apartment_to": 60
+        }
+      ],
+      "longitude": 31.320278,
+      "floors": 5
     }
   ],
   "users": [
     {
-      "role": "admin",
+      "username": "admin",
       "phone": "+7 (999) 000-00-01",
-      "password": "admin",
       "organization_id": "all",
-      "approved": true,
-      "created_at": "2026-01-10",
+      "role": "admin",
+      "password": "admin",
       "full_name": "Главный администратор",
+      "created_at": "2026-01-10",
+      "approved": true,
+      "id": 1,
       "permissions": [
         "home",
         "map",
@@ -1669,15 +1671,13 @@
         "internal",
         "messages",
         "admin"
-      ],
-      "id": 1,
-      "username": "admin"
+      ]
     },
     {
+      "phone": "+7 (922) 554-12-88",
       "id": 2,
-      "username": "smirnov",
-      "organization_id": "org-1",
       "created_at": "2026-02-15",
+      "username": "smirnov",
       "permissions": [
         "home",
         "map",
@@ -1687,34 +1687,30 @@
         "search",
         "notifications"
       ],
+      "organization_id": "org-1",
       "role": "editor",
-      "phone": "+7 (922) 554-12-88",
+      "password": "123",
       "full_name": "Смирнов Александр Иванович",
-      "approved": true,
-      "password": "123"
+      "approved": true
     },
     {
-      "organization_id": "org-1",
-      "created_at": "2026-03-01",
-      "full_name": "Коваленко Иван Сергеевич",
       "phone": "+7 (999) 111-22-33",
+      "approved": true,
+      "id": 3,
+      "created_at": "2026-03-01",
+      "organization_id": "org-1",
+      "full_name": "Коваленко Иван Сергеевич",
+      "role": "viewer",
+      "password": "123",
       "permissions": [
         "home",
         "map",
         "houses",
         "search"
       ],
-      "role": "viewer",
-      "id": 3,
-      "username": "kovalenko",
-      "approved": true,
-      "password": "123"
+      "username": "kovalenko"
     },
     {
-      "username": "Тая",
-      "role": "editor",
-      "organization_id": "org-1",
-      "password": "Asd",
       "permissions": [
         "home",
         "map",
@@ -1724,1677 +1720,1708 @@
         "search",
         "notifications"
       ],
-      "id": 1791141408806,
-      "created_at": "2026-10-04",
       "phone": "0636150210",
+      "password": "Asd",
+      "created_at": "2026-10-04",
+      "role": "editor",
       "approved": true,
+      "organization_id": "org-1",
+      "id": 1791141408806,
+      "username": "Тая",
       "full_name": "Таисия"
+    },
+    {
+      "created_at": "2026-10-04",
+      "approved": true,
+      "permissions": [
+        "home",
+        "map",
+        "houses",
+        "search"
+      ],
+      "full_name": "Таисия",
+      "phone": "0636150210",
+      "role": "viewer",
+      "id": 1791147412591,
+      "password": "123",
+      "organization_id": "org-1",
+      "username": "ТаяЗикун"
     }
   ],
   "personalPeople": [
     {
+      "owner_user_id": 1,
+      "owner_surname": "Главный администратор",
       "phones": [
         "0962275476"
       ],
-      "id": "my-pp-1790944386925",
-      "owner_user_id": 1,
       "position": "",
-      "owner_surname": "Главный администратор",
-      "organization": "",
+      "residence_address": "",
       "full_name": "Валера",
-      "notes": "окна",
-      "residence_address": ""
+      "id": "my-pp-1790944386925",
+      "organization": "",
+      "notes": "окна"
     },
     {
+      "id": "my-pp-1790925479867",
       "phones": [
         "0989148161"
       ],
-      "organization": "",
-      "id": "my-pp-1790925479867",
-      "position": "",
-      "residence_address": "Пухова 152",
-      "owner_surname": "Главный администратор",
       "full_name": "Андрей",
+      "position": "",
       "notes": "батареи, племянник",
-      "owner_user_id": 1
+      "owner_surname": "Главный администратор",
+      "owner_user_id": 1,
+      "residence_address": "Пухова 152",
+      "organization": ""
     },
     {
+      "organization": "ЖЭК-10",
+      "id": "pp-1790616650954",
+      "full_name": "Зикун Алексей Витальевич",
       "phones": [],
       "residence_address": "",
-      "organization": "ЖЭК-10",
-      "position": "сантехник",
-      "id": "pp-1790616650954",
       "notes": "",
-      "full_name": "Зикун Алексей Витальевич"
+      "position": "сантехник"
     },
     {
       "position": "сантехник",
-      "notes": "",
+      "phones": [],
       "residence_address": "",
       "id": "pp-1790616615122",
-      "full_name": "Ющенко Юрий",
-      "phones": [],
-      "organization": "ЖЭК-10"
-    },
-    {
-      "id": "pp-1790616555154",
-      "position": "сантехник",
-      "full_name": "Шейкин Александр",
-      "phones": [],
-      "residence_address": "",
       "notes": "",
+      "full_name": "Ющенко Юрий",
       "organization": "ЖЭК-10"
     },
     {
+      "residence_address": "",
+      "full_name": "Шейкин Александр",
+      "id": "pp-1790616555154",
+      "notes": "",
+      "phones": [],
+      "organization": "ЖЭК-10",
+      "position": "сантехник"
+    },
+    {
+      "organization": "ЖЭК-10",
       "phones": [
         "0639444986"
       ],
-      "organization": "ЖЭК-10",
-      "position": "сантехник",
       "full_name": "Зикун Виталий Володимирович",
-      "id": "pp-1790614857018",
       "notes": "",
-      "residence_address": "ул. Космонавтов д. 12 кв. 37"
+      "position": "сантехник",
+      "residence_address": "ул. Космонавтов д. 12 кв. 37",
+      "id": "pp-1790614857018"
     },
     {
+      "organization": "ЖЭК-10",
       "residence_address": "",
       "phones": [],
-      "position": "Сантехник",
-      "organization": "ЖЭК-10",
       "notes": "",
-      "full_name": "Клемиша Анатолий",
-      "id": "pp-1790589102428"
+      "position": "Сантехник",
+      "id": "pp-1790589102428",
+      "full_name": "Клемиша Анатолий"
     },
     {
       "phones": [],
-      "full_name": "Кубрак Володя",
-      "position": "Сантехник",
-      "organization": "ЖЭК-10",
-      "residence_address": "",
       "id": "pp-1790589030173",
-      "notes": ""
+      "position": "Сантехник",
+      "full_name": "Кубрак Володя",
+      "notes": "",
+      "residence_address": "",
+      "organization": "ЖЭК-10"
     }
   ],
   "personalTasks": [
     {
-      "status": "in_progress",
-      "owner_user_id": 1,
-      "title": "Рок. 28 6 залив в бочок",
-      "task_date": "",
-      "description": "",
       "id": "pt-1790944955334",
-      "owner_surname": "Главный администратор"
-    },
-    {
-      "status": "pending",
-      "title": "Космонавтов 5а 22 замена шаровых кранов+установка смесителя",
-      "owner_user_id": 1,
-      "id": "pt-1790944839078",
-      "task_date": "",
       "description": "",
-      "owner_surname": "Главный администратор"
-    },
-    {
-      "description": "Андрей Пухова 152, 0989148161\nСаша Медведев хозяин квартиры, 0676784624",
+      "status": "in_progress",
+      "title": "Рок. 28 6 залив в бочок",
       "owner_surname": "Главный администратор",
-      "title": "установка 4 батарей",
-      "status": "pending",
-      "task_date": "2026-10-08",
-      "id": "pt-1790922203547",
+      "task_date": "",
       "owner_user_id": 1
     },
     {
+      "status": "pending",
       "owner_surname": "Главный администратор",
+      "description": "",
+      "owner_user_id": 1,
+      "id": "pt-1790944839078",
+      "title": "Космонавтов 5а 22 замена шаровых кранов+установка смесителя",
+      "task_date": ""
+    },
+    {
+      "title": "установка 4 батарей",
+      "description": "Андрей Пухова 152, 0989148161\nСаша Медведев хозяин квартиры, 0676784624",
+      "status": "pending",
+      "owner_user_id": 1,
+      "task_date": "2026-10-08",
+      "owner_surname": "Главный администратор",
+      "id": "pt-1790922203547"
+    },
+    {
+      "owner_surname": "Главный администратор",
+      "status": "completed",
       "task_date": "2026-09-30",
       "owner_user_id": 1,
       "description": "по паять трубы",
-      "status": "completed",
       "id": "pt-1790673565371",
       "title": "ул. Доценка д. 17б кв. 43"
     }
   ],
   "streets": [
     {
-      "current_name": "Соборности",
       "old_names": "ул. Деснянская, Деснянська, Доценка",
+      "current_name": "Соборности",
       "id": 1
     },
     {
-      "current_name": "Шевченко",
       "id": 2,
-      "old_names": "ул. Советская, Радянська"
+      "old_names": "ул. Советская, Радянська",
+      "current_name": "Шевченко"
     },
     {
-      "id": 3,
       "current_name": "Мира",
+      "id": 3,
       "old_names": "проспект Ленина, пр-т Ленина"
     },
     {
-      "id": 4,
       "old_names": "ул. Октябрьская, Жовтнева",
-      "current_name": "Героев"
+      "current_name": "Героев",
+      "id": 4
     },
     {
-      "current_name": "Дмитрия Романченко",
+      "id": 5,
       "old_names": "ул. Гагарина, Космонавтов",
-      "id": 5
+      "current_name": "Дмитрия Романченко"
     },
     {
+      "id": 6,
       "old_names": "ул. Щорса",
-      "current_name": "Европейская",
-      "id": 6
+      "current_name": "Европейская"
     }
   ],
   "auditLogs": [
     {
+      "details": "Создана учётная запись «Таисия» (логин: ТаяЗикун)",
+      "can_undo": false,
+      "created_at": "04.10.2026, 23:56:52",
+      "entity_id": 1791147412591,
+      "action": "Добавлен пользователь",
+      "entity": "Пользователь",
+      "id": 1791147412591,
+      "user_name": "Главный администратор"
+    },
+    {
+      "can_undo": false,
       "id": 1791141408806,
+      "action": "Добавлен пользователь",
+      "entity_id": 1791141408806,
       "created_at": "04.10.2026, 22:16:48",
       "user_name": "Главный администратор",
-      "details": "Создана учётная запись «Таисия» (логин: Тая)",
       "entity": "Пользователь",
-      "entity_id": 1791141408806,
-      "action": "Добавлен пользователь",
-      "can_undo": false
+      "details": "Создана учётная запись «Таисия» (логин: Тая)"
     },
     {
-      "entity": "Улица",
       "can_undo": false,
+      "id": 1791116732387,
+      "created_at": "04.10.2026, 15:25:32",
       "action": "Переименование улицы в объектах",
       "entity_id": "Дмитрия Романченко",
+      "entity": "Улица",
       "details": "Старое название «Космонавтов» заменено на актуальное «Дмитрия Романченко». Обновлено домов: 12, заявок: 0",
-      "user_name": "Главный администратор",
-      "created_at": "04.10.2026, 15:25:32",
-      "id": 1791116732387
+      "user_name": "Главный администратор"
     },
     {
-      "can_undo": false,
+      "entity": "Улица",
       "entity_id": "Соборности",
       "details": "Старое название «Доценка» заменено на актуальное «Соборности». Обновлено домов: 8, заявок: 0",
-      "user_name": "Главный администратор",
-      "entity": "Улица",
-      "created_at": "03.10.2026, 20:49:41",
       "action": "Переименование улицы в объектах",
+      "can_undo": false,
+      "created_at": "03.10.2026, 20:49:41",
+      "user_name": "Главный администратор",
       "id": 1791049781483
     },
     {
-      "created_at": "01.10.2026, 23:14:45",
-      "id": 1790885685067,
-      "entity_id": "h-1790708645434",
-      "details": "Обновлены данные дома ул. Рокосовского, 38",
-      "action": "Изменены данные дома",
-      "entity": "Дом",
       "can_undo": false,
+      "created_at": "01.10.2026, 23:14:45",
+      "entity": "Дом",
+      "entity_id": "h-1790708645434",
+      "action": "Изменены данные дома",
+      "details": "Обновлены данные дома ул. Рокосовского, 38",
+      "id": 1790885685067,
       "user_name": "Главный администратор"
     },
     {
+      "action": "Изменены данные дома",
       "user_name": "Главный администратор",
-      "can_undo": false,
       "details": "Обновлены данные дома ул. Рокосовского, 36",
+      "entity_id": "h-1790708612290",
       "id": 1790885667276,
       "created_at": "01.10.2026, 23:14:27",
-      "action": "Изменены данные дома",
-      "entity_id": "h-1790708612290",
+      "can_undo": false,
       "entity": "Дом"
     },
     {
-      "can_undo": false,
-      "details": "Обновлены данные дома ул. Рокосовского, 34",
       "created_at": "01.10.2026, 23:14:14",
       "entity": "Дом",
-      "entity_id": "h-1790708592729",
       "id": 1790885654247,
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "details": "Обновлены данные дома ул. Рокосовского, 34",
       "action": "Изменены данные дома",
-      "user_name": "Главный администратор"
+      "entity_id": "h-1790708592729"
     },
     {
-      "can_undo": false,
+      "id": 1790885642222,
       "details": "Обновлены данные дома ул. Рокосовского, 32",
+      "entity": "Дом",
       "entity_id": "h-1790708572242",
       "user_name": "Главный администратор",
-      "entity": "Дом",
-      "id": 1790885642222,
-      "created_at": "01.10.2026, 23:14:02",
-      "action": "Изменены данные дома"
+      "can_undo": false,
+      "action": "Изменены данные дома",
+      "created_at": "01.10.2026, 23:14:02"
     },
     {
-      "created_at": "01.10.2026, 23:13:50",
-      "can_undo": false,
       "entity_id": "h-1790602342108",
+      "action": "Изменены данные дома",
       "details": "Обновлены данные дома ул. Рокосовского, 30",
       "entity": "Дом",
       "user_name": "Главный администратор",
-      "id": 1790885630820,
-      "action": "Изменены данные дома"
+      "created_at": "01.10.2026, 23:13:50",
+      "can_undo": false,
+      "id": 1790885630820
     },
     {
       "id": 1790885617955,
-      "user_name": "Главный администратор",
       "can_undo": false,
+      "user_name": "Главный администратор",
       "entity": "Дом",
+      "created_at": "01.10.2026, 23:13:37",
+      "action": "Изменены данные дома",
       "details": "Обновлены данные дома ул. Рокосовского, 28",
-      "entity_id": "h-1790708522210",
-      "action": "Изменены данные дома",
-      "created_at": "01.10.2026, 23:13:37"
+      "entity_id": "h-1790708522210"
     },
     {
-      "id": 1790885607715,
-      "action": "Изменены данные дома",
-      "can_undo": false,
-      "entity_id": "h-1790708488242",
       "entity": "Дом",
+      "user_name": "Главный администратор",
       "created_at": "01.10.2026, 23:13:27",
-      "user_name": "Главный администратор",
-      "details": "Обновлены данные дома ул. Рокосовского, 22"
-    },
-    {
-      "entity": "Дом",
-      "created_at": "01.10.2026, 23:13:08",
-      "id": 1790885588285,
-      "entity_id": "h-1790602125197",
-      "action": "Изменены данные дома",
+      "id": 1790885607715,
+      "details": "Обновлены данные дома ул. Рокосовского, 22",
+      "entity_id": "h-1790708488242",
       "can_undo": false,
-      "details": "Обновлены данные дома ул. Рокосовского, 20",
-      "user_name": "Главный администратор"
-    },
-    {
-      "details": "Обновлены данные дома ул. Рокосовского, 18",
-      "entity": "Дом",
-      "user_name": "Главный администратор",
-      "created_at": "01.10.2026, 23:12:55",
-      "action": "Изменены данные дома",
-      "id": 1790885575884,
-      "can_undo": false,
-      "entity_id": "h-1790708452762"
-    },
-    {
-      "user_name": "Главный администратор",
-      "can_undo": false,
-      "details": "Обновлены данные дома ул. Пухова, 132",
-      "id": 1790885553331,
-      "created_at": "01.10.2026, 23:12:33",
-      "action": "Изменены данные дома",
-      "entity_id": "h-1790623660513",
-      "entity": "Дом"
-    },
-    {
-      "details": "Обновлены данные дома ул. Космонавтов, 26",
-      "id": 1790885534404,
-      "created_at": "01.10.2026, 23:12:14",
-      "user_name": "Главный администратор",
-      "can_undo": false,
-      "entity_id": "h-1790708396746",
-      "entity": "Дом",
       "action": "Изменены данные дома"
     },
     {
       "can_undo": false,
-      "entity_id": "h-1790708359834",
-      "id": 1790885520510,
-      "action": "Изменены данные дома",
-      "details": "Обновлены данные дома ул. Космонавтов, 24",
-      "user_name": "Главный администратор",
       "entity": "Дом",
-      "created_at": "01.10.2026, 23:12:00"
+      "id": 1790885588285,
+      "entity_id": "h-1790602125197",
+      "details": "Обновлены данные дома ул. Рокосовского, 20",
+      "action": "Изменены данные дома",
+      "created_at": "01.10.2026, 23:13:08",
+      "user_name": "Главный администратор"
     },
     {
+      "entity_id": "h-1790708452762",
+      "action": "Изменены данные дома",
+      "id": 1790885575884,
       "user_name": "Главный администратор",
-      "id": 1790885505764,
-      "created_at": "01.10.2026, 23:11:45",
+      "can_undo": false,
+      "entity": "Дом",
+      "details": "Обновлены данные дома ул. Рокосовского, 18",
+      "created_at": "01.10.2026, 23:12:55"
+    },
+    {
+      "can_undo": false,
+      "id": 1790885553331,
+      "details": "Обновлены данные дома ул. Пухова, 132",
+      "action": "Изменены данные дома",
+      "entity_id": "h-1790623660513",
+      "entity": "Дом",
+      "created_at": "01.10.2026, 23:12:33",
+      "user_name": "Главный администратор"
+    },
+    {
+      "created_at": "01.10.2026, 23:12:14",
+      "id": 1790885534404,
+      "can_undo": false,
+      "action": "Изменены данные дома",
+      "details": "Обновлены данные дома ул. Космонавтов, 26",
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "entity_id": "h-1790708396746"
+    },
+    {
+      "entity_id": "h-1790708359834",
+      "created_at": "01.10.2026, 23:12:00",
       "action": "Изменены данные дома",
       "entity": "Дом",
-      "details": "Обновлены данные дома ул. Космонавтов, 22",
-      "entity_id": "h-1790708282938",
+      "user_name": "Главный администратор",
+      "id": 1790885520510,
+      "details": "Обновлены данные дома ул. Космонавтов, 24",
       "can_undo": false
     },
     {
-      "id": 1790885493292,
+      "created_at": "01.10.2026, 23:11:45",
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "action": "Изменены данные дома",
+      "id": 1790885505764,
+      "entity_id": "h-1790708282938",
+      "details": "Обновлены данные дома ул. Космонавтов, 22"
+    },
+    {
+      "entity": "Дом",
       "user_name": "Главный администратор",
       "can_undo": false,
-      "entity": "Дом",
-      "details": "Обновлены данные дома ул. Космонавтов, 20",
-      "action": "Изменены данные дома",
       "created_at": "01.10.2026, 23:11:33",
-      "entity_id": "h-1790708265586"
+      "entity_id": "h-1790708265586",
+      "id": 1790885493292,
+      "details": "Обновлены данные дома ул. Космонавтов, 20",
+      "action": "Изменены данные дома"
     },
     {
-      "details": "Обновлены данные дома ул. Космонавтов, 12",
       "entity": "Дом",
-      "can_undo": false,
-      "user_name": "Главный администратор",
-      "action": "Изменены данные дома",
       "entity_id": "h-1790708176426",
+      "can_undo": false,
+      "action": "Изменены данные дома",
       "created_at": "01.10.2026, 23:11:21",
-      "id": 1790885481604
+      "id": 1790885481604,
+      "user_name": "Главный администратор",
+      "details": "Обновлены данные дома ул. Космонавтов, 12"
     },
     {
-      "id": 1790885468820,
+      "user_name": "Главный администратор",
+      "entity": "Дом",
       "created_at": "01.10.2026, 23:11:08",
-      "entity_id": "h-1790708151146",
       "details": "Обновлены данные дома ул. Космонавтов, 10а",
+      "entity_id": "h-1790708151146",
+      "id": 1790885468820,
       "action": "Изменены данные дома",
-      "can_undo": false,
-      "user_name": "Главный администратор",
-      "entity": "Дом"
+      "can_undo": false
     },
     {
-      "entity_id": "h-1790708133690",
-      "id": 1790885450220,
-      "action": "Изменены данные дома",
+      "created_at": "01.10.2026, 23:10:50",
       "details": "Обновлены данные дома ул. Космонавтов, 10",
+      "id": 1790885450220,
+      "user_name": "Главный администратор",
+      "action": "Изменены данные дома",
       "entity": "Дом",
       "can_undo": false,
-      "user_name": "Главный администратор",
-      "created_at": "01.10.2026, 23:10:50"
+      "entity_id": "h-1790708133690"
     },
     {
-      "user_name": "Главный администратор",
       "can_undo": false,
-      "id": 1790885432996,
+      "user_name": "Главный администратор",
       "entity": "Дом",
-      "details": "Обновлены данные дома ул. Космонавтов, 8",
+      "id": 1790885432996,
       "action": "Изменены данные дома",
       "created_at": "01.10.2026, 23:10:32",
+      "details": "Обновлены данные дома ул. Космонавтов, 8",
       "entity_id": "h-1790708040002"
     },
     {
-      "can_undo": false,
       "entity_id": "h-1790708015090",
-      "details": "Обновлены данные дома ул. Космонавтов, 6",
-      "id": 1790885419643,
-      "action": "Изменены данные дома",
-      "user_name": "Главный администратор",
       "entity": "Дом",
-      "created_at": "01.10.2026, 23:10:19"
+      "created_at": "01.10.2026, 23:10:19",
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "action": "Изменены данные дома",
+      "details": "Обновлены данные дома ул. Космонавтов, 6",
+      "id": 1790885419643
     },
     {
-      "created_at": "01.10.2026, 23:10:06",
+      "can_undo": false,
+      "entity": "Дом",
       "entity_id": "h-1790707991705",
       "action": "Изменены данные дома",
       "details": "Обновлены данные дома ул. Космонавтов, 4а",
-      "entity": "Дом",
-      "can_undo": false,
       "id": 1790885406955,
+      "created_at": "01.10.2026, 23:10:06",
       "user_name": "Главный администратор"
     },
     {
-      "user_name": "Главный администратор",
-      "entity": "Дом",
+      "entity_id": "h-1790675163627",
       "can_undo": false,
-      "details": "Обновлены данные дома ул. Космонавтов, 4",
+      "entity": "Дом",
       "action": "Изменены данные дома",
-      "id": 1790885390107,
+      "user_name": "Главный администратор",
+      "details": "Обновлены данные дома ул. Космонавтов, 4",
       "created_at": "01.10.2026, 23:09:50",
-      "entity_id": "h-1790675163627"
+      "id": 1790885390107
     },
     {
-      "action": "Изменены данные дома",
-      "entity_id": "h-1790623847201",
-      "created_at": "01.10.2026, 23:09:33",
-      "id": 1790885373539,
       "entity": "Дом",
+      "entity_id": "h-1790623847201",
+      "user_name": "Главный администратор",
       "details": "Обновлены данные дома ул. Космонавтов, 2",
       "can_undo": false,
-      "user_name": "Главный администратор"
+      "action": "Изменены данные дома",
+      "id": 1790885373539,
+      "created_at": "01.10.2026, 23:09:33"
     },
     {
-      "entity_id": "h-1790532399368",
-      "created_at": "01.10.2026, 23:09:17",
-      "action": "Изменены данные дома",
-      "details": "Обновлены данные дома ул. Доценка, 7в",
+      "can_undo": false,
       "entity": "Дом",
-      "can_undo": false,
+      "entity_id": "h-1790532399368",
+      "action": "Изменены данные дома",
+      "id": 1790885357643,
       "user_name": "Главный администратор",
-      "id": 1790885357643
+      "created_at": "01.10.2026, 23:09:17",
+      "details": "Обновлены данные дома ул. Доценка, 7в"
     },
     {
-      "entity_id": "h-1790532367679",
-      "details": "Обновлены данные дома ул. Доценка, 7а",
-      "action": "Изменены данные дома",
-      "created_at": "01.10.2026, 23:09:06",
       "can_undo": false,
+      "action": "Изменены данные дома",
+      "details": "Обновлены данные дома ул. Доценка, 7а",
+      "entity_id": "h-1790532367679",
       "id": 1790885346524,
       "user_name": "Главный администратор",
+      "created_at": "01.10.2026, 23:09:06",
       "entity": "Дом"
     },
     {
-      "details": "Обновлены данные дома ул. Доценка, 7",
-      "entity": "Дом",
+      "id": 1790885336237,
       "created_at": "01.10.2026, 23:08:56",
-      "user_name": "Главный администратор",
-      "action": "Изменены данные дома",
       "entity_id": "h-1790532343720",
+      "action": "Изменены данные дома",
       "can_undo": false,
-      "id": 1790885336237
+      "entity": "Дом",
+      "details": "Обновлены данные дома ул. Доценка, 7",
+      "user_name": "Главный администратор"
     },
     {
-      "entity": "Дом",
-      "details": "Обновлены данные дома ул. Доценка, 5а",
+      "id": 1790885326235,
       "created_at": "01.10.2026, 23:08:46",
+      "details": "Обновлены данные дома ул. Доценка, 5а",
+      "entity": "Дом",
+      "can_undo": false,
       "user_name": "Главный администратор",
       "action": "Изменены данные дома",
-      "can_undo": false,
-      "entity_id": "h-1790532269760",
-      "id": 1790885326235
+      "entity_id": "h-1790532269760"
     },
     {
-      "user_name": "Главный администратор",
-      "action": "Изменены данные дома",
       "entity_id": "h-1790532132904",
-      "created_at": "01.10.2026, 23:08:31",
-      "entity": "Дом",
-      "details": "Обновлены данные дома ул. Доценка, 5",
       "id": 1790885311413,
-      "can_undo": false
+      "action": "Изменены данные дома",
+      "details": "Обновлены данные дома ул. Доценка, 5",
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "can_undo": false,
+      "created_at": "01.10.2026, 23:08:31"
     },
     {
+      "action": "Изменены данные дома",
+      "details": "Обновлены данные дома ул. Доценка, 3а",
+      "entity_id": "h-1790532171936",
+      "can_undo": false,
+      "id": 1790885299164,
+      "created_at": "01.10.2026, 23:08:19",
+      "entity": "Дом",
+      "user_name": "Главный администратор"
+    },
+    {
+      "created_at": "01.10.2026, 23:08:09",
+      "entity": "Дом",
       "user_name": "Главный администратор",
       "can_undo": false,
-      "details": "Обновлены данные дома ул. Доценка, 3а",
-      "created_at": "01.10.2026, 23:08:19",
-      "id": 1790885299164,
-      "entity": "Дом",
-      "entity_id": "h-1790532171936",
-      "action": "Изменены данные дома"
-    },
-    {
-      "user_name": "Главный администратор",
       "details": "Обновлены данные дома ул. Доценка, 3",
       "id": 1790885289347,
-      "entity": "Дом",
-      "created_at": "01.10.2026, 23:08:09",
-      "can_undo": false,
       "action": "Изменены данные дома",
       "entity_id": "h-1790531970960"
     },
     {
-      "user_name": "Главный администратор",
-      "can_undo": false,
-      "created_at": "01.10.2026, 23:07:53",
-      "details": "Обновлены данные дома ул. Доценка, 1",
       "entity": "Дом",
-      "entity_id": "h-1790531754136",
+      "details": "Обновлены данные дома ул. Доценка, 1",
       "id": 1790885273212,
-      "action": "Изменены данные дома"
+      "entity_id": "h-1790531754136",
+      "created_at": "01.10.2026, 23:07:53",
+      "can_undo": false,
+      "action": "Изменены данные дома",
+      "user_name": "Главный администратор"
     },
     {
-      "action": "Изменены данные дома",
-      "id": 1790885256908,
-      "entity": "Дом",
-      "user_name": "Главный администратор",
       "details": "Обновлены данные дома ул. Белова, 21 к. 3",
       "entity_id": "h-1790584263863",
       "can_undo": false,
-      "created_at": "01.10.2026, 23:07:36"
-    },
-    {
-      "created_at": "01.10.2026, 23:07:09",
-      "entity_id": "h-1790882677748",
-      "action": "Изменены данные дома",
-      "user_name": "Главный администратор",
       "entity": "Дом",
-      "id": 1790885229555,
-      "details": "Обновлены данные дома ул. 1 Мая, 171",
-      "can_undo": false
+      "action": "Изменены данные дома",
+      "id": 1790885256908,
+      "created_at": "01.10.2026, 23:07:36",
+      "user_name": "Главный администратор"
     },
     {
-      "action": "Изменены данные дома",
+      "id": 1790885229555,
+      "entity": "Дом",
+      "can_undo": false,
+      "entity_id": "h-1790882677748",
+      "details": "Обновлены данные дома ул. 1 Мая, 171",
+      "created_at": "01.10.2026, 23:07:09",
+      "user_name": "Главный администратор",
+      "action": "Изменены данные дома"
+    },
+    {
       "entity_id": "h-1790882636373",
-      "created_at": "01.10.2026, 23:06:55",
+      "id": 1790885215276,
       "entity": "Дом",
       "details": "Обновлены данные дома ул. 1 Мая, 169 к. 2",
       "user_name": "Главный администратор",
+      "action": "Изменены данные дома",
       "can_undo": false,
-      "id": 1790885215276
+      "created_at": "01.10.2026, 23:06:55"
     },
     {
-      "entity": "Дом",
       "id": 1790885202404,
-      "user_name": "Главный администратор",
-      "action": "Изменены данные дома",
-      "details": "Обновлены данные дома ул. 1 Мая, 169 к. 1",
       "created_at": "01.10.2026, 23:06:42",
+      "user_name": "Главный администратор",
+      "details": "Обновлены данные дома ул. 1 Мая, 169 к. 1",
+      "entity": "Дом",
+      "action": "Изменены данные дома",
       "entity_id": "h-1790601891356",
       "can_undo": false
     },
     {
-      "entity": "Дом",
-      "id": 1790885183597,
-      "action": "Изменены данные дома",
       "entity_id": "h-1790882598772",
-      "created_at": "01.10.2026, 23:06:23",
+      "id": 1790885183597,
       "details": "Обновлены данные дома ул. 1 Мая, 165 к. 2",
+      "action": "Изменены данные дома",
+      "created_at": "01.10.2026, 23:06:23",
       "user_name": "Главный администратор",
+      "entity": "Дом",
       "can_undo": false
     },
     {
-      "entity_id": "h-1790882574629",
+      "entity": "Дом",
+      "user_name": "Главный администратор",
+      "created_at": "01.10.2026, 23:06:09",
       "id": 1790885169917,
       "details": "Обновлены данные дома ул. 1 Мая, 165 к. 1",
-      "created_at": "01.10.2026, 23:06:09",
+      "entity_id": "h-1790882574629",
       "can_undo": false,
-      "action": "Изменены данные дома",
-      "user_name": "Главный администратор",
-      "entity": "Дом"
-    },
-    {
-      "user_name": "Главный администратор",
-      "can_undo": false,
-      "details": "Обновлены данные дома ул. 1 Мая, 163",
-      "id": 1790885148739,
-      "entity": "Дом",
-      "entity_id": "h-1790882528060",
-      "created_at": "01.10.2026, 23:05:48",
       "action": "Изменены данные дома"
     },
     {
-      "can_undo": false,
-      "entity_id": "h-1790882973444",
-      "details": "Обновлены данные дома ул. 1 Мая, 161а",
-      "action": "Изменены данные дома",
-      "user_name": "Главный администратор",
-      "created_at": "01.10.2026, 23:05:36",
+      "details": "Обновлены данные дома ул. 1 Мая, 163",
+      "entity_id": "h-1790882528060",
       "entity": "Дом",
-      "id": 1790885136835
+      "can_undo": false,
+      "id": 1790885148739,
+      "created_at": "01.10.2026, 23:05:48",
+      "action": "Изменены данные дома",
+      "user_name": "Главный администратор"
     },
     {
+      "details": "Обновлены данные дома ул. 1 Мая, 161а",
+      "id": 1790885136835,
+      "entity": "Дом",
+      "user_name": "Главный администратор",
+      "can_undo": false,
       "action": "Изменены данные дома",
+      "entity_id": "h-1790882973444",
+      "created_at": "01.10.2026, 23:05:36"
+    },
+    {
+      "user_name": "Главный администратор",
+      "created_at": "01.10.2026, 23:05:27",
+      "action": "Изменены данные дома",
+      "details": "Обновлены данные дома ул. 1 Мая, 161",
       "id": 1790885127424,
       "entity_id": "h-1790882484076",
       "entity": "Дом",
-      "details": "Обновлены данные дома ул. 1 Мая, 161",
-      "can_undo": false,
-      "created_at": "01.10.2026, 23:05:27",
-      "user_name": "Главный администратор"
-    },
-    {
-      "entity_id": "h-1790623490049",
-      "details": "Обновлены данные дома ул. 1 Мая, 159",
-      "can_undo": false,
-      "id": 1790885117421,
-      "user_name": "Главный администратор",
-      "created_at": "01.10.2026, 23:05:17",
-      "action": "Изменены данные дома",
-      "entity": "Дом"
-    },
-    {
-      "id": 1790885104068,
-      "user_name": "Главный администратор",
-      "created_at": "01.10.2026, 23:05:04",
-      "details": "Обновлены данные дома ул. 1 Мая, 157",
-      "entity_id": "h-1790882446907",
-      "can_undo": false,
-      "action": "Изменены данные дома",
-      "entity": "Дом"
-    },
-    {
-      "user_name": "Главный администратор",
-      "id": 1790885089940,
-      "can_undo": false,
-      "action": "Изменены данные дома",
-      "entity_id": "h-1790882422804",
-      "entity": "Дом",
-      "created_at": "01.10.2026, 23:04:49",
-      "details": "Обновлены данные дома ул. 1 Мая, 155"
-    },
-    {
-      "action": "Изменены данные дома",
-      "can_undo": false,
-      "created_at": "01.10.2026, 23:04:25",
-      "details": "Обновлены данные дома ул. 1 Мая, 161а",
-      "entity": "Дом",
-      "entity_id": "h-1790882973444",
-      "id": 1790885065916,
-      "user_name": "Главный администратор"
-    },
-    {
-      "action": "Изменены данные дома",
-      "user_name": "Главный администратор",
-      "entity": "Дом",
-      "can_undo": false,
-      "details": "Обновлены данные дома ул. Космонавтов, 4а",
-      "created_at": "01.10.2026, 23:03:53",
-      "id": 1790885033246,
-      "entity_id": "h-1790707991705"
-    },
-    {
-      "can_undo": false,
-      "entity": "Дом",
-      "details": "Установлены координаты: 51.51815, 31.31904",
-      "created_at": "01.10.2026, 22:45:33",
-      "entity_id": "h-1790707991705",
-      "action": "Изменены координаты дома",
-      "user_name": "Главный администратор",
-      "id": 1790883933459
-    },
-    {
-      "user_name": "Главный администратор",
-      "action": "Изменены координаты дома",
-      "created_at": "01.10.2026, 22:45:01",
-      "entity": "Дом",
-      "can_undo": false,
-      "details": "Установлены координаты: 51.51857, 31.31886",
-      "entity_id": "h-1790708015090",
-      "id": 1790883901859
-    },
-    {
-      "user_name": "Главный администратор",
-      "details": "Установлены координаты: 51.51878, 31.31836",
-      "created_at": "01.10.2026, 22:44:36",
-      "id": 1790883876508,
-      "entity_id": "h-1790708040002",
-      "entity": "Дом",
-      "can_undo": false,
-      "action": "Изменены координаты дома"
-    },
-    {
-      "action": "Изменены координаты дома",
-      "details": "Установлены координаты: 51.51751, 31.31639",
-      "user_name": "Главный администратор",
-      "entity": "Дом",
-      "id": 1790883846980,
-      "entity_id": "h-1790708133690",
-      "can_undo": false,
-      "created_at": "01.10.2026, 22:44:06"
-    },
-    {
-      "entity_id": "h-1790708151146",
-      "id": 1790883821859,
-      "created_at": "01.10.2026, 22:43:41",
-      "action": "Изменены координаты дома",
-      "user_name": "Главный администратор",
-      "entity": "Дом",
-      "can_undo": false,
-      "details": "Установлены координаты: 51.51801, 31.31643"
-    },
-    {
-      "action": "Изменены координаты дома",
-      "entity_id": "h-1790708176426",
-      "id": 1790883779323,
-      "entity": "Дом",
-      "created_at": "01.10.2026, 22:42:59",
-      "details": "Установлены координаты: 51.51834, 31.31716",
-      "can_undo": false,
-      "user_name": "Главный администратор"
-    },
-    {
-      "created_at": "01.10.2026, 22:42:20",
-      "entity_id": "h-1790708265586",
-      "id": 1790883740804,
-      "user_name": "Главный администратор",
-      "action": "Изменены координаты дома",
-      "can_undo": false,
-      "details": "Установлены координаты: 51.51951, 31.31751",
-      "entity": "Дом"
-    },
-    {
-      "action": "Изменены координаты дома",
-      "details": "Установлены координаты: 51.51963, 31.31818",
-      "entity": "Дом",
-      "entity_id": "h-1790708282938",
-      "id": 1790883696011,
-      "user_name": "Главный администратор",
-      "created_at": "01.10.2026, 22:41:36",
       "can_undo": false
     },
     {
-      "user_name": "Главный администратор",
-      "id": 1790883653060,
       "can_undo": false,
+      "action": "Изменены данные дома",
+      "entity_id": "h-1790623490049",
+      "id": 1790885117421,
       "entity": "Дом",
-      "details": "Установлены координаты: 51.51691, 31.31637",
-      "created_at": "01.10.2026, 22:40:53",
-      "entity_id": "h-1790708359834",
+      "details": "Обновлены данные дома ул. 1 Мая, 159",
+      "user_name": "Главный администратор",
+      "created_at": "01.10.2026, 23:05:17"
+    },
+    {
+      "can_undo": false,
+      "entity_id": "h-1790882446907",
+      "entity": "Дом",
+      "details": "Обновлены данные дома ул. 1 Мая, 157",
+      "action": "Изменены данные дома",
+      "id": 1790885104068,
+      "created_at": "01.10.2026, 23:05:04",
+      "user_name": "Главный администратор"
+    },
+    {
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "created_at": "01.10.2026, 23:04:49",
+      "id": 1790885089940,
+      "details": "Обновлены данные дома ул. 1 Мая, 155",
+      "can_undo": false,
+      "entity_id": "h-1790882422804",
+      "action": "Изменены данные дома"
+    },
+    {
+      "user_name": "Главный администратор",
+      "created_at": "01.10.2026, 23:04:25",
+      "details": "Обновлены данные дома ул. 1 Мая, 161а",
+      "action": "Изменены данные дома",
+      "entity_id": "h-1790882973444",
+      "entity": "Дом",
+      "id": 1790885065916,
+      "can_undo": false
+    },
+    {
+      "created_at": "01.10.2026, 23:03:53",
+      "action": "Изменены данные дома",
+      "details": "Обновлены данные дома ул. Космонавтов, 4а",
+      "user_name": "Главный администратор",
+      "id": 1790885033246,
+      "can_undo": false,
+      "entity_id": "h-1790707991705",
+      "entity": "Дом"
+    },
+    {
+      "entity_id": "h-1790707991705",
+      "action": "Изменены координаты дома",
+      "details": "Установлены координаты: 51.51815, 31.31904",
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "id": 1790883933459,
+      "entity": "Дом",
+      "created_at": "01.10.2026, 22:45:33"
+    },
+    {
+      "user_name": "Главный администратор",
+      "created_at": "01.10.2026, 22:45:01",
+      "action": "Изменены координаты дома",
+      "id": 1790883901859,
+      "details": "Установлены координаты: 51.51857, 31.31886",
+      "entity_id": "h-1790708015090",
+      "entity": "Дом",
+      "can_undo": false
+    },
+    {
+      "id": 1790883876508,
+      "entity": "Дом",
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "details": "Установлены координаты: 51.51878, 31.31836",
+      "created_at": "01.10.2026, 22:44:36",
+      "action": "Изменены координаты дома",
+      "entity_id": "h-1790708040002"
+    },
+    {
+      "created_at": "01.10.2026, 22:44:06",
+      "user_name": "Главный администратор",
+      "action": "Изменены координаты дома",
+      "entity": "Дом",
+      "id": 1790883846980,
+      "entity_id": "h-1790708133690",
+      "details": "Установлены координаты: 51.51751, 31.31639",
+      "can_undo": false
+    },
+    {
+      "details": "Установлены координаты: 51.51801, 31.31643",
+      "id": 1790883821859,
+      "entity": "Дом",
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "created_at": "01.10.2026, 22:43:41",
+      "entity_id": "h-1790708151146",
       "action": "Изменены координаты дома"
     },
     {
-      "id": 1790883618732,
+      "details": "Установлены координаты: 51.51834, 31.31716",
+      "entity": "Дом",
       "user_name": "Главный администратор",
+      "id": 1790883779323,
+      "entity_id": "h-1790708176426",
+      "action": "Изменены координаты дома",
+      "created_at": "01.10.2026, 22:42:59",
+      "can_undo": false
+    },
+    {
+      "details": "Установлены координаты: 51.51951, 31.31751",
+      "action": "Изменены координаты дома",
+      "entity_id": "h-1790708265586",
+      "id": 1790883740804,
+      "entity": "Дом",
+      "created_at": "01.10.2026, 22:42:20",
+      "can_undo": false,
+      "user_name": "Главный администратор"
+    },
+    {
+      "created_at": "01.10.2026, 22:41:36",
+      "action": "Изменены координаты дома",
+      "entity_id": "h-1790708282938",
+      "can_undo": false,
+      "id": 1790883696011,
+      "entity": "Дом",
+      "user_name": "Главный администратор",
+      "details": "Установлены координаты: 51.51963, 31.31818"
+    },
+    {
+      "details": "Установлены координаты: 51.51691, 31.31637",
+      "action": "Изменены координаты дома",
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "id": 1790883653060,
+      "created_at": "01.10.2026, 22:40:53",
+      "entity_id": "h-1790708359834",
+      "entity": "Дом"
+    },
+    {
+      "can_undo": false,
+      "id": 1790883618732,
       "action": "Изменены координаты дома",
       "entity_id": "h-1790708359834",
       "entity": "Дом",
       "created_at": "01.10.2026, 22:40:18",
-      "details": "Установлены координаты: 51.51691, 51.51691",
-      "can_undo": false
+      "user_name": "Главный администратор",
+      "details": "Установлены координаты: 51.51691, 51.51691"
     },
     {
       "details": "Обновлены данные дома ул. 1 Мая, 161",
-      "entity_id": "h-1790882484076",
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "action": "Изменены данные дома",
       "created_at": "01.10.2026, 22:39:38",
-      "can_undo": false,
-      "entity": "Дом",
       "id": 1790883578284,
-      "user_name": "Главный администратор",
-      "action": "Изменены данные дома"
+      "entity_id": "h-1790882484076"
     },
     {
-      "details": "Установлены координаты: 51.51635, 31.31617",
-      "created_at": "01.10.2026, 22:39:23",
-      "entity_id": "h-1790708396746",
       "entity": "Дом",
-      "action": "Изменены координаты дома",
-      "can_undo": false,
+      "details": "Установлены координаты: 51.51635, 31.31617",
       "user_name": "Главный администратор",
-      "id": 1790883563927
+      "can_undo": false,
+      "created_at": "01.10.2026, 22:39:23",
+      "id": 1790883563927,
+      "entity_id": "h-1790708396746",
+      "action": "Изменены координаты дома"
     },
     {
+      "user_name": "Главный администратор",
+      "action": "Изменены координаты дома",
       "id": 1790883504933,
       "can_undo": false,
-      "entity_id": "h-1790708452762",
-      "action": "Изменены координаты дома",
       "created_at": "01.10.2026, 22:38:24",
+      "entity_id": "h-1790708452762",
+      "details": "Установлены координаты: 51.51358, 31.32517",
+      "entity": "Дом"
+    },
+    {
       "user_name": "Главный администратор",
-      "entity": "Дом",
-      "details": "Установлены координаты: 51.51358, 31.32517"
-    },
-    {
-      "entity_id": "h-1790708488242",
-      "action": "Изменены координаты дома",
-      "entity": "Дом",
       "created_at": "01.10.2026, 22:35:36",
-      "id": 1790883336725,
-      "details": "Установлены координаты: 51.51442, 31.32226",
+      "action": "Изменены координаты дома",
       "can_undo": false,
-      "user_name": "Главный администратор"
+      "entity": "Дом",
+      "entity_id": "h-1790708488242",
+      "id": 1790883336725,
+      "details": "Установлены координаты: 51.51442, 31.32226"
     },
     {
-      "entity": "Дом",
-      "entity_id": "h-1790708522210",
+      "can_undo": false,
       "action": "Изменены координаты дома",
+      "entity_id": "h-1790708522210",
       "id": 1790883306908,
       "details": "Установлены координаты: 51.51427, 31.31820",
       "created_at": "01.10.2026, 22:35:06",
-      "can_undo": false,
-      "user_name": "Главный администратор"
+      "user_name": "Главный администратор",
+      "entity": "Дом"
     },
     {
-      "created_at": "01.10.2026, 22:34:24",
-      "details": "Установлены координаты: 51.51510, 31.31818",
       "can_undo": false,
-      "entity": "Дом",
+      "action": "Изменены координаты дома",
+      "created_at": "01.10.2026, 22:34:24",
       "entity_id": "h-1790708572242",
       "id": 1790883264676,
-      "action": "Изменены координаты дома",
-      "user_name": "Главный администратор"
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "details": "Установлены координаты: 51.51510, 31.31818"
     },
     {
-      "entity_id": "h-1790708592729",
-      "entity": "Дом",
+      "can_undo": false,
       "action": "Изменены координаты дома",
       "created_at": "01.10.2026, 22:33:53",
-      "details": "Установлены координаты: 51.51516, 31.31733",
+      "entity_id": "h-1790708592729",
       "id": 1790883233444,
-      "can_undo": false,
+      "details": "Установлены координаты: 51.51516, 31.31733",
+      "entity": "Дом",
       "user_name": "Главный администратор"
     },
     {
       "entity_id": "h-1790708612290",
+      "entity": "Дом",
       "details": "Установлены координаты: 51.51574, 31.31763",
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "action": "Изменены координаты дома",
       "created_at": "01.10.2026, 22:33:23",
-      "entity": "Дом",
-      "can_undo": false,
-      "user_name": "Главный администратор",
-      "id": 1790883203132,
-      "action": "Изменены координаты дома"
+      "id": 1790883203132
     },
     {
-      "details": "Установлены координаты: 51.51548, 31.31659",
       "can_undo": false,
-      "action": "Изменены координаты дома",
-      "id": 1790883172604,
       "entity_id": "h-1790708645434",
-      "entity": "Дом",
-      "created_at": "01.10.2026, 22:32:52",
-      "user_name": "Главный администратор"
-    },
-    {
-      "user_name": "Главный администратор",
-      "created_at": "01.10.2026, 22:32:10",
-      "details": "Установлены координаты: 51.51510, 31.31225",
-      "entity_id": "h-1790882422804",
-      "can_undo": false,
+      "details": "Установлены координаты: 51.51548, 31.31659",
       "action": "Изменены координаты дома",
       "entity": "Дом",
-      "id": 1790883130548
+      "user_name": "Главный администратор",
+      "created_at": "01.10.2026, 22:32:52",
+      "id": 1790883172604
     },
     {
-      "can_undo": false,
+      "entity_id": "h-1790882422804",
+      "action": "Изменены координаты дома",
+      "id": 1790883130548,
+      "details": "Установлены координаты: 51.51510, 31.31225",
       "user_name": "Главный администратор",
-      "entity_id": "h-1790882446907",
+      "entity": "Дом",
+      "can_undo": false,
+      "created_at": "01.10.2026, 22:32:10"
+    },
+    {
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "can_undo": false,
       "action": "Изменены координаты дома",
       "created_at": "01.10.2026, 22:31:22",
-      "entity": "Дом",
+      "entity_id": "h-1790882446907",
       "id": 1790883082044,
       "details": "Установлены координаты: 51.51516, 31.31085"
     },
     {
-      "action": "Изменены координаты дома",
-      "user_name": "Главный администратор",
-      "entity": "Дом",
       "id": 1790883047852,
+      "created_at": "01.10.2026, 22:30:47",
+      "action": "Изменены координаты дома",
+      "can_undo": false,
       "entity_id": "h-1790882484076",
       "details": "Установлены координаты: 51.51573, 31.31122",
-      "created_at": "01.10.2026, 22:30:47",
+      "entity": "Дом",
+      "user_name": "Главный администратор"
+    },
+    {
+      "entity_id": "h-1790882973444",
+      "entity": "Дом",
+      "created_at": "01.10.2026, 22:30:08",
+      "user_name": "Главный администратор",
+      "action": "Изменены координаты дома",
+      "id": 1790883008012,
+      "can_undo": false,
+      "details": "Установлены координаты: 51.51617, 31.31151"
+    },
+    {
+      "entity": "Дом",
+      "entity_id": "h-1790882973444",
+      "details": "Добавлен дом ул. 1 Мая, 161а",
+      "created_at": "01.10.2026, 22:29:33",
+      "action": "Создан новый дом",
+      "user_name": "Главный администратор",
+      "id": 1790882973445,
       "can_undo": false
     },
     {
-      "user_name": "Главный администратор",
-      "can_undo": false,
-      "created_at": "01.10.2026, 22:30:08",
       "action": "Изменены координаты дома",
-      "id": 1790883008012,
-      "details": "Установлены координаты: 51.51617, 31.31151",
-      "entity": "Дом",
-      "entity_id": "h-1790882973444"
-    },
-    {
       "can_undo": false,
-      "details": "Добавлен дом ул. 1 Мая, 161а",
-      "user_name": "Главный администратор",
-      "entity": "Дом",
-      "created_at": "01.10.2026, 22:29:33",
-      "action": "Создан новый дом",
-      "entity_id": "h-1790882973444",
-      "id": 1790882973445
-    },
-    {
-      "user_name": "Главный администратор",
-      "id": 1790882937932,
-      "action": "Изменены координаты дома",
       "entity_id": "h-1790882528060",
-      "created_at": "01.10.2026, 22:28:57",
-      "can_undo": false,
       "details": "Установлены координаты: 51.51624, 31.31071",
+      "id": 1790882937932,
+      "user_name": "Главный администратор",
+      "created_at": "01.10.2026, 22:28:57",
       "entity": "Дом"
     },
     {
-      "user_name": "Главный администратор",
-      "id": 1790882890980,
       "details": "Установлены координаты: 51.51644, 31.31199",
-      "created_at": "01.10.2026, 22:28:10",
       "entity": "Дом",
+      "user_name": "Главный администратор",
+      "created_at": "01.10.2026, 22:28:10",
       "can_undo": false,
-      "entity_id": "h-1790882574629",
+      "action": "Изменены координаты дома",
+      "id": 1790882890980,
+      "entity_id": "h-1790882574629"
+    },
+    {
+      "entity": "Дом",
+      "entity_id": "h-1790882598772",
+      "id": 1790882862885,
+      "user_name": "Главный администратор",
+      "details": "Установлены координаты: 51.51685, 31.31157",
+      "can_undo": false,
+      "created_at": "01.10.2026, 22:27:42",
       "action": "Изменены координаты дома"
     },
     {
-      "entity_id": "h-1790882598772",
-      "details": "Установлены координаты: 51.51685, 31.31157",
-      "entity": "Дом",
       "action": "Изменены координаты дома",
-      "can_undo": false,
-      "created_at": "01.10.2026, 22:27:42",
-      "user_name": "Главный администратор",
-      "id": 1790882862885
-    },
-    {
       "details": "Установлены координаты: 51.51656, 31.31287",
-      "user_name": "Главный администратор",
-      "entity": "Дом",
+      "id": 1790882823525,
       "entity_id": "h-1790882636373",
       "can_undo": false,
-      "created_at": "01.10.2026, 22:27:03",
-      "action": "Изменены координаты дома",
-      "id": 1790882823525
-    },
-    {
-      "action": "Изменены координаты дома",
-      "user_name": "Главный администратор",
-      "can_undo": false,
       "entity": "Дом",
-      "created_at": "01.10.2026, 22:25:58",
-      "id": 1790882758500,
-      "details": "Установлены координаты: 51.51804, 31.31219",
-      "entity_id": "h-1790882677748"
+      "created_at": "01.10.2026, 22:27:03",
+      "user_name": "Главный администратор"
     },
     {
-      "id": 1790882677749,
+      "created_at": "01.10.2026, 22:25:58",
+      "action": "Изменены координаты дома",
+      "details": "Установлены координаты: 51.51804, 31.31219",
       "user_name": "Главный администратор",
-      "details": "Добавлен дом ул. 1 Мая, 171",
-      "entity_id": "h-1790882677748",
       "can_undo": false,
-      "action": "Создан новый дом",
-      "created_at": "01.10.2026, 22:24:37",
+      "id": 1790882758500,
+      "entity_id": "h-1790882677748",
       "entity": "Дом"
     },
     {
-      "entity": "Дом",
+      "created_at": "01.10.2026, 22:24:37",
       "user_name": "Главный администратор",
-      "can_undo": false,
+      "entity": "Дом",
+      "id": 1790882677749,
+      "entity_id": "h-1790882677748",
       "action": "Создан новый дом",
-      "details": "Добавлен дом ул. 1 Мая, 169 к. 2",
-      "id": 1790882636374,
-      "created_at": "01.10.2026, 22:23:56",
-      "entity_id": "h-1790882636373"
+      "details": "Добавлен дом ул. 1 Мая, 171",
+      "can_undo": false
     },
     {
-      "user_name": "Главный администратор",
+      "details": "Добавлен дом ул. 1 Мая, 169 к. 2",
+      "created_at": "01.10.2026, 22:23:56",
+      "entity": "Дом",
+      "entity_id": "h-1790882636373",
+      "action": "Создан новый дом",
       "can_undo": false,
+      "user_name": "Главный администратор",
+      "id": 1790882636374
+    },
+    {
+      "entity": "Дом",
+      "can_undo": false,
+      "user_name": "Главный администратор",
       "id": 1790882598773,
       "details": "Добавлен дом ул. 1 Мая, 165 к. 2",
       "created_at": "01.10.2026, 22:23:18",
+      "action": "Создан новый дом",
+      "entity_id": "h-1790882598772"
+    },
+    {
       "entity": "Дом",
-      "entity_id": "h-1790882598772",
+      "entity_id": "h-1790882574629",
+      "can_undo": false,
+      "created_at": "01.10.2026, 22:22:54",
+      "details": "Добавлен дом ул. 1 Мая, 165 к. 1",
+      "id": 1790882574630,
+      "user_name": "Главный администратор",
       "action": "Создан новый дом"
     },
     {
-      "action": "Создан новый дом",
-      "entity_id": "h-1790882574629",
-      "details": "Добавлен дом ул. 1 Мая, 165 к. 1",
-      "entity": "Дом",
-      "created_at": "01.10.2026, 22:22:54",
       "can_undo": false,
-      "id": 1790882574630,
-      "user_name": "Главный администратор"
-    },
-    {
-      "user_name": "Главный администратор",
-      "action": "Создан новый дом",
-      "can_undo": false,
-      "entity": "Дом",
-      "entity_id": "h-1790882528060",
-      "details": "Добавлен дом ул. 1 Мая, 163",
       "created_at": "01.10.2026, 22:22:08",
-      "id": 1790882528061
+      "user_name": "Главный администратор",
+      "action": "Создан новый дом",
+      "id": 1790882528061,
+      "entity": "Дом",
+      "details": "Добавлен дом ул. 1 Мая, 163",
+      "entity_id": "h-1790882528060"
     },
     {
-      "id": 1790882484077,
       "user_name": "Главный администратор",
-      "entity_id": "h-1790882484076",
       "action": "Создан новый дом",
-      "created_at": "01.10.2026, 22:21:24",
       "can_undo": false,
+      "created_at": "01.10.2026, 22:21:24",
+      "entity_id": "h-1790882484076",
+      "entity": "Дом",
       "details": "Добавлен дом ул. 1Мая, 161",
+      "id": 1790882484077
+    },
+    {
+      "entity_id": "h-1790882446907",
+      "id": 1790882446908,
+      "details": "Добавлен дом ул. 1 Мая, 157",
+      "entity": "Дом",
+      "action": "Создан новый дом",
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "created_at": "01.10.2026, 22:20:46"
+    },
+    {
+      "entity": "Дом",
+      "id": 1790882422805,
+      "user_name": "Главный администратор",
+      "details": "Добавлен дом ул. 1 Мая, 155",
+      "created_at": "01.10.2026, 22:20:22",
+      "can_undo": false,
+      "action": "Создан новый дом",
+      "entity_id": "h-1790882422804"
+    },
+    {
+      "action": "Изменены данные дома",
+      "can_undo": false,
+      "id": 1790708739970,
+      "user_name": "Главный администратор",
+      "details": "Обновлены данные дома ул. Рокосовского, 32",
+      "created_at": "29.09.2026, 22:05:39",
+      "entity_id": "h-1790708572242",
       "entity": "Дом"
     },
     {
-      "created_at": "01.10.2026, 22:20:46",
-      "user_name": "Главный администратор",
-      "action": "Создан новый дом",
-      "entity_id": "h-1790882446907",
-      "entity": "Дом",
-      "id": 1790882446908,
-      "can_undo": false,
-      "details": "Добавлен дом ул. 1 Мая, 157"
-    },
-    {
-      "details": "Добавлен дом ул. 1 Мая, 155",
-      "entity": "Дом",
-      "user_name": "Главный администратор",
-      "action": "Создан новый дом",
-      "entity_id": "h-1790882422804",
-      "id": 1790882422805,
-      "can_undo": false,
-      "created_at": "01.10.2026, 22:20:22"
-    },
-    {
-      "id": 1790708739970,
-      "entity_id": "h-1790708572242",
-      "details": "Обновлены данные дома ул. Рокосовского, 32",
-      "entity": "Дом",
-      "created_at": "29.09.2026, 22:05:39",
-      "action": "Изменены данные дома",
-      "user_name": "Главный администратор",
-      "can_undo": false
-    },
-    {
-      "entity_id": "h-1790708592729",
       "action": "Изменены данные дома",
       "id": 1790708725355,
+      "entity_id": "h-1790708592729",
+      "can_undo": false,
+      "entity": "Дом",
       "details": "Обновлены данные дома ул. Рокосовского, 34",
-      "entity": "Дом",
       "created_at": "29.09.2026, 22:05:25",
-      "can_undo": false,
       "user_name": "Главный администратор"
     },
     {
-      "action": "Создан новый дом",
-      "entity_id": "h-1790708645434",
-      "details": "Добавлен дом ул. Рокосовского, 38",
-      "created_at": "29.09.2026, 22:04:05",
+      "user_name": "Главный администратор",
       "entity": "Дом",
+      "created_at": "29.09.2026, 22:04:05",
       "id": 1790708645435,
+      "details": "Добавлен дом ул. Рокосовского, 38",
       "can_undo": false,
-      "user_name": "Главный администратор"
+      "entity_id": "h-1790708645434",
+      "action": "Создан новый дом"
     },
     {
       "can_undo": false,
+      "entity": "Дом",
+      "entity_id": "h-1790708612290",
+      "created_at": "29.09.2026, 22:03:32",
       "details": "Добавлен дом ул. Рокосовского, 36",
       "action": "Создан новый дом",
       "id": 1790708612290,
-      "entity_id": "h-1790708612290",
-      "entity": "Дом",
-      "user_name": "Главный администратор",
-      "created_at": "29.09.2026, 22:03:32"
+      "user_name": "Главный администратор"
     },
     {
-      "entity_id": "h-1790708592729",
-      "details": "Добавлен дом ул. Рокосовского, 34",
-      "created_at": "29.09.2026, 22:03:12",
-      "action": "Создан новый дом",
+      "entity": "Дом",
+      "id": 1790708592730,
       "can_undo": false,
-      "entity": "Дом",
       "user_name": "Главный администратор",
-      "id": 1790708592730
+      "created_at": "29.09.2026, 22:03:12",
+      "details": "Добавлен дом ул. Рокосовского, 34",
+      "action": "Создан новый дом",
+      "entity_id": "h-1790708592729"
     },
     {
-      "created_at": "29.09.2026, 22:02:52",
       "entity_id": "h-1790708572242",
       "action": "Создан новый дом",
-      "entity": "Дом",
-      "details": "Добавлен дом ул. Рокосовского, 32",
       "can_undo": false,
       "id": 1790708572243,
-      "user_name": "Главный администратор"
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "details": "Добавлен дом ул. Рокосовского, 32",
+      "created_at": "29.09.2026, 22:02:52"
     },
     {
+      "user_name": "Главный администратор",
+      "action": "Создан новый дом",
       "created_at": "29.09.2026, 22:02:02",
-      "user_name": "Главный администратор",
-      "details": "Добавлен дом ул. Рокосовского, 28",
+      "id": 1790708522211,
+      "can_undo": false,
       "entity_id": "h-1790708522210",
-      "action": "Создан новый дом",
-      "can_undo": false,
       "entity": "Дом",
-      "id": 1790708522211
+      "details": "Добавлен дом ул. Рокосовского, 28"
     },
     {
+      "action": "Создан новый дом",
+      "can_undo": false,
+      "user_name": "Главный администратор",
       "id": 1790708488242,
-      "user_name": "Главный администратор",
-      "can_undo": false,
-      "action": "Создан новый дом",
-      "entity": "Дом",
-      "details": "Добавлен дом ул. Рокосовского, 22",
       "created_at": "29.09.2026, 22:01:28",
-      "entity_id": "h-1790708488242"
+      "entity_id": "h-1790708488242",
+      "entity": "Дом",
+      "details": "Добавлен дом ул. Рокосовского, 22"
     },
     {
-      "user_name": "Главный администратор",
       "action": "Создан новый дом",
-      "entity_id": "h-1790708452762",
-      "id": 1790708452763,
-      "entity": "Дом",
-      "can_undo": false,
+      "created_at": "29.09.2026, 22:00:52",
+      "user_name": "Главный администратор",
       "details": "Добавлен дом ул. Рокосовского, 18",
-      "created_at": "29.09.2026, 22:00:52"
+      "entity_id": "h-1790708452762",
+      "can_undo": false,
+      "entity": "Дом",
+      "id": 1790708452763
     },
     {
-      "action": "Создан новый дом",
-      "id": 1790708396747,
-      "created_at": "29.09.2026, 21:59:56",
-      "entity_id": "h-1790708396746",
-      "entity": "Дом",
+      "user_name": "Главный администратор",
       "details": "Добавлен дом ул. Космонавтов, 26",
-      "can_undo": false,
-      "user_name": "Главный администратор"
-    },
-    {
-      "action": "Создан новый дом",
-      "user_name": "Главный администратор",
-      "can_undo": false,
-      "created_at": "29.09.2026, 21:59:19",
+      "created_at": "29.09.2026, 21:59:56",
+      "id": 1790708396747,
       "entity": "Дом",
-      "details": "Добавлен дом ул. Космонавтов, 24",
-      "entity_id": "h-1790708359834",
-      "id": 1790708359836
-    },
-    {
-      "entity": "Дом",
-      "user_name": "Главный администратор",
-      "action": "Создан новый дом",
-      "entity_id": "h-1790708282938",
-      "created_at": "29.09.2026, 21:58:02",
-      "details": "Добавлен дом ул. Космонавтов, 22",
-      "can_undo": false,
-      "id": 1790708282938
-    },
-    {
-      "id": 1790708265586,
-      "created_at": "29.09.2026, 21:57:45",
-      "user_name": "Главный администратор",
-      "entity": "Дом",
-      "entity_id": "h-1790708265586",
-      "details": "Добавлен дом ул. Космонавтов, 20",
+      "entity_id": "h-1790708396746",
       "action": "Создан новый дом",
       "can_undo": false
     },
     {
-      "entity_id": "h-1790708176426",
-      "created_at": "29.09.2026, 21:57:10",
-      "id": 1790708230052,
-      "action": "Изменены данные дома",
-      "details": "Обновлены данные дома ул. Космонавтов, 12",
+      "id": 1790708359836,
+      "entity": "Дом",
+      "details": "Добавлен дом ул. Космонавтов, 24",
+      "can_undo": false,
       "user_name": "Главный администратор",
+      "created_at": "29.09.2026, 21:59:19",
+      "action": "Создан новый дом",
+      "entity_id": "h-1790708359834"
+    },
+    {
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "details": "Добавлен дом ул. Космонавтов, 22",
+      "id": 1790708282938,
+      "created_at": "29.09.2026, 21:58:02",
+      "entity_id": "h-1790708282938",
+      "can_undo": false,
+      "action": "Создан новый дом"
+    },
+    {
+      "details": "Добавлен дом ул. Космонавтов, 20",
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "created_at": "29.09.2026, 21:57:45",
+      "id": 1790708265586,
+      "entity_id": "h-1790708265586",
+      "action": "Создан новый дом",
+      "can_undo": false
+    },
+    {
+      "created_at": "29.09.2026, 21:57:10",
+      "entity_id": "h-1790708176426",
+      "action": "Изменены данные дома",
+      "can_undo": false,
+      "entity": "Дом",
+      "id": 1790708230052,
+      "details": "Обновлены данные дома ул. Космонавтов, 12",
+      "user_name": "Главный администратор"
+    },
+    {
+      "entity_id": "h-1790708176426",
+      "details": "Добавлен дом ул. Космонавтов, 12",
+      "action": "Создан новый дом",
+      "entity": "Дом",
+      "id": 1790708176428,
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "created_at": "29.09.2026, 21:56:16"
+    },
+    {
+      "details": "Добавлен дом ул. Космонавтов, 10а",
+      "can_undo": false,
+      "entity_id": "h-1790708151146",
+      "action": "Создан новый дом",
+      "created_at": "29.09.2026, 21:55:51",
+      "id": 1790708151146,
+      "entity": "Дом",
+      "user_name": "Главный администратор"
+    },
+    {
+      "action": "Создан новый дом",
+      "entity_id": "h-1790708133690",
+      "details": "Добавлен дом ул. Космонавтов, 10",
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "id": 1790708133690,
+      "entity": "Дом",
+      "created_at": "29.09.2026, 21:55:33"
+    },
+    {
+      "entity": "Дом",
+      "can_undo": false,
+      "id": 1790708095594,
+      "created_at": "29.09.2026, 21:54:55",
+      "entity_id": "h-1790708040002",
+      "details": "Обновлены данные дома ул. Космонавтов, 8",
+      "user_name": "Главный администратор",
+      "action": "Изменены данные дома"
+    },
+    {
+      "entity_id": "h-1790708040002",
+      "action": "Создан новый дом",
+      "id": 1790708040002,
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "entity": "Дом",
+      "details": "Добавлен дом ул. Космонавтов, 8",
+      "created_at": "29.09.2026, 21:54:00"
+    },
+    {
+      "entity_id": "h-1790708015090",
+      "entity": "Дом",
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "action": "Создан новый дом",
+      "details": "Добавлен дом ул. Космонавтов, 6",
+      "created_at": "29.09.2026, 21:53:35",
+      "id": 1790708015090
+    },
+    {
+      "details": "Добавлен дом ул. Космонавтов, 4а",
+      "created_at": "29.09.2026, 21:53:11",
+      "entity": "Дом",
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "entity_id": "h-1790707991705",
+      "action": "Создан новый дом",
+      "id": 1790707991706
+    },
+    {
+      "id": 1790676364237,
+      "details": "№29.09.2026-008: Замена кнализации. (ул. Рокосовского, д. 20)",
+      "entity": "Заявка",
+      "entity_id": "ticket-1790676364237",
+      "created_at": "29.09.2026, 13:06:04",
+      "user_name": "Главный администратор",
+      "action": "Создана новая заявка",
+      "can_undo": false
+    },
+    {
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "created_at": "29.09.2026, 12:58:44",
+      "entity": "Заявка",
+      "action": "Создана новая заявка",
+      "entity_id": "ticket-1790675924036",
+      "details": "№29.09.2026-007: Замена кнализации. (ул. 1 Мая, д. 159)",
+      "id": 1790675924036
+    },
+    {
+      "id": 1790675230155,
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "details": "Установлены координаты: 51.51765, 31.31944",
+      "entity": "Дом",
+      "created_at": "29.09.2026, 12:47:10",
+      "entity_id": "h-1790675163627",
+      "action": "Изменены координаты дома"
+    },
+    {
+      "entity_id": "h-1790675163627",
+      "action": "Создан новый дом",
+      "details": "Добавлен дом ул. Космонавтов, 4",
+      "created_at": "29.09.2026, 12:46:03",
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "can_undo": false,
+      "id": 1790675163628
+    },
+    {
+      "entity_id": "h-1790623847201",
+      "details": "Установлены координаты: 51.51714, 31.31961",
+      "entity": "Дом",
+      "id": 1790623890098,
+      "user_name": "Главный администратор",
+      "action": "Изменены координаты дома",
+      "created_at": "28.09.2026, 22:31:30",
+      "can_undo": false
+    },
+    {
+      "id": 1790623847201,
+      "details": "Добавлен дом ул. Космонавтов, 2",
+      "action": "Создан новый дом",
+      "user_name": "Главный администратор",
+      "created_at": "28.09.2026, 22:30:47",
+      "can_undo": false,
+      "entity": "Дом",
+      "entity_id": "h-1790623847201"
+    },
+    {
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "details": "Установлены координаты: 51.52119, 31.32998",
+      "action": "Изменены координаты дома",
+      "entity": "Дом",
+      "entity_id": "h-1790623660513",
+      "id": 1790623708041,
+      "created_at": "28.09.2026, 22:28:28"
+    },
+    {
+      "entity": "Дом",
+      "created_at": "28.09.2026, 22:27:40",
+      "id": 1790623660513,
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "details": "Добавлен дом ул. Пухова, 132",
+      "action": "Создан новый дом",
+      "entity_id": "h-1790623660513"
+    },
+    {
+      "can_undo": false,
+      "created_at": "28.09.2026, 22:27:00",
+      "action": "Создана новая заявка",
+      "user_name": "Главный администратор",
+      "id": 1790623620298,
+      "entity": "Заявка",
+      "details": "№28.09.2026-006: течь холодной водыв подвале (ул. Пухова, д. 132)",
+      "entity_id": "ticket-1790623620298"
+    },
+    {
+      "created_at": "28.09.2026, 22:25:28",
+      "user_name": "Главный администратор",
+      "details": "Установлены координаты: 51.51543, 31.31045",
+      "action": "Изменены координаты дома",
+      "entity": "Дом",
+      "entity_id": "h-1790623490049",
+      "id": 1790623528808,
+      "can_undo": false
+    },
+    {
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "action": "Создан новый дом",
+      "details": "Добавлен дом ул. 1 Мая, 159",
+      "id": 1790623490049,
+      "entity_id": "h-1790623490049",
+      "entity": "Дом",
+      "created_at": "28.09.2026, 22:24:50"
+    },
+    {
+      "action": "Изменены координаты дома",
+      "user_name": "Главный администратор",
+      "id": 1790623379347,
+      "details": "Установлены координаты: 51.51436, 31.31728",
+      "entity_id": "h-1790602342108",
+      "created_at": "28.09.2026, 22:22:59",
       "can_undo": false,
       "entity": "Дом"
     },
     {
-      "id": 1790708176428,
-      "action": "Создан новый дом",
       "user_name": "Главный администратор",
-      "can_undo": false,
-      "details": "Добавлен дом ул. Космонавтов, 12",
-      "entity": "Дом",
-      "created_at": "29.09.2026, 21:56:16",
-      "entity_id": "h-1790708176426"
-    },
-    {
-      "user_name": "Главный администратор",
-      "action": "Создан новый дом",
-      "entity_id": "h-1790708151146",
-      "created_at": "29.09.2026, 21:55:51",
-      "id": 1790708151146,
-      "entity": "Дом",
-      "details": "Добавлен дом ул. Космонавтов, 10а",
-      "can_undo": false
-    },
-    {
-      "id": 1790708133690,
-      "entity_id": "h-1790708133690",
-      "created_at": "29.09.2026, 21:55:33",
-      "details": "Добавлен дом ул. Космонавтов, 10",
-      "entity": "Дом",
-      "can_undo": false,
-      "user_name": "Главный администратор",
-      "action": "Создан новый дом"
-    },
-    {
-      "action": "Изменены данные дома",
-      "entity_id": "h-1790708040002",
-      "entity": "Дом",
-      "id": 1790708095594,
-      "created_at": "29.09.2026, 21:54:55",
-      "can_undo": false,
-      "details": "Обновлены данные дома ул. Космонавтов, 8",
-      "user_name": "Главный администратор"
-    },
-    {
-      "id": 1790708040002,
-      "can_undo": false,
-      "entity_id": "h-1790708040002",
-      "created_at": "29.09.2026, 21:54:00",
-      "entity": "Дом",
-      "user_name": "Главный администратор",
-      "details": "Добавлен дом ул. Космонавтов, 8",
-      "action": "Создан новый дом"
-    },
-    {
-      "action": "Создан новый дом",
-      "entity_id": "h-1790708015090",
-      "entity": "Дом",
-      "id": 1790708015090,
-      "details": "Добавлен дом ул. Космонавтов, 6",
-      "created_at": "29.09.2026, 21:53:35",
-      "can_undo": false,
-      "user_name": "Главный администратор"
-    },
-    {
-      "entity": "Дом",
-      "entity_id": "h-1790707991705",
-      "details": "Добавлен дом ул. Космонавтов, 4а",
-      "action": "Создан новый дом",
-      "can_undo": false,
-      "created_at": "29.09.2026, 21:53:11",
-      "id": 1790707991706,
-      "user_name": "Главный администратор"
-    },
-    {
-      "user_name": "Главный администратор",
-      "can_undo": false,
-      "details": "№29.09.2026-008: Замена кнализации. (ул. Рокосовского, д. 20)",
-      "created_at": "29.09.2026, 13:06:04",
-      "id": 1790676364237,
-      "entity": "Заявка",
-      "action": "Создана новая заявка",
-      "entity_id": "ticket-1790676364237"
-    },
-    {
-      "user_name": "Главный администратор",
-      "details": "№29.09.2026-007: Замена кнализации. (ул. 1 Мая, д. 159)",
-      "id": 1790675924036,
-      "entity": "Заявка",
-      "entity_id": "ticket-1790675924036",
-      "can_undo": false,
-      "created_at": "29.09.2026, 12:58:44",
-      "action": "Создана новая заявка"
-    },
-    {
-      "user_name": "Главный администратор",
-      "id": 1790675230155,
-      "can_undo": false,
-      "action": "Изменены координаты дома",
-      "created_at": "29.09.2026, 12:47:10",
-      "entity_id": "h-1790675163627",
-      "entity": "Дом",
-      "details": "Установлены координаты: 51.51765, 31.31944"
-    },
-    {
-      "id": 1790675163628,
-      "user_name": "Главный администратор",
-      "action": "Создан новый дом",
-      "entity": "Дом",
-      "can_undo": false,
-      "details": "Добавлен дом ул. Космонавтов, 4",
-      "entity_id": "h-1790675163627",
-      "created_at": "29.09.2026, 12:46:03"
-    },
-    {
-      "entity": "Дом",
-      "created_at": "28.09.2026, 22:31:30",
-      "can_undo": false,
-      "action": "Изменены координаты дома",
-      "entity_id": "h-1790623847201",
-      "details": "Установлены координаты: 51.51714, 31.31961",
-      "id": 1790623890098,
-      "user_name": "Главный администратор"
-    },
-    {
-      "created_at": "28.09.2026, 22:30:47",
-      "details": "Добавлен дом ул. Космонавтов, 2",
-      "entity_id": "h-1790623847201",
-      "entity": "Дом",
-      "user_name": "Главный администратор",
-      "can_undo": false,
-      "action": "Создан новый дом",
-      "id": 1790623847201
-    },
-    {
-      "details": "Установлены координаты: 51.52119, 31.32998",
-      "entity_id": "h-1790623660513",
-      "created_at": "28.09.2026, 22:28:28",
-      "entity": "Дом",
-      "user_name": "Главный администратор",
-      "action": "Изменены координаты дома",
-      "id": 1790623708041,
-      "can_undo": false
-    },
-    {
-      "action": "Создан новый дом",
-      "entity_id": "h-1790623660513",
-      "id": 1790623660513,
-      "entity": "Дом",
-      "created_at": "28.09.2026, 22:27:40",
-      "details": "Добавлен дом ул. Пухова, 132",
-      "can_undo": false,
-      "user_name": "Главный администратор"
-    },
-    {
-      "entity_id": "ticket-1790623620298",
-      "id": 1790623620298,
-      "details": "№28.09.2026-006: течь холодной водыв подвале (ул. Пухова, д. 132)",
-      "user_name": "Главный администратор",
-      "action": "Создана новая заявка",
-      "can_undo": false,
-      "entity": "Заявка",
-      "created_at": "28.09.2026, 22:27:00"
-    },
-    {
-      "entity_id": "h-1790623490049",
-      "details": "Установлены координаты: 51.51543, 31.31045",
-      "action": "Изменены координаты дома",
-      "can_undo": false,
-      "user_name": "Главный администратор",
-      "created_at": "28.09.2026, 22:25:28",
-      "entity": "Дом",
-      "id": 1790623528808
-    },
-    {
-      "entity_id": "h-1790623490049",
-      "entity": "Дом",
-      "details": "Добавлен дом ул. 1 Мая, 159",
-      "action": "Создан новый дом",
-      "created_at": "28.09.2026, 22:24:50",
-      "id": 1790623490049,
-      "can_undo": false,
-      "user_name": "Главный администратор"
-    },
-    {
-      "created_at": "28.09.2026, 22:22:59",
-      "id": 1790623379347,
-      "can_undo": false,
-      "details": "Установлены координаты: 51.51436, 31.31728",
-      "entity_id": "h-1790602342108",
-      "entity": "Дом",
-      "user_name": "Главный администратор",
-      "action": "Изменены координаты дома"
-    },
-    {
-      "can_undo": false,
-      "details": "№28.09.2026-005: течь холодной воды в подвале (ул. 1 мая, д. 159)",
       "created_at": "28.09.2026, 19:31:25",
-      "entity_id": "ticket-1790613085395",
-      "user_name": "Главный администратор",
-      "entity": "Заявка",
+      "details": "№28.09.2026-005: течь холодной воды в подвале (ул. 1 мая, д. 159)",
       "id": 1790613085395,
-      "action": "Создана новая заявка"
+      "entity": "Заявка",
+      "action": "Создана новая заявка",
+      "entity_id": "ticket-1790613085395",
+      "can_undo": false
     },
     {
-      "entity_id": "ticket-1790612984163",
       "can_undo": false,
-      "created_at": "28.09.2026, 19:29:44",
-      "details": "№28.09.2026-004: сняли плитку, обследовать канализационную трубу (ул. Рокосовского, д. 30)",
-      "id": 1790612984164,
-      "action": "Создана новая заявка",
       "user_name": "Главный администратор",
-      "entity": "Заявка"
+      "created_at": "28.09.2026, 19:29:44",
+      "entity": "Заявка",
+      "id": 1790612984164,
+      "details": "№28.09.2026-004: сняли плитку, обследовать канализационную трубу (ул. Рокосовского, д. 30)",
+      "action": "Создана новая заявка",
+      "entity_id": "ticket-1790612984163"
     },
     {
       "id": 1790602342109,
+      "can_undo": false,
       "entity": "Дом",
       "entity_id": "h-1790602342108",
       "action": "Создан новый дом",
       "created_at": "28.09.2026, 16:32:22",
-      "details": "Добавлен дом ул. Рокосовского, 30",
-      "can_undo": false,
-      "user_name": "Главный администратор"
+      "user_name": "Главный администратор",
+      "details": "Добавлен дом ул. Рокосовского, 30"
     },
     {
-      "action": "Создана новая заявка",
-      "can_undo": false,
-      "entity": "Заявка",
-      "created_at": "28.09.2026, 16:30:23",
-      "entity_id": "ticket-1790602223709",
       "user_name": "Главный администратор",
       "details": "№28.09.2026-003: Сняли щит обследовать канализационную прубу. (ул. Рокосовского, д. 20)",
-      "id": 1790602223709
+      "can_undo": false,
+      "entity": "Заявка",
+      "id": 1790602223709,
+      "created_at": "28.09.2026, 16:30:23",
+      "entity_id": "ticket-1790602223709",
+      "action": "Создана новая заявка"
     },
     {
-      "id": 1790602157900,
-      "entity": "Дом",
       "user_name": "Главный администратор",
       "action": "Изменены координаты дома",
       "details": "Установлены координаты: 51.51402, 31.32380",
-      "can_undo": false,
+      "id": 1790602157900,
+      "created_at": "28.09.2026, 16:29:17",
       "entity_id": "h-1790602125197",
-      "created_at": "28.09.2026, 16:29:17"
+      "can_undo": false,
+      "entity": "Дом"
     },
     {
       "entity_id": "h-1790602125197",
-      "id": 1790602125198,
-      "entity": "Дом",
-      "created_at": "28.09.2026, 16:28:45",
-      "details": "Добавлен дом ул. Рокосовского, 20",
       "action": "Создан новый дом",
+      "id": 1790602125198,
       "can_undo": false,
-      "user_name": "Главный администратор"
+      "user_name": "Главный администратор",
+      "created_at": "28.09.2026, 16:28:45",
+      "entity": "Дом",
+      "details": "Добавлен дом ул. Рокосовского, 20"
     },
     {
       "user_name": "Главный администратор",
-      "can_undo": false,
-      "details": "№28.09.2026-002: Запах канализации с подвала. (ул. 1 Мая, д. 169 корп. 1)",
-      "entity": "Заявка",
-      "id": 1790601999261,
-      "entity_id": "ticket-1790601999261",
       "action": "Создана новая заявка",
-      "created_at": "28.09.2026, 16:26:39"
+      "entity": "Заявка",
+      "can_undo": false,
+      "created_at": "28.09.2026, 16:26:39",
+      "entity_id": "ticket-1790601999261",
+      "details": "№28.09.2026-002: Запах канализации с подвала. (ул. 1 Мая, д. 169 корп. 1)",
+      "id": 1790601999261
     },
     {
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "created_at": "28.09.2026, 16:25:39",
       "id": 1790601939148,
       "details": "Установлены координаты: 51.51737, 31.31306",
-      "user_name": "Главный администратор",
-      "created_at": "28.09.2026, 16:25:39",
-      "entity": "Дом",
       "entity_id": "h-1790601891356",
       "can_undo": false,
       "action": "Изменены координаты дома"
     },
     {
-      "id": 1790601891358,
-      "entity_id": "h-1790601891356",
-      "created_at": "28.09.2026, 16:24:51",
-      "details": "Добавлен дом ул. 1 Мая, 169 к. 1",
-      "entity": "Дом",
-      "user_name": "Главный администратор",
       "action": "Создан новый дом",
-      "can_undo": false
+      "created_at": "28.09.2026, 16:24:51",
+      "user_name": "Главный администратор",
+      "details": "Добавлен дом ул. 1 Мая, 169 к. 1",
+      "entity_id": "h-1790601891356",
+      "can_undo": false,
+      "entity": "Дом",
+      "id": 1790601891358
+    },
+    {
+      "entity_id": "h-1790584263863",
+      "action": "Изменены координаты дома",
+      "details": "Установлены координаты: 51.52356, 31.32521",
+      "created_at": "28.09.2026, 16:05:31",
+      "id": 1790600731429,
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "entity": "Дом"
     },
     {
       "user_name": "Главный администратор",
+      "id": 1790584365830,
+      "created_at": "28.09.2026, 11:32:45",
+      "action": "Создана новая заявка",
       "can_undo": false,
-      "id": 1790600731429,
-      "action": "Изменены координаты дома",
-      "details": "Установлены координаты: 51.52356, 31.32521",
+      "entity_id": "ticket-1790584365830",
+      "entity": "Заявка",
+      "details": "№28.09.2026-001: обследовать канализационную трубу, мокрая стена. (Белова, 213)"
+    },
+    {
+      "details": "Добавлен дом ул. Белова, 21 к. 3",
+      "created_at": "28.09.2026, 11:31:03",
+      "id": 1790584263867,
+      "action": "Создан новый дом",
+      "user_name": "Главный администратор",
+      "can_undo": false,
       "entity": "Дом",
-      "created_at": "28.09.2026, 16:05:31",
       "entity_id": "h-1790584263863"
     },
     {
-      "id": 1790584365830,
-      "action": "Создана новая заявка",
-      "can_undo": false,
-      "details": "№28.09.2026-001: обследовать канализационную трубу, мокрая стена. (Белова, 213)",
-      "entity_id": "ticket-1790584365830",
-      "entity": "Заявка",
-      "user_name": "Главный администратор",
-      "created_at": "28.09.2026, 11:32:45"
-    },
-    {
-      "id": 1790584263867,
-      "user_name": "Главный администратор",
-      "created_at": "28.09.2026, 11:31:03",
-      "details": "Добавлен дом ул. Белова, 21 к. 3",
-      "can_undo": false,
-      "entity": "Дом",
-      "entity_id": "h-1790584263863",
-      "action": "Создан новый дом"
-    },
-    {
-      "action": "Изменены координаты дома",
-      "user_name": "Главный администратор",
-      "entity": "Дом",
-      "created_at": "27.09.2026, 21:32:00",
-      "details": "Установлены координаты: 51.51541, 31.32034",
       "entity_id": "h-1790532132904",
+      "entity": "Дом",
+      "details": "Установлены координаты: 51.51541, 31.32034",
+      "id": 1790533920119,
+      "user_name": "Главный администратор",
+      "action": "Изменены координаты дома",
       "can_undo": false,
-      "id": 1790533920119
+      "created_at": "27.09.2026, 21:32:00"
     },
     {
-      "entity_id": "h-1790532171936",
-      "id": 1790533886790,
-      "created_at": "27.09.2026, 21:31:26",
-      "entity": "Дом",
-      "details": "Установлены координаты: 51.51461, 31.31962",
       "user_name": "Главный администратор",
+      "created_at": "27.09.2026, 21:31:26",
+      "action": "Изменены координаты дома",
+      "id": 1790533886790,
       "can_undo": false,
+      "entity_id": "h-1790532171936",
+      "entity": "Дом",
+      "details": "Установлены координаты: 51.51461, 31.31962"
+    },
+    {
+      "created_at": "27.09.2026, 21:30:48",
+      "can_undo": false,
+      "details": "Установлены координаты: 51.51505, 31.31923",
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "id": 1790533848959,
+      "action": "Изменены координаты дома",
+      "entity_id": "h-1790532269760"
+    },
+    {
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "created_at": "27.09.2026, 21:30:06",
+      "details": "Установлены координаты: 51.51574, 31.31980",
+      "can_undo": false,
+      "entity_id": "h-1790532343720",
+      "id": 1790533806727,
       "action": "Изменены координаты дома"
     },
     {
-      "action": "Изменены координаты дома",
-      "created_at": "27.09.2026, 21:30:48",
-      "user_name": "Главный администратор",
       "entity": "Дом",
-      "details": "Установлены координаты: 51.51505, 31.31923",
-      "entity_id": "h-1790532269760",
-      "can_undo": false,
-      "id": 1790533848959
-    },
-    {
-      "created_at": "27.09.2026, 21:30:06",
-      "entity_id": "h-1790532343720",
-      "id": 1790533806727,
-      "entity": "Дом",
-      "action": "Изменены координаты дома",
-      "details": "Установлены координаты: 51.51574, 31.31980",
-      "user_name": "Главный администратор",
-      "can_undo": false
-    },
-    {
-      "entity": "Дом",
-      "details": "Установлены координаты: 51.51619, 31.32034",
-      "action": "Изменены координаты дома",
       "entity_id": "h-1790532367679",
+      "details": "Установлены координаты: 51.51619, 31.32034",
       "id": 1790533778135,
-      "user_name": "Главный администратор",
       "can_undo": false,
-      "created_at": "27.09.2026, 21:29:38"
+      "action": "Изменены координаты дома",
+      "created_at": "27.09.2026, 21:29:38",
+      "user_name": "Главный администратор"
     },
     {
+      "entity": "Дом",
+      "details": "Установлены координаты: 51.51620, 31.31953",
       "user_name": "Главный администратор",
-      "action": "Изменены координаты дома",
       "id": 1790533743151,
       "entity_id": "h-1790532399368",
       "created_at": "27.09.2026, 21:29:03",
       "can_undo": false,
-      "entity": "Дом",
-      "details": "Установлены координаты: 51.51620, 31.31953"
-    },
-    {
-      "can_undo": false,
-      "created_at": "27.09.2026, 21:06:39",
-      "details": "Добавлен дом ул. Доценка, 7в",
-      "entity_id": "h-1790532399368",
-      "id": 1790532399369,
-      "user_name": "Главный администратор",
-      "action": "Создан новый дом",
-      "entity": "Дом"
-    },
-    {
-      "details": "Добавлен дом ул. Доценка, 7а",
-      "id": 1790532367679,
-      "user_name": "Главный администратор",
-      "can_undo": false,
-      "created_at": "27.09.2026, 21:06:07",
-      "entity": "Дом",
-      "action": "Создан новый дом",
-      "entity_id": "h-1790532367679"
-    },
-    {
-      "created_at": "27.09.2026, 21:05:43",
-      "entity_id": "h-1790532343720",
-      "entity": "Дом",
-      "action": "Создан новый дом",
-      "details": "Добавлен дом ул. Доценка, 7",
-      "id": 1790532343721,
-      "can_undo": false,
-      "user_name": "Главный администратор"
-    },
-    {
-      "user_name": "Главный администратор",
-      "created_at": "27.09.2026, 21:04:29",
-      "details": "Добавлен дом ул. Доценка, 5а",
-      "id": 1790532269761,
-      "entity_id": "h-1790532269760",
-      "entity": "Дом",
-      "can_undo": false,
-      "action": "Создан новый дом"
-    },
-    {
-      "can_undo": false,
-      "user_name": "Главный администратор",
-      "details": "Добавлен дом ул. Доценка, 3а",
-      "entity": "Дом",
-      "action": "Создан новый дом",
-      "id": 1790532171936,
-      "entity_id": "h-1790532171936",
-      "created_at": "27.09.2026, 21:02:51"
-    },
-    {
-      "created_at": "27.09.2026, 21:02:12",
-      "can_undo": false,
-      "entity_id": "h-1790532132904",
-      "details": "Добавлен дом ул. Доценка, 5",
-      "action": "Создан новый дом",
-      "user_name": "Главный администратор",
-      "entity": "Дом",
-      "id": 1790532132905
-    },
-    {
-      "can_undo": false,
-      "entity": "Дом",
-      "details": "Установлены координаты: 51.51493, 31.32031",
-      "action": "Изменены координаты дома",
-      "entity_id": "h-1790531970960",
-      "id": 1790532043161,
-      "user_name": "Главный администратор",
-      "created_at": "27.09.2026, 21:00:43"
-    },
-    {
-      "user_name": "Главный администратор",
-      "id": 1790531992529,
-      "can_undo": false,
-      "action": "Изменены данные дома",
-      "created_at": "27.09.2026, 20:59:52",
-      "entity": "Дом",
-      "details": "Обновлены данные дома ул. Доценка, 1",
-      "entity_id": "h-1790531754136"
-    },
-    {
-      "id": 1790531970961,
-      "created_at": "27.09.2026, 20:59:30",
-      "user_name": "Главный администратор",
-      "details": "Добавлен дом ул. Доценка, 3",
-      "action": "Создан новый дом",
-      "entity_id": "h-1790531970960",
-      "can_undo": false,
-      "entity": "Дом"
-    },
-    {
-      "details": "Установлены координаты: 51.51430, 31.32028",
-      "can_undo": false,
-      "entity_id": "h-1790531754136",
-      "entity": "Дом",
-      "id": 1790531868431,
-      "action": "Изменены координаты дома",
-      "created_at": "27.09.2026, 20:57:48",
-      "user_name": "Главный администратор"
-    },
-    {
-      "created_at": "27.09.2026, 20:55:54",
-      "user_name": "Главный администратор",
-      "details": "Добавлен дом ул. Доценка, 1",
-      "id": 1790531754137,
-      "entity": "Дом",
-      "entity_id": "h-1790531754136",
-      "action": "Создан новый дом",
-      "can_undo": false
-    },
-    {
-      "id": 1790498854804,
-      "created_at": "27.09.2026, 11:47:34",
-      "can_undo": false,
-      "entity_id": "h-1",
-      "user_name": "Главный администратор",
-      "entity": "Дом",
-      "details": "Установлены координаты: 51.50320, 31.30450",
       "action": "Изменены координаты дома"
     },
     {
-      "can_undo": true,
-      "entity_id": "t-4",
-      "id": 104,
+      "details": "Добавлен дом ул. Доценка, 7в",
+      "id": 1790532399369,
       "user_name": "Главный администратор",
-      "entity": "Заявка",
-      "created_at": "2026-09-26 11:45",
-      "details": "Заявка №20.09.2026-002 (течь на лестничной клетке, Доценка 1а) переведена в статус «В работе»",
-      "action": "Заявка принята в работу"
-    },
-    {
-      "created_at": "2026-09-26 09:30",
-      "user_name": "Диспетчер дежурный",
-      "id": 103,
-      "action": "Создана новая заявка",
-      "entity_id": "t-3",
-      "entity": "Заявка",
-      "can_undo": false,
-      "details": "Заявка №21.09.2026-002: замена кан трубы, Доценка 5а, кв. 33"
-    },
-    {
-      "id": 102,
-      "can_undo": false,
-      "user_name": "Главный администратор",
-      "entity_id": "h-1",
       "entity": "Дом",
-      "created_at": "2026-09-25 16:20",
+      "entity_id": "h-1790532399368",
+      "action": "Создан новый дом",
+      "can_undo": false,
+      "created_at": "27.09.2026, 21:06:39"
+    },
+    {
+      "entity": "Дом",
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "created_at": "27.09.2026, 21:06:07",
+      "id": 1790532367679,
+      "entity_id": "h-1790532367679",
+      "details": "Добавлен дом ул. Доценка, 7а",
+      "action": "Создан новый дом"
+    },
+    {
+      "user_name": "Главный администратор",
+      "action": "Создан новый дом",
+      "id": 1790532343721,
+      "can_undo": false,
+      "entity_id": "h-1790532343720",
+      "entity": "Дом",
+      "created_at": "27.09.2026, 21:05:43",
+      "details": "Добавлен дом ул. Доценка, 7"
+    },
+    {
+      "entity": "Дом",
+      "user_name": "Главный администратор",
+      "details": "Добавлен дом ул. Доценка, 5а",
+      "id": 1790532269761,
+      "can_undo": false,
+      "created_at": "27.09.2026, 21:04:29",
+      "action": "Создан новый дом",
+      "entity_id": "h-1790532269760"
+    },
+    {
+      "details": "Добавлен дом ул. Доценка, 3а",
+      "entity": "Дом",
+      "entity_id": "h-1790532171936",
+      "created_at": "27.09.2026, 21:02:51",
+      "id": 1790532171936,
+      "can_undo": false,
+      "action": "Создан новый дом",
+      "user_name": "Главный администратор"
+    },
+    {
+      "can_undo": false,
+      "action": "Создан новый дом",
+      "user_name": "Главный администратор",
+      "id": 1790532132905,
+      "created_at": "27.09.2026, 21:02:12",
+      "entity": "Дом",
+      "entity_id": "h-1790532132904",
+      "details": "Добавлен дом ул. Доценка, 5"
+    },
+    {
+      "entity": "Дом",
+      "created_at": "27.09.2026, 21:00:43",
+      "details": "Установлены координаты: 51.51493, 31.32031",
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "entity_id": "h-1790531970960",
       "action": "Изменены координаты дома",
-      "details": "Установлены координаты: 51.50320, 31.30450 (Доценка, 1)"
+      "id": 1790532043161
+    },
+    {
+      "action": "Изменены данные дома",
+      "id": 1790531992529,
+      "can_undo": false,
+      "created_at": "27.09.2026, 20:59:52",
+      "details": "Обновлены данные дома ул. Доценка, 1",
+      "user_name": "Главный администратор",
+      "entity_id": "h-1790531754136",
+      "entity": "Дом"
+    },
+    {
+      "action": "Создан новый дом",
+      "entity_id": "h-1790531970960",
+      "created_at": "27.09.2026, 20:59:30",
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "details": "Добавлен дом ул. Доценка, 3",
+      "id": 1790531970961,
+      "entity": "Дом"
+    },
+    {
+      "action": "Изменены координаты дома",
+      "entity_id": "h-1790531754136",
+      "can_undo": false,
+      "user_name": "Главный администратор",
+      "id": 1790531868431,
+      "entity": "Дом",
+      "created_at": "27.09.2026, 20:57:48",
+      "details": "Установлены координаты: 51.51430, 31.32028"
+    },
+    {
+      "entity_id": "h-1790531754136",
+      "action": "Создан новый дом",
+      "details": "Добавлен дом ул. Доценка, 1",
+      "id": 1790531754137,
+      "user_name": "Главный администратор",
+      "can_undo": false,
+      "entity": "Дом",
+      "created_at": "27.09.2026, 20:55:54"
+    },
+    {
+      "user_name": "Главный администратор",
+      "entity": "Дом",
+      "entity_id": "h-1",
+      "can_undo": false,
+      "created_at": "27.09.2026, 11:47:34",
+      "action": "Изменены координаты дома",
+      "details": "Установлены координаты: 51.50320, 31.30450",
+      "id": 1790498854804
+    },
+    {
+      "created_at": "2026-09-26 11:45",
+      "action": "Заявка принята в работу",
+      "can_undo": true,
+      "user_name": "Главный администратор",
+      "details": "Заявка №20.09.2026-002 (течь на лестничной клетке, Доценка 1а) переведена в статус «В работе»",
+      "id": 104,
+      "entity": "Заявка",
+      "entity_id": "t-4"
+    },
+    {
+      "entity_id": "t-3",
+      "action": "Создана новая заявка",
+      "details": "Заявка №21.09.2026-002: замена кан трубы, Доценка 5а, кв. 33",
+      "id": 103,
+      "user_name": "Диспетчер дежурный",
+      "can_undo": false,
+      "entity": "Заявка",
+      "created_at": "2026-09-26 09:30"
+    },
+    {
+      "action": "Изменены координаты дома",
+      "entity_id": "h-1",
+      "created_at": "2026-09-25 16:20",
+      "can_undo": false,
+      "details": "Установлены координаты: 51.50320, 31.30450 (Доценка, 1)",
+      "entity": "Дом",
+      "user_name": "Главный администратор",
+      "id": 102
     },
     {
       "id": 101,
-      "action": "Заявка закрыта",
-      "created_at": "2026-09-24 14:10",
       "can_undo": false,
+      "action": "Заявка закрыта",
       "entity_id": "t-5",
       "entity": "Заявка",
-      "user_name": "Мастер Смирнов А.",
-      "details": "Заявка №19.09.2026-011 переведена в статус «Выполнена» (доводчик)"
+      "created_at": "2026-09-24 14:10",
+      "details": "Заявка №19.09.2026-011 переведена в статус «Выполнена» (доводчик)",
+      "user_name": "Мастер Смирнов А."
     }
   ]
 }

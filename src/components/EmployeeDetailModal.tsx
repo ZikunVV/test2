@@ -149,7 +149,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
               </div>
             ) : (
               <span className="text-slate-400 text-xs italic">
-                Телефон не указан (для образца: +38 (050) 000-00-00)
+                Телефон не указан (для образца: +38 (067) 123-45-67, +38 (050) 123-45-67, +38 (063) 123-45-67)
               </span>
             )}
           </div>

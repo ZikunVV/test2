@@ -34,6 +34,7 @@ interface NewTicketModalProps {
   prefilledDate?: string;
   isPlannedDefault?: boolean;
   onCreateTicket: (ticket: Omit<Ticket, 'id' | 'number'>) => void;
+  canInspectWorker?: boolean;
 }
 
 export const NewTicketModal: React.FC<NewTicketModalProps> = ({
@@ -48,6 +49,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   prefilledDate,
   isPlannedDefault = false,
   onCreateTicket,
+  canInspectWorker = true,
 }) => {
   // Sorted houses in alphabetical order (by street, house number, building)
   const sortedHouses = React.useMemo(() => {
@@ -141,6 +143,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   const [inspectedWorker, setInspectedWorker] = useState<PersonalPerson | { full_name: string; isManual?: boolean } | null>(null);
 
   const handleInspectWorker = (workerName: string) => {
+    if (!canInspectWorker) return;
     const found = people.find(
       (p) => p.full_name?.trim().toLowerCase() === workerName.trim().toLowerCase()
     );

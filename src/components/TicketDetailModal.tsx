@@ -411,8 +411,10 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   <span
                     key={idx}
                     onDoubleClick={() => onInspectWorker && onInspectWorker(exec)}
-                    title="Двойной клик — полная информация о сотруднике"
-                    className="px-3 py-1 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-bold text-xs flex items-center gap-1.5 cursor-pointer hover:bg-purple-100 hover:border-purple-300 transition-colors shadow-2xs"
+                    title={onInspectWorker ? 'Двойной клик — полная информация о сотруднике' : undefined}
+                    className={`px-3 py-1 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs ${
+                      onInspectWorker ? 'cursor-pointer hover:bg-purple-100 hover:border-purple-300' : 'cursor-default'
+                    }`}
                   >
                     <User className="w-3.5 h-3.5 text-purple-600" />
                     <span>{exec}</span>
