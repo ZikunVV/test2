@@ -1596,7 +1596,37 @@ export default function App() {
         users={users}
         organizations={organizations}
         onLoginSuccess={handleLoginSuccess}
-        onRegisterUser={handleCreateUser}
+        onRegisterUser={(newUserData) =>
+          handleCreateUser({
+            ...newUserData,
+            role: 'viewer',
+          })
+        }
+        onSendMessageToAdmin={(senderName, subject, text) => {
+          const newMsg: AdminMessageItem = {
+            id: `msg-${Date.now()}`,
+            senderId: 0,
+            senderName,
+            senderRole: 'viewer',
+            organizationId: currentOrganizationId,
+            subject,
+            text,
+            createdAt: new Date().toLocaleString('ru-RU'),
+            resolved: false,
+          };
+          setAdminMessages((prev) => [newMsg, ...prev]);
+          setNotifications((prev) => [
+            {
+              id: `notif-msg-${Date.now()}`,
+              title: `Сообщение с экрана входа: ${subject}`,
+              description: `${senderName}: ${text}`,
+              time: 'Только что',
+              unread: true,
+              type: 'info',
+            },
+            ...prev,
+          ]);
+        }}
       />
     );
   }

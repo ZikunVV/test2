@@ -6,14 +6,14 @@ import {
   User,
   Phone,
   Building2,
-  ArrowRight,
   UserPlus,
   LogIn,
   AlertCircle,
   CheckCircle2,
   Eye,
   EyeOff,
-  Sparkles,
+  Send,
+  X,
 } from 'lucide-react';
 
 interface AuthScreenProps {
@@ -24,6 +24,7 @@ interface AuthScreenProps {
   organizations: Organization[];
   onLoginSuccess: (user: UserItem) => void;
   onRegisterUser: (newUser: Omit<UserItem, 'id' | 'created_at' | 'approved' | 'permissions'>) => UserItem;
+  onSendMessageToAdmin?: (senderName: string, subject: string, text: string) => void;
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({
@@ -34,6 +35,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   organizations,
   onLoginSuccess,
   onRegisterUser,
+  onSendMessageToAdmin,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
@@ -46,10 +48,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [regPassword, setRegPassword] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regOrgId, setRegOrgId] = useState<string>(organizations[0]?.id || 'org-1');
-  const [regRole, setRegRole] = useState<'editor' | 'viewer'>('editor');
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Write to administrator modal state on AuthScreen
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+  const [msgSenderName, setMsgSenderName] = useState('');
+  const [msgSubject, setMsgSubject] = useState('');
+  const [msgText, setMsgText] = useState('');
+  const [msgSentSuccess, setMsgSentSuccess] = useState(false);
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,30 +115,34 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       return;
     }
 
+    // All newly registered users automatically receive "viewer" (Только чтение) status
     const created = onRegisterUser({
       full_name: regFullName.trim(),
       username: regUsername.trim(),
       password: regPassword.trim(),
       phone: regPhone.trim() || '—',
       organization_id: regOrgId,
-      role: regRole,
+      role: 'viewer',
     });
 
-    if (created.approved) {
-      onLoginSuccess(created);
-    } else {
-      setSuccessMsg(
-        'Заявка на регистрацию отправлена! После одобрения администратором вы сможете войти в систему.'
-      );
-      setMode('login');
-      setUsername(created.username);
-      setPassword('');
-    }
+    onLoginSuccess(created);
   };
 
-  const handleQuickDemoLogin = (demoUser: UserItem) => {
-    setErrorMsg(null);
-    onLoginSuccess(demoUser);
+  const handleSendMessageSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!msgText.trim()) return;
+    const sender = msgSenderName.trim() || regFullName.trim() || username.trim() || 'Гость (Экран входа)';
+    const subj = msgSubject.trim() || 'Обращение с экрана входа';
+    if (onSendMessageToAdmin) {
+      onSendMessageToAdmin(sender, subj, msgText.trim());
+    }
+    setMsgSentSuccess(true);
+    setMsgSubject('');
+    setMsgText('');
+    setTimeout(() => {
+      setMsgSentSuccess(false);
+      setIsMessageModalOpen(false);
+    }, 1800);
   };
 
   return (
@@ -152,7 +164,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       />
 
       <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 bg-white rounded-3xl border border-purple-200/90 shadow-2xl overflow-hidden relative z-10">
-        {/* Left Branding & Quick Access Column */}
+        {/* Left Branding Column */}
         <div
           className="lg:col-span-5 p-6 md:p-8 text-white flex flex-col justify-between relative overflow-hidden"
           style={{
@@ -174,40 +186,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 </div>
               </div>
             </div>
-
-            <div className="space-y-2 pt-2">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 border border-white/20 text-[10px] font-bold uppercase tracking-wider">
-                <Sparkles className="w-3 h-3" />
-                <span>Мультиарендная платформа (Шаг 3)</span>
-              </div>
-              <h1 className="text-xl md:text-2xl font-black leading-snug">
-                Единый диспетчерский центр и паспортный учёт домов
-              </h1>
-              <p className="text-xs text-purple-100/90 leading-relaxed">
-                Каждый сотрудник автоматически подключается к рабочей базе своей управляющей компании или ЖЭКа с персональными правами доступа.
-              </p>
-            </div>
           </div>
 
-          {/* Security & Access Features */}
-          <div className="pt-6 mt-6 border-t border-white/20 space-y-2.5 relative z-10">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-purple-100">
-              Защищённый корпоративный доступ:
-            </div>
-            <div className="space-y-2 text-xs text-purple-100/90">
-              <div className="p-2.5 rounded-xl bg-white/10 border border-white/15">
-                <div className="font-bold text-white">Авторизация по логину и паролю</div>
-                <div className="text-[11px] opacity-85 mt-0.5">
-                  Вход в базу данных доступен только зарегистрированным и одобренным администратором сотрудникам.
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-white/10 border border-white/15">
-                <div className="font-bold text-white">Изоляция организаций</div>
-                <div className="text-[11px] opacity-85 mt-0.5">
-                  Сотрудник видит только дома, заявки и задачи своей управляющей компании.
-                </div>
-              </div>
-            </div>
+          {/* Active link: Write to Administrator */}
+          <div className="pt-6 mt-6 border-t border-white/20 relative z-10">
+            <button
+              type="button"
+              onClick={() => setIsMessageModalOpen(true)}
+              className="w-full py-2.5 px-4 rounded-xl bg-white/15 hover:bg-white/25 border border-white/30 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+            >
+              <Send className="w-4 h-4" />
+              <span>Написать администратору</span>
+            </button>
           </div>
         </div>
 
@@ -406,18 +396,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Должность / Роль
+                    Статус при регистрации
                   </label>
-                  <select
-                    value={regRole}
-                    onChange={(e) =>
-                      setRegRole(e.target.value as 'editor' | 'viewer')
-                    }
-                    className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  >
-                    <option value="editor">Диспетчер / Мастер</option>
-                    <option value="viewer">Сотрудник (Только чтение)</option>
-                  </select>
+                  <div className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-purple-50/70 text-xs font-bold text-purple-900">
+                    Только чтение (по умолчанию)
+                  </div>
                 </div>
               </div>
 
@@ -455,6 +438,106 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           )}
         </div>
       </div>
+
+      {/* Modal: Write to Administrator from AuthScreen */}
+      {isMessageModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs p-4"
+          onClick={() => setIsMessageModalOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl bg-white p-5 sm:p-6 shadow-2xl border border-purple-200 text-xs space-y-4 animate-in fade-in zoom-in-95"
+          >
+            <div className="flex items-center justify-between border-b border-purple-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center">
+                  <Send className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider block">
+                    Связь с администратором
+                  </span>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Написать администратору
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMessageModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {msgSentSuccess ? (
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>Ваше сообщение успешно отправлено Главному администратору!</span>
+              </div>
+            ) : (
+              <form onSubmit={handleSendMessageSubmit} className="space-y-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Ваше имя / ФИО или телефон
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={msgSenderName}
+                    onChange={(e) => setMsgSenderName(e.target.value)}
+                    placeholder="Иваненко С.П., +380..."
+                    className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Тема обращения
+                  </label>
+                  <input
+                    type="text"
+                    value={msgSubject}
+                    onChange={(e) => setMsgSubject(e.target.value)}
+                    placeholder="Запрос прав доступа / Вопрос по входу"
+                    className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Текст сообщения <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={msgText}
+                    onChange={(e) => setMsgText(e.target.value)}
+                    placeholder="Напишите ваше сообщение Главному администратору..."
+                    className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2 border-t border-purple-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsMessageModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold cursor-pointer"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Отправить</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

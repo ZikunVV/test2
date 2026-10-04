@@ -3,5 +3,5 @@ export interface ExportProjectOptions {
 }
 
 export async function downloadProjectArchive(_options?: ExportProjectOptions): Promise<void> {
-  alert('Архив проекта');
+  alert('Архив проекта уже развёрнут.');
 }
