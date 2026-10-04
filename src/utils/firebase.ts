@@ -7,7 +7,7 @@ import {
   onSnapshot,
   setDoc,
 } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import firebaseConfig from '../firebase-applet-config.json';
 import {
   Organization,
   House,
