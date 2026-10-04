@@ -1,0 +1,92 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Blueprint for WorkspaceSync
+    function isValidWorkspaceSync(data, workspaceId) {
+      return data.keys().hasAll(['id', 'updatedBy', 'updatedAtIso']) &&
+        data.keys().hasOnly([
+          'id',
+          'updatedBy',
+          'updatedAtIso',
+          'organizations',
+          'houses',
+          'tickets',
+          'streets',
+          'users',
+          'personalTasks',
+          'personalPeople',
+          'auditLogs',
+          'adminMessages'
+        ]) &&
+        data.id is string &&
+        data.id == workspaceId &&
+        data.id.size() >= 1 &&
+        data.id.size() <= 128 &&
+        data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.updatedBy is string &&
+        data.updatedBy.size() >= 1 &&
+        data.updatedBy.size() <= 200 &&
+        data.updatedAtIso is string &&
+        data.updatedAtIso.size() >= 1 &&
+        data.updatedAtIso.size() <= 64 &&
+        (!('organizations' in data) || (data.organizations is list && data.organizations.size() <= 500)) &&
+        (!('houses' in data) || (data.houses is list && data.houses.size() <= 5000)) &&
+        (!('tickets' in data) || (data.tickets is list && data.tickets.size() <= 5000)) &&
+        (!('streets' in data) || (data.streets is list && data.streets.size() <= 2000)) &&
+        (!('users' in data) || (data.users is list && data.users.size() <= 1000)) &&
+        (!('personalTasks' in data) || (data.personalTasks is list && data.personalTasks.size() <= 5000)) &&
+        (!('personalPeople' in data) || (data.personalPeople is list && data.personalPeople.size() <= 5000)) &&
+        (!('auditLogs' in data) || (data.auditLogs is list && data.auditLogs.size() <= 5000)) &&
+        (!('adminMessages' in data) || (data.adminMessages is list && data.adminMessages.size() <= 2000));
+    }
+
+    // Connection test document
+    match /test/{docId} {
+      allow get: if isValidId(docId);
+      allow list, create, update, delete: if false;
+    }
+
+    // Shared Workspace Synchronization Document
+    match /workspaces/{workspaceId} {
+      allow get: if isValidId(workspaceId);
+      allow list: if false;
+      allow create: if isValidId(workspaceId) && isValidWorkspaceSync(incoming(), workspaceId);
+      allow update: if isValidId(workspaceId) &&
+        isValidWorkspaceSync(incoming(), workspaceId) &&
+        incoming().id == existing().id &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'updatedBy',
+          'updatedAtIso',
+          'organizations',
+          'houses',
+          'tickets',
+          'streets',
+          'users',
+          'personalTasks',
+          'personalPeople',
+          'auditLogs',
+          'adminMessages'
+        ]);
+      allow delete: if false;
+    }
+  }
+}

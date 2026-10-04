@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "Organization": {
+      "title": "Organization",
+      "description": "Housing management company or municipal organization (e.g., KP ZHEK-10)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 200 },
+        "slug": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 100 },
+        "address": { "type": "string", "maxLength": 300 },
+        "contact_person": { "type": "string", "maxLength": 200 },
+        "active": { "type": "boolean" },
+        "created_at": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "name", "slug"]
+    },
+    "House": {
+      "title": "House",
+      "description": "Managed residential building with technical specifications and entrances",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "organization_id": { "type": "string", "maxLength": 128 },
+        "street": { "type": "string", "maxLength": 200 },
+        "house_number": { "type": "string", "maxLength": 50 },
+        "building": { "type": "string", "maxLength": 50 },
+        "floors": { "type": "number" },
+        "apartments": { "type": "number" },
+        "entrances_count": { "type": "number" },
+        "technical_specs": { "type": "string", "maxLength": 5000 },
+        "house_data": { "type": "string", "maxLength": 5000 }
+      },
+      "required": ["id", "street", "house_number"]
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "Maintenance or repair request assigned to technicians",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "organization_id": { "type": "string", "maxLength": 128 },
+        "number": { "type": "string", "maxLength": 50 },
+        "date": { "type": "string", "maxLength": 50 },
+        "title": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["in_waiting", "in_progress", "completed"] },
+        "address": { "type": "string", "maxLength": 300 },
+        "assignee": { "type": "string", "maxLength": 200 }
+      },
+      "required": ["id", "number", "title", "status", "address"]
+    },
+    "WorkspaceSync": {
+      "title": "WorkspaceSync",
+      "description": "Synchronized multi-tenant workspace state document for real-time updates across dispatchers and workers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedBy": { "type": "string", "maxLength": 200 },
+        "updatedAtIso": { "type": "string", "maxLength": 64 },
+        "organizations": { "type": "array" },
+        "houses": { "type": "array" },
+        "tickets": { "type": "array" },
+        "streets": { "type": "array" },
+        "users": { "type": "array" },
+        "personalTasks": { "type": "array" },
+        "personalPeople": { "type": "array" },
+        "auditLogs": { "type": "array" },
+        "adminMessages": { "type": "array" }
+      },
+      "required": ["id", "updatedBy", "updatedAtIso"]
+    }
+  },
+  "firestore": {
+    "/workspaces/{workspaceId}": {
+      "schema": { "$ref": "#/entities/WorkspaceSync" },
+      "description": "Shared real-time workspace synchronization documents"
+    }
+  }
+}

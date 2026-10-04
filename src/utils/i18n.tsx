@@ -1,0 +1,789 @@
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+
+export type AppLanguage = 'ru' | 'ua' | 'en';
+
+interface LanguageContextValue {
+  lang: AppLanguage;
+  setLang: (lang: AppLanguage) => void;
+  t: (text: string) => string;
+}
+
+const LanguageContext = createContext<LanguageContextValue>({
+  lang: 'ru',
+  setLang: () => {},
+  t: (text) => text,
+});
+
+export const useLanguage = () => useContext(LanguageContext);
+
+// Dictionary of non-editable UI strings: key is Russian original, value is [Ukrainian, English]
+const UI_DICTIONARY: Record<string, [string, string]> = {
+  // Header & Navigation
+  'Назад': ['Назад', 'Back'],
+  'На телефон': ['На телефон', 'Install App'],
+  'Установить приложение на телефон или компьютер': [
+    'Встановити додаток на телефон або комп’ютер',
+    'Install application on phone or computer',
+  ],
+  'В Telegram / Viber': ['У Telegram / Viber', 'To Telegram / Viber'],
+  'Отправить в Telegram': ['Надіслати в Telegram', 'Send to Telegram'],
+  'Отправить в Viber': ['Надіслати у Viber', 'Send to Viber'],
+  'Скопировать карточку заявки в буфер обмена': [
+    'Скопіювати картку заявки в буфер обміну',
+    'Copy request card to clipboard',
+  ],
+  'Текст заявки скопирован! Вставьте в любой чат': [
+    'Текст заявки скопійовано! Вставте в будь-який чат',
+    'Request text copied! Paste into any chat',
+  ],
+  'Меню': ['Меню', 'Menu'],
+  'Уведомления': ['Сповіщення', 'Notifications'],
+  'База данных': ['База даних', 'Database'],
+  'проэкт': ['проєкт', 'project'],
+  'Сборка...': ['Збірка...', 'Building...'],
+  'Язык:': ['Мова:', 'Language:'],
+  'Русский': ['Російська', 'Russian'],
+  'Українська': ['Українська', 'Ukrainian'],
+  'English': ['English', 'English'],
+  'Русский (RU)': ['Російська (RU)', 'Russian (RU)'],
+  'Українська (UA)': ['Українська (UA)', 'Ukrainian (UA)'],
+  'English (EN)': ['English (EN)', 'English (EN)'],
+
+  // Sidebar & Roles
+  'Организация': ['Організація', 'Organization'],
+  'Выберите организацию': ['Оберіть організацію', 'Select organization'],
+  'Управление организациями': ['Керування організаціями', 'Manage organizations'],
+  'Сменить активную организацию': ['Змінити активну організацію', 'Switch active organization'],
+  'Главная': ['Головна', 'Home'],
+  'Карта объектов': ['Карта об’єктів', 'Objects Map'],
+  'Дома в управлении': ['Будинки в управлінні', 'Managed Buildings'],
+  'Плановые работы': ['Планові роботи', 'Planned Works'],
+  'Сотрудники': ['Співробітники', 'Employees'],
+  'Выполненные работы': ['Виконані роботи', 'Completed Works'],
+  'История действий': ['Історія дій', 'Action History'],
+  'Сообщения': ['Повідомлення', 'Messages'],
+  'Администрирование': ['Адміністрування', 'Administration'],
+  'Администратор': ['Адміністратор', 'Administrator'],
+  'Редактор': ['Редактор', 'Editor'],
+  'Наблюдатель': ['Спостерігач', 'Viewer'],
+  'Сменить аккаунт для теста прав:': ['Змінити акаунт для тесту прав:', 'Switch account to test permissions:'],
+  'Полный доступ (Админ)': ['Повний доступ (Адмін)', 'Full access (Admin)'],
+  'Диспетчер/Мастер': ['Диспетчер/Майстер', 'Dispatcher/Master'],
+  'Только чтение': ['Тільки читання', 'Read-only'],
+  'Написать администратору': ['Написати адміністратору', 'Write to Administrator'],
+  'Главный администратор': ['Головний адміністратор', 'Chief Administrator'],
+  'Дежурный диспетчер': ['Черговий диспетчер', 'Duty Dispatcher'],
+  'Сотрудник службы': ['Співробітник служби', 'Service Worker'],
+
+  // Home Page & Stats
+  'Добрый день, Главный!': ['Добрий день, Головний!', 'Good day, Chief!'],
+  'Подать заявку': ['Подати заявку', 'Submit Request'],
+  'В работе': ['В роботі', 'In Progress'],
+  'в работе': ['в роботі', 'in progress'],
+  'В ожидании': ['В очікуванні', 'Pending'],
+  'ожидают решения': ['очікують рішення', 'awaiting action'],
+  'Выполнено': ['Виконано', 'Completed'],
+  'Выполнена': ['Виконана', 'Completed'],
+  'Выполненные': ['Виконані', 'Completed'],
+  'завершено успешно': ['завершено успішно', 'successfully completed'],
+  'Список работ': ['Список робіт', 'Work List'],
+  'Поиск: номер заявки, адрес, работа, мастер...': [
+    'Пошук: номер заявки, адреса, робота, майстер...',
+    'Search: ticket #, address, work, technician...',
+  ],
+  'Очистить поиск': ['Очистити пошук', 'Clear search'],
+  'Фильтр по статусу:': ['Фільтр за статусом:', 'Status filter:'],
+  'Поиск:': ['Пошук:', 'Search:'],
+  'Сбросить фильтр': ['Скинути фільтр', 'Reset filter'],
+  'Заявок не найдено': ['Заявок не знайдено', 'No requests found'],
+  'Попробуйте сбросить фильтры или строку поиска.': [
+    'Спробуйте скинути фільтри або рядок пошуку.',
+    'Try resetting the filters or search query.',
+  ],
+  'Сбросить фильтры': ['Скинути фільтри', 'Reset filters'],
+
+  // Ticket Cards & Details
+  'Плановые': ['Планові', 'Planned'],
+  'Плановая работа': ['Планова робота', 'Planned Work'],
+  'Срочная заявка': ['Термінова заявка', 'Urgent Request'],
+  '№ квартиры:': ['№ квартири:', 'Apt #:'],
+  'исполнитель:': ['виконавець:', 'assignee:'],
+  'Исполнитель:': ['Виконавець:', 'Assignee:'],
+  'Не назначен': ['Не призначено', 'Unassigned'],
+  'Двойной клик — карточка сотрудника': ['Подвійний клік — картка співробітника', 'Double click — employee card'],
+  'Двойной клик — информация о сотруднике': ['Подвійний клік — інформація про співробітника', 'Double click — employee info'],
+  'Двойной клик — полная информация о сотруднике': ['Подвійний клік — повна інформація про співробітника', 'Double click — full employee info'],
+  'Принять': ['Прийняти', 'Accept'],
+  'Принять в работу': ['Прийняти в роботу', 'Accept into work'],
+  'Завершить': ['Завершити', 'Complete'],
+  'Редактировать': ['Редагувати', 'Edit'],
+  'Редактировать заявку': ['Редагувати заявку', 'Edit request'],
+  'Открыть': ['Відкрити', 'Open'],
+  'Закрыть': ['Закрити', 'Close'],
+  'Отмена': ['Скасувати', 'Cancel'],
+  'Сохранить': ['Зберегти', 'Save'],
+  'Сохранить изменения': ['Зберегти зміни', 'Save changes'],
+  'Удалить': ['Видалити', 'Delete'],
+  'Добавить': ['Додати', 'Add'],
+
+  // Completed Works (SearchView)
+  'Поиск выполненных работ': ['Пошук виконаних робіт', 'Search Completed Works'],
+  'Архив и фильтр исполненных заявок': ['Архів та фільтр виконаних заявок', 'Archive and filter of completed requests'],
+  'Поиск по всем выполненным заявкам (адрес, номер, исполнитель, описание). Личные дела исключены.': [
+    'Пошук за всіма виконаними заявками (адреса, номер, виконавець, опис). Особисті справи виключені.',
+    'Search across all completed requests (address, number, assignee, description). Personal tasks excluded.',
+  ],
+  'Быстрый поиск (текст, описание, работа)': ['Швидкий пошук (текст, опис, робота)', 'Quick search (text, description, work)'],
+  'Например: сварка, замена крана, подвал...': ['Наприклад: зварювання, заміна крана, підвал...', 'E.g.: welding, valve replacement, basement...'],
+  'Номер заявки': ['Номер заявки', 'Request Number'],
+  'Исполнитель': ['Виконавець', 'Assignee'],
+  'Фамилия мастера': ['Прізвище майстра', 'Technician surname'],
+  'Улица': ['Вулиця', 'Street'],
+  'Название улицы': ['Назва вулиці', 'Street name'],
+  'Дом': ['Будинок', 'House'],
+  'Дата исполнения от': ['Дата виконання від', 'Completion date from'],
+  'Дата исполнения до': ['Дата виконання до', 'Completion date to'],
+  'Найдено выполненных работ:': ['Знайдено виконаних робіт:', 'Completed works found:'],
+  'Один клик — выделить цветом · Двойной клик — открыть заявку': [
+    'Один клік — виділити кольором · Подвійний клік — відкрити заявку',
+    'Single click — highlight · Double click — open request',
+  ],
+  'Один клик — выделить цветом. Двойной клик — открыть заявку': [
+    'Один клік — виділити кольором. Подвійний клік — відкрити заявку',
+    'Single click — highlight. Double click — open request',
+  ],
+  'По заданным критериям выполненных заявок не найдено.': [
+    'За заданими критеріями виконаних заявок не знайдено.',
+    'No completed requests found matching your criteria.',
+  ],
+
+  // Planned Works (PlannedView)
+  'Плановые работы и Календарь': ['Планові роботи та Календар', 'Planned Works & Calendar'],
+  'График планово-предупредительных работ и обходов': [
+    'Графік планово-попереджувальних робіт та обходів',
+    'Schedule of preventive maintenance and inspections',
+  ],
+  'Календарь': ['Календар', 'Calendar'],
+  'Список': ['Список', 'List'],
+  'Создать плановую заявку': ['Створити планову заявку', 'Create Planned Request'],
+  'Январь': ['Січень', 'January'],
+  'Февраль': ['Лютий', 'February'],
+  'Март': ['Березень', 'March'],
+  'Апрель': ['Квітень', 'April'],
+  'Май': ['Травень', 'May'],
+  'Июнь': ['Червень', 'June'],
+  'Июль': ['Липень', 'July'],
+  'Август': ['Серпень', 'August'],
+  'Сентябрь': ['Вересень', 'September'],
+  'Октябрь': ['Жовтень', 'October'],
+  'Ноябрь': ['Листопад', 'November'],
+  'Декабрь': ['Грудень', 'December'],
+  'Пн': ['Пн', 'Mon'],
+  'Вт': ['Вт', 'Tue'],
+  'Ср': ['Ср', 'Wed'],
+  'Чт': ['Чт', 'Thu'],
+  'Пт': ['Пт', 'Fri'],
+  'Сб': ['Сб', 'Sat'],
+  'Вс': ['Нд', 'Sun'],
+  'Всего плановых': ['Всього планових', 'Total planned'],
+  'Нет плановых работ': ['Немає планових робіт', 'No planned works'],
+
+  // Houses View
+  'Реестр жилого фонда, паспорта домов, подъезды и история заявок по объектам.': [
+    'Реєстр житлового фонду, паспорти будинків, під’їзди та історія заявок по об’єктах.',
+    'Housing stock registry, building passports, entrances, and request history.',
+  ],
+  'Добавить дом': ['Додати будинок', 'Add Building'],
+  '+ Добавить новый дом': ['+ Додати новий будинок', '+ Add New Building'],
+  'Добавить новый дом': ['Додати новий будинок', 'Add New Building'],
+  'Поиск дома по улице или номеру...': ['Пошук будинку за вулицею або номером...', 'Search building by street or number...'],
+  'Например: Доценка': ['Наприклад: Доценка', 'E.g.: Dotsenka'],
+  '№ дома': ['№ будинку', 'House #'],
+  'Номер дома': ['Номер будинку', 'House Number'],
+  'Корпус': ['Корпус', 'Building/Block'],
+  'Все улицы': ['Всі вулиці', 'All streets'],
+  'Этажей': ['Поверхів', 'Floors'],
+  'Подъездов': ['Під’їздів', 'Entrances'],
+  'Квартир': ['Квартир', 'Apartments'],
+  'На карте': ['На карті', 'On Map'],
+  'Показать на карте': ['Показати на карті', 'Show on Map'],
+  'Паспорт дома': ['Паспорт будинку', 'Building Passport'],
+  'Общие данные и паспорт дома': ['Загальні дані та паспорт будинку', 'General Data & Building Passport'],
+  'Данные по дому:': ['Дані по будинку:', 'Building Data:'],
+  'Данные паспорта дома пока не внесены.': ['Дані паспорта будинку поки не внесені.', 'Building passport data not entered yet.'],
+  'Технические характеристики дома:': ['Технічні характеристики будинку:', 'Building Technical Specifications:'],
+  'Техническое описание конструкций не заполнено.': ['Технічний опис конструкцій не заповнено.', 'Technical description of structures not filled.'],
+  'Техническое описание для этого подъезда пока не заполнено.': ['Технічний опис для цього під’їзду поки не заповнено.', 'Technical description for this entrance not filled yet.'],
+  'Технические характеристики': ['Технічні характеристики', 'Technical Specifications'],
+  'Подъезды': ['Під’їзди', 'Entrances'],
+  'Заявки по дому': ['Заявки по будинку', 'Building Requests'],
+  'Активных заявок по этому дому нет.': ['Активних заявок по цьому будинку немає.', 'No active requests for this building.'],
+  'Дома по заданным критериям не найдены.': ['Будинки за заданими критеріями не знайдені.', 'No buildings found matching your criteria.'],
+  'К списку домов': ['До списку будинків', 'Back to Buildings List'],
+  'Общая площадь (м²)': ['Загальна площа (м²)', 'Total Area (m²)'],
+  'Количество этажей': ['Кількість поверхів', 'Number of Floors'],
+  'Количество подъездов': ['Кількість під’їздів', 'Number of Entrances'],
+  'Количество квартир': ['Кількість квартир', 'Number of Apartments'],
+
+  // Map View
+  'Карта': ['Карта', 'Map'],
+  'Интерактивная карта жилого фонда и заявок': [
+    'Інтерактивна карта житлового фонду та заявок',
+    'Interactive map of buildings and requests',
+  ],
+  'Поиск выполняется только по списку «Дома в управлении» — улица и номер дома.': [
+    'Пошук виконується тільки за списком «Будинки в управлінні» — вулиця та номер будинку.',
+    'Search is performed only within "Managed Buildings" — street and house number.',
+  ],
+  'улица №дома (например: Доценка 1, Доценка 5а)...': [
+    'вулиця №будинку (наприклад: Доценка 1, Доценка 5а)...',
+    'street house# (e.g.: Dotsenka 1, Dotsenka 5a)...',
+  ],
+  'Такая улица, дом отсутствует в списке, за достоверной информацией обратиться к Администратору.': [
+    'Така вулиця, будинок відсутні у списку, за достовірною інформацією зверніться до Адміністратора.',
+    'Such street/building is not in the list; please contact the Administrator for accurate information.',
+  ],
+  'Кликните на маркер дома для информации': ['Клікніть на маркер будинку для інформації', 'Click on a building marker for info'],
+  'Карточка объекта': ['Картка об’єкта', 'Object Card'],
+  'Открыть карточку дома': ['Відкрити картку будинку', 'Open Building Card'],
+  'Координаты GPS (Широта / Долгота)': ['Координати GPS (Широта / Довгота)', 'GPS Coordinates (Lat / Lng)'],
+  'Широта (Latitude)': ['Широта (Latitude)', 'Latitude'],
+  'Долгота (Longitude)': ['Довгота (Longitude)', 'Longitude'],
+  'Сохранить координаты': ['Зберегти координати', 'Save Coordinates'],
+  'Координаты успешно сохранены!': ['Координати успішно збережено!', 'Coordinates saved successfully!'],
+  'Поиск адреса на карте': ['Пошук адреси на карті', 'Search address on map'],
+  'Найти': ['Знайти', 'Find'],
+  'Сброс': ['Скидання', 'Reset'],
+
+  // Personal Tasks View
+  'Личный список дел': ['Особистий список справ', 'Personal To-Do List'],
+  'Личный кабинет и блокнот': ['Особистий кабінет та блокнот', 'Personal Workspace & Notebook'],
+  'Личные задачи': ['Особисті задачі', 'Personal Tasks'],
+  'Личные контакты': ['Особисті контакти', 'Personal Contacts'],
+  'Новая задача': ['Нова задача', 'New Task'],
+  '+ Новая задача': ['+ Нова задача', '+ New Task'],
+  'Новый контакт': ['Новий контакт', 'New Contact'],
+  '+ Добавить человека': ['+ Додати людину', '+ Add Person'],
+  'Добавить человека': ['Додати людину', 'Add Person'],
+  'Все задачи': ['Всі задачі', 'All Tasks'],
+  'Ожидают': ['Очікують', 'Pending'],
+  'Задачи и заметки': ['Задачі та нотатки', 'Tasks & Notes'],
+  'Люди (Личный список)': ['Люди (Особистий список)', 'People (Personal List)'],
+
+  // People View (Employees)
+  'Справочник сотрудников и служб': ['Довідник співробітників та служб', 'Employees & Services Directory'],
+  'Корпоративный справочник мастеров, инженеров и подрядных служб.': [
+    'Корпоративний довідник майстрів, інженерів та підрядних служб.',
+    'Corporate directory of technicians, engineers, and contractor services.',
+  ],
+  'Поиск по фамилии, организации, должности, адресу или телефону...': [
+    'Пошук за прізвищем, організацією, посадою, адресою або телефоном...',
+    'Search by surname, organization, position, address, or phone...',
+  ],
+  'Добавить сотрудника': ['Додати співробітника', 'Add Employee'],
+  '+ Добавить сотрудника': ['+ Додати співробітника', '+ Add Employee'],
+  'Сотрудников пока нет в списке.': ['Співробітників поки немає у списку.', 'No employees in the list yet.'],
+  'ФИО / Фамилия Имя Отчество': ['ПІБ / Прізвище Ім’я По батькові', 'Full Name'],
+  'Организация / Служба': ['Організація / Служба', 'Organization / Service'],
+  'Должность / Специализация': ['Посада / Спеціалізація', 'Position / Role'],
+  'Адрес проживания': ['Адреса проживання', 'Residence Address'],
+  'Телефоны': ['Телефони', 'Phones'],
+  'Примечания': ['Примітки', 'Notes'],
+  'Где работает': ['Де працює', 'Workplace'],
+  'Кем работает': ['Ким працює', 'Position'],
+
+  // Database Backup Modal
+  'Резервное копирование и база данных': ['Резервне копіювання та база даних', 'Database Backup & Restore'],
+  'Экспорт в файл (Скачать базу)': ['Експорт у файл (Завантажити базу)', 'Export to File (Download DB)'],
+  'Импорт из файла (Восстановить)': ['Імпорт з файлу (Відновити)', 'Import from File (Restore)'],
+  'Скачать резервную копию (.json)': ['Завантажити резервну копію (.json)', 'Download Backup (.json)'],
+  'Выбрать файл резервной копии (.json)': ['Обрати файл резервної копії (.json)', 'Select Backup File (.json)'],
+  'Очистить базу данных': ['Очистити базу даних', 'Clear Database'],
+
+  // Admin View
+  'Панель администрирования (WORKFLOW)': [
+    'Панель адміністрування (WORKFLOW)',
+    'Administration Panel (WORKFLOW)',
+  ],
+  'Новая заявка (WORKFLOW)': [
+    'Нова заявка (WORKFLOW)',
+    'New Request (WORKFLOW)',
+  ],
+  'Система управления ЖКХ': [
+    'Система управління ЖКГ',
+    'Housing & Utilities Management System',
+  ],
+  'Управление пользователями, матрица 12 прав доступа, переименование улиц и журнал аудита с откатом.': [
+    'Керування користувачами, матриця 12 прав доступу, перейменування вулиць та журнал аудиту з відкатом.',
+    'User management, 12-permission matrix, street renaming, and audit log with rollback.',
+  ],
+  'Резервная копия (Экспорт/Импорт)': ['Резервна копія (Експорт/Імпорт)', 'Database Backup (Export/Import)'],
+  'Учетные записи и права доступа': ['Облікові записи та права доступу', 'User Accounts & Permissions'],
+  'Одобрен': ['Схвалений', 'Approved'],
+  'Ожидает': ['Очікує', 'Pending'],
+  'Настроить права (12)': ['Налаштувати права (12)', 'Configure Permissions (12)'],
+  'Скрыть права': ['Приховати права', 'Hide Permissions'],
+  'Организации и компании (Мультиарендность / Multi-Tenancy)': [
+    'Організації та компанії (Мультиорендність / Multi-Tenancy)',
+    'Organizations & Companies (Multi-Tenancy)',
+  ],
+  'Каждая организация имеет полностью изолированную базу домов, заявок и сотрудников.': [
+    'Кожна організація має повністю ізольовану базу будинків, заявок та співробітників.',
+    'Each organization has a completely isolated database of buildings, requests, and employees.',
+  ],
+  'Добавить организацию': ['Додати організацію', 'Add Organization'],
+  'Активная сейчас': ['Активна зараз', 'Currently Active'],
+  'Активна': ['Активна', 'Active'],
+  'Приостановлена': ['Призупинена', 'Suspended'],
+  'Переключиться сюда': ['Переключитися сюди', 'Switch Here'],
+  'Справочник улиц (Декоммунизация / Переименование)': [
+    'Довідник вулиць (Декомунізація / Перейменування)',
+    'Streets Directory (Renaming / History)',
+  ],
+  'Журнал действий и история изменений (Audit Log)': [
+    'Журнал дій та історія змін (Audit Log)',
+    'Action Log & Change History (Audit Log)',
+  ],
+  'Поддержка отката для ключевых операций': [
+    'Підтримка відкату для ключових операцій',
+    'Rollback support for key operations',
+  ],
+  'Отменить действие': ['Скасувати дію', 'Undo Action'],
+  'Откачено': ['Відкочено', 'Rolled Back'],
+
+  // Notifications Popover
+  'Уведомления диспетчера': ['Сповіщення диспетчера', 'Dispatcher Notifications'],
+  'Отметить все как прочитанные': ['Позначити всі як прочитані', 'Mark all as read'],
+
+  // New Ticket & Edit Ticket Modals
+  'Новая заявка': ['Нова заявка', 'New Request'],
+  'Создание новой заявки': ['Створення нової заявки', 'Create New Request'],
+  'Адрес и место': ['Адреса та місце', 'Address & Location'],
+  'Заявитель': ['Заявник', 'Applicant'],
+  'Суть обращения': ['Суть звернення', 'Request Details'],
+  'Назначение мастеров': ['Призначення майстрів', 'Assign Technicians'],
+  'Создать заявку': ['Створити заявку', 'Create Request'],
+  'Квартира': ['Квартира', 'Apartment'],
+  'Подъезд': ['Під’їзд', 'Entrance'],
+  'Подвал': ['Підвал', 'Basement'],
+  'Кровля / Крыша': ['Покрівля / Дах', 'Roof'],
+  'Двор / Придомовая': ['Двір / Прибудинкова', 'Yard / Grounds'],
+  'Водоснабжение и канализация': ['Водопостачання та каналізація', 'Water & Sewage'],
+  'Отопление': ['Опалення', 'Heating'],
+  'Электрика': ['Електрика', 'Electrical'],
+  'Конструктив / Кровля / Общестрой': ['Конструктив / Покрівля / Загальнобуд', 'Structural / Roof / General'],
+  'Благоустройство': ['Благоустрій', 'Landscaping'],
+  'Обычная': ['Звичайна', 'Normal'],
+  'Срочная': ['Термінова', 'Urgent'],
+  'Аварийная': ['Аварійна', 'Emergency'],
+
+  // Messages to Admin Modal
+  'Связь с администратором': ['Зв’язок з адміністратором', 'Contact Administrator'],
+  'Написать сообщение администратору': ['Написати повідомлення адміністратору', 'Send Message to Administrator'],
+  'Входящие обращения сотрудников': ['Вхідні звернення співробітників', 'Incoming Employee Messages'],
+  'От кого:': ['Від кого:', 'From:'],
+  'Тема обращения': ['Тема звернення', 'Subject / Category'],
+  'Вопрос по работе': ['Питання по роботі', 'Work Question'],
+  'Доступ и права': ['Доступ та права', 'Access & Permissions'],
+  'Ошибка в адресе / доме': ['Помилка в адресі / будинку', 'Address / Building Error'],
+  'Предложение по улучшению': ['Пропозиція щодо покращення', 'Improvement Suggestion'],
+  'Срочное сообщение': ['Термінове повідомлення', 'Urgent Message'],
+  'Текст сообщения': ['Текст повідомлення', 'Message Text'],
+  'Опишите ваш вопрос, проблему или предложение для главного администратора...': [
+    'Опишіть ваше питання, проблему або пропозицію для головного адміністратора...',
+    'Describe your question, issue, or suggestion for the chief administrator...',
+  ],
+  'Отправить сообщение': ['Надіслати повідомлення', 'Send Message'],
+  'Сообщение успешно отправлено администратору!': [
+    'Повідомлення успішно надіслано адміністратору!',
+    'Message successfully sent to the administrator!',
+  ],
+  'История сообщений': ['Історія повідомлень', 'Message History'],
+  'Пока нет отправленных сообщений.': ['Поки немає надісланих повідомлень.', 'No messages sent yet.'],
+  'Ответить': ['Відповісти', 'Reply'],
+  'Ответ администратора:': ['Відповідь адміністратора:', 'Administrator Reply:'],
+  'Решено': ['Вирішено', 'Resolved'],
+  'Новое': ['Нове', 'New'],
+  'Отметить решённым': ['Позначити вирішеним', 'Mark Resolved'],
+};
+
+// Dynamic pattern rules for strings with numbers or dynamic suffixes
+const PATTERN_RULES: Array<{
+  regex: RegExp;
+  ua: (...matches: string[]) => string;
+  en: (...matches: string[]) => string;
+}> = [
+  {
+    regex: /^Личный список дел \((.+)\)$/,
+    ua: (name) => `Особистий список справ (${name})`,
+    en: (name) => `Personal Tasks (${name})`,
+  },
+  {
+    regex: /^Пользователи \((\d+)\)$/,
+    ua: (n) => `Користувачі (${n})`,
+    en: (n) => `Users (${n})`,
+  },
+  {
+    regex: /^Организации \((\d+)\)$/,
+    ua: (n) => `Організації (${n})`,
+    en: (n) => `Organizations (${n})`,
+  },
+  {
+    regex: /^Улицы \((\d+)\)$/,
+    ua: (n) => `Вулиці (${n})`,
+    en: (n) => `Streets (${n})`,
+  },
+  {
+    regex: /^Журнал аудита \((\d+)\)$/,
+    ua: (n) => `Журнал аудиту (${n})`,
+    en: (n) => `Audit Log (${n})`,
+  },
+  {
+    regex: /^Дата:\s*(.+)$/,
+    ua: (d) => `Дата: ${d}`,
+    en: (d) => `Date: ${d}`,
+  },
+  {
+    regex: /^Заявка #(.+)$/,
+    ua: (n) => `Заявка #${n}`,
+    en: (n) => `Request #${n}`,
+  },
+  {
+    regex: /^Сотрудник:\s*(.*)$/,
+    ua: (s) => `Співробітник: ${s}`,
+    en: (s) => `Employee: ${s}`,
+  },
+  {
+    regex: /^Время:\s*(.+)$/,
+    ua: (t) => `Час: ${t}`,
+    en: (t) => `Time: ${t}`,
+  },
+  {
+    regex: /^Домов:\s*(.*)$/,
+    ua: (n) => `Будинків: ${n}`,
+    en: (n) => `Buildings: ${n}`,
+  },
+  {
+    regex: /^Заявок:\s*(.*)$/,
+    ua: (n) => `Заявок: ${n}`,
+    en: (n) => `Requests: ${n}`,
+  },
+  {
+    regex: /^Тел:\s*(.+)$/,
+    ua: (p) => `Тел: ${p}`,
+    en: (p) => `Tel: ${p}`,
+  },
+  {
+    regex: /^Логин:\s*(.+)$/,
+    ua: (u) => `Логін: ${u}`,
+    en: (u) => `Login: ${u}`,
+  },
+  {
+    regex: /^Регистрация:\s*(.+)$/,
+    ua: (d) => `Реєстрація: ${d}`,
+    en: (d) => `Registered: ${d}`,
+  },
+  {
+    regex: /^Последние 20 просмотренных \((\d+)\)$/,
+    ua: (n) => `Останні 20 переглянутих (${n})`,
+    en: (n) => `Last 20 Viewed (${n})`,
+  },
+  {
+    regex: /^Все дома \((\d+)\)$/,
+    ua: (n) => `Всі будинки (${n})`,
+    en: (n) => `All Buildings (${n})`,
+  },
+  {
+    regex: /^Подъезд №(\d+)$/,
+    ua: (n) => `Під’їзд №${n}`,
+    en: (n) => `Entrance #${n}`,
+  },
+  {
+    regex: /^Входящие обращения сотрудников \((\d+)\)$/,
+    ua: (n) => `Вхідні звернення співробітників (${n})`,
+    en: (n) => `Incoming Employee Messages (${n})`,
+  },
+  {
+    regex: /^История сообщений \((\d+)\)$/,
+    ua: (n) => `Історія повідомлень (${n})`,
+    en: (n) => `Message History (${n})`,
+  },
+];
+
+// Build reverse dictionary from UA and EN back to RU so switching back to Russian is 100% lossless
+const REVERSE_TO_RU: Record<string, string> = {};
+for (const [ruKey, [uaVal, enVal]] of Object.entries(UI_DICTIONARY)) {
+  if (uaVal && !REVERSE_TO_RU[uaVal]) {
+    REVERSE_TO_RU[uaVal] = ruKey;
+  }
+  if (enVal && !REVERSE_TO_RU[enVal]) {
+    REVERSE_TO_RU[enVal] = ruKey;
+  }
+}
+
+const REVERSE_PATTERN_RULES: Array<{
+  regex: RegExp;
+  ru: (...matches: string[]) => string;
+}> = [
+  {
+    regex: /^(?:Особистий список справ|Personal Tasks) \((.+)\)$/,
+    ru: (name) => `Личный список дел (${name})`,
+  },
+  {
+    regex: /^(?:Користувачі|Users) \((\d+)\)$/,
+    ru: (n) => `Пользователи (${n})`,
+  },
+  {
+    regex: /^(?:Організації|Organizations) \((\d+)\)$/,
+    ru: (n) => `Организации (${n})`,
+  },
+  {
+    regex: /^(?:Вулиці|Streets) \((\d+)\)$/,
+    ru: (n) => `Улицы (${n})`,
+  },
+  {
+    regex: /^(?:Журнал аудиту|Audit Log) \((\d+)\)$/,
+    ru: (n) => `Журнал аудита (${n})`,
+  },
+  {
+    regex: /^Date:\s*(.+)$/,
+    ru: (d) => `Дата: ${d}`,
+  },
+  {
+    regex: /^Request #(.+)$/,
+    ru: (n) => `Заявка #${n}`,
+  },
+  {
+    regex: /^(?:Співробітник|Employee):\s*(.*)$/,
+    ru: (s) => `Сотрудник: ${s}`,
+  },
+  {
+    regex: /^(?:Час|Time):\s*(.+)$/,
+    ru: (t) => `Время: ${t}`,
+  },
+  {
+    regex: /^(?:Будинків|Buildings):\s*(.*)$/,
+    ru: (n) => `Домов: ${n}`,
+  },
+  {
+    regex: /^Requests:\s*(.*)$/,
+    ru: (n) => `Заявок: ${n}`,
+  },
+  {
+    regex: /^Tel:\s*(.+)$/,
+    ru: (p) => `Тел: ${p}`,
+  },
+  {
+    regex: /^(?:Логін|Login):\s*(.+)$/,
+    ru: (u) => `Логин: ${u}`,
+  },
+  {
+    regex: /^(?:Реєстрація|Registered):\s*(.+)$/,
+    ru: (d) => `Регистрация: ${d}`,
+  },
+  {
+    regex: /^(?:Останні 20 переглянутих|Last 20 Viewed) \((\d+)\)$/,
+    ru: (n) => `Последние 20 просмотренных (${n})`,
+  },
+  {
+    regex: /^(?:Всі будинки|All Buildings) \((\d+)\)$/,
+    ru: (n) => `Все дома (${n})`,
+  },
+  {
+    regex: /^(?:Під’їзд №|Entrance #)(\d+)$/,
+    ru: (n) => `Подъезд №${n}`,
+  },
+  {
+    regex: /^(?:Вхідні звернення співробітників|Incoming Employee Messages) \((\d+)\)$/,
+    ru: (n) => `Входящие обращения сотрудников (${n})`,
+  },
+  {
+    regex: /^(?:Історія повідомлень|Message History) \((\d+)\)$/,
+    ru: (n) => `История сообщений (${n})`,
+  },
+];
+
+export function normalizeToRussian(raw: string): string {
+  if (!raw) return raw;
+  const trimmed = raw.trim();
+  if (!trimmed) return raw;
+
+  if (UI_DICTIONARY[trimmed]) {
+    return raw;
+  }
+
+  const rev = REVERSE_TO_RU[trimmed];
+  if (rev) {
+    return raw.replace(trimmed, rev);
+  }
+
+  for (const rule of REVERSE_PATTERN_RULES) {
+    const m = trimmed.match(rule.regex);
+    if (m) {
+      const args = m.slice(1);
+      return raw.replace(trimmed, rule.ru(...args));
+    }
+  }
+
+  return raw;
+}
+
+export function translateStaticText(raw: string, lang: AppLanguage): string {
+  if (!raw) return raw;
+  const ruBase = normalizeToRussian(raw);
+  const trimmed = ruBase.trim();
+  if (!trimmed) return raw;
+
+  if (lang === 'ru') return ruBase;
+
+  const exact = UI_DICTIONARY[trimmed];
+  if (exact) {
+    const translated = lang === 'ua' ? exact[0] : exact[1];
+    return ruBase.replace(trimmed, translated);
+  }
+
+  for (const rule of PATTERN_RULES) {
+    const m = trimmed.match(rule.regex);
+    if (m) {
+      const args = m.slice(1);
+      const translated = lang === 'ua' ? rule.ua(...args) : rule.en(...args);
+      return ruBase.replace(trimmed, translated);
+    }
+  }
+
+  return ruBase;
+}
+
+interface CustomTextNode extends Text {
+  __origRuText?: string;
+}
+
+interface CustomElement extends HTMLElement {
+  __origPlaceholder?: string;
+  __origTitle?: string;
+}
+
+export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [lang, setLangState] = useState<AppLanguage>(() => {
+    try {
+      const saved = localStorage.getItem('app_language');
+      if (saved === 'ru' || saved === 'ua' || saved === 'en') return saved;
+    } catch (e) {}
+    return 'ru';
+  });
+
+  const setLang = useCallback((next: AppLanguage) => {
+    setLangState(next);
+    try {
+      localStorage.setItem('app_language', next);
+    } catch (e) {}
+  }, []);
+
+  const t = useCallback(
+    (text: string) => {
+      return translateStaticText(text, lang);
+    },
+    [lang]
+  );
+
+  // Automatic DOM translation of static UI labels, placeholders, and titles
+  useEffect(() => {
+    let isApplying = false;
+
+    const processNode = (root: Node) => {
+      if (isApplying) return;
+      isApplying = true;
+      try {
+        const walker = document.createTreeWalker(
+          root,
+          NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+          null
+        );
+
+        let current: Node | null = walker.currentNode;
+        while (current) {
+          if (current.nodeType === Node.TEXT_NODE) {
+            const textNode = current as CustomTextNode;
+            const parent = textNode.parentElement;
+            if (
+              parent &&
+              parent.tagName !== 'SCRIPT' &&
+              parent.tagName !== 'STYLE' &&
+              parent.tagName !== 'TEXTAREA'
+            ) {
+              const currentVal = textNode.nodeValue || '';
+              if (textNode.__origRuText === undefined) {
+                textNode.__origRuText = normalizeToRussian(currentVal);
+              } else {
+                // Check if currentVal is simply one of the translations of __origRuText
+                const ruForm = textNode.__origRuText;
+                const uaForm = translateStaticText(ruForm, 'ua');
+                const enForm = translateStaticText(ruForm, 'en');
+                if (
+                  currentVal !== ruForm &&
+                  currentVal !== uaForm &&
+                  currentVal !== enForm
+                ) {
+                  // React genuinely updated this text node to a new value
+                  textNode.__origRuText = normalizeToRussian(currentVal);
+                }
+              }
+
+              const targetVal = translateStaticText(textNode.__origRuText, lang);
+              if (textNode.nodeValue !== targetVal) {
+                textNode.nodeValue = targetVal;
+              }
+            }
+          } else if (current.nodeType === Node.ELEMENT_NODE) {
+            const el = current as CustomElement;
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+              const ph = el.getAttribute('placeholder');
+              if (ph) {
+                if (el.__origPlaceholder === undefined) {
+                  el.__origPlaceholder = normalizeToRussian(ph);
+                }
+                const targetPh = translateStaticText(el.__origPlaceholder, lang);
+                if (ph !== targetPh) {
+                  el.setAttribute('placeholder', targetPh);
+                }
+              }
+            }
+            const titleAttr = el.getAttribute('title');
+            if (titleAttr) {
+              if (el.__origTitle === undefined) {
+                el.__origTitle = normalizeToRussian(titleAttr);
+              }
+              const targetTitle = translateStaticText(el.__origTitle, lang);
+              if (titleAttr !== targetTitle) {
+                el.setAttribute('title', targetTitle);
+              }
+            }
+          }
+          current = walker.nextNode();
+        }
+      } finally {
+        isApplying = false;
+      }
+    };
+
+    processNode(document.body);
+
+    const observer = new MutationObserver(() => {
+      processNode(document.body);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => observer.disconnect();
+  }, [lang]);
+
+  return (
+    <LanguageContext.Provider value={{ lang, setLang, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+};
