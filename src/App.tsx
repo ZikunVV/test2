@@ -237,9 +237,9 @@ export default function App() {
   // Active user and permissions (v48.20 + Moderator access rules + Step 3 Auth & Org binding)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('app_is_authenticated') !== 'false';
+      return localStorage.getItem('app_is_authenticated') === 'true';
     } catch (e) {
-      return true;
+      return false;
     }
   });
   const [currentUserId, setCurrentUserId] = useState<number>(() => {

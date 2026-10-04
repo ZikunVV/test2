@@ -359,40 +359,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* User switch dropdown */}
             {userDropdownOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-1.5 p-1.5 bg-white rounded-xl shadow-xl border border-purple-200 z-40 space-y-1">
-                <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
-                  Сменить аккаунт для теста прав:
-                </div>
-                {users.map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      if (onSwitchUser) onSwitchUser(u.id);
-                      setUserDropdownOpen(false);
-                    }}
-                    className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors ${
-                      currentUser?.id === u.id
-                        ? 'bg-purple-50 text-purple-900 font-bold'
-                        : 'hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <div>
-                      <div className="font-semibold">{u.full_name}</div>
-                      <div className="text-[10px] text-slate-400">
-                        {u.role === 'admin'
-                          ? 'Полный доступ (Админ)'
-                          : u.role === 'editor'
-                          ? 'Диспетчер/Мастер'
-                          : 'Только чтение'}
-                      </div>
+                {currentUser?.role === 'admin' && (
+                  <>
+                    <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
+                      Сменить аккаунт (режим Админа):
                     </div>
-                    {currentUser?.id === u.id && (
-                      <span className="w-2 h-2 rounded-full bg-purple-700" />
-                    )}
-                  </button>
-                ))}
+                    {users.map((u) => (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          if (onSwitchUser) onSwitchUser(u.id);
+                          setUserDropdownOpen(false);
+                        }}
+                        className={`w-full text-left p-2 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                          currentUser?.id === u.id
+                            ? 'bg-purple-50 text-purple-900 font-bold'
+                            : 'hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-semibold">{u.full_name}</div>
+                          <div className="text-[10px] text-slate-400">
+                            {u.role === 'admin'
+                              ? 'Полный доступ (Админ)'
+                              : u.role === 'editor'
+                              ? 'Диспетчер/Мастер'
+                              : 'Только чтение'}
+                          </div>
+                        </div>
+                        {currentUser?.id === u.id && (
+                          <span className="w-2 h-2 rounded-full bg-purple-700" />
+                        )}
+                      </button>
+                    ))}
+                  </>
+                )}
 
                 {onLogout && (
-                  <div className="pt-1 mt-1 border-t border-purple-100">
+                  <div className={currentUser?.role === 'admin' ? 'pt-1 mt-1 border-t border-purple-100' : ''}>
                     <button
                       type="button"
                       onClick={() => {
@@ -402,7 +406,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className="w-full text-left p-2 rounded-lg text-xs font-bold text-rose-700 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer"
                     >
                       <LogOut className="w-3.5 h-3.5" />
-                      <span>{t('Выйти (Экран входа)')}</span>
+                      <span>{t('Выйти из аккаунта')}</span>
                     </button>
                   </div>
                 )}

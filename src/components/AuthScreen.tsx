@@ -189,38 +189,24 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             </div>
           </div>
 
-          {/* Quick Demo Accounts for instant testing */}
+          {/* Security & Access Features */}
           <div className="pt-6 mt-6 border-t border-white/20 space-y-2.5 relative z-10">
             <div className="text-[10px] font-bold uppercase tracking-wider text-purple-100">
-              Быстрый вход одним кликом (для проверки):
+              Защищённый корпоративный доступ:
             </div>
-            <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-              {users.map((u) => {
-                const org = organizations.find((o) => o.id === u.organization_id);
-                const orgLabel =
-                  u.organization_id === 'all' || u.username === 'admin'
-                    ? 'Все организации'
-                    : org?.name || 'КП «ЖЄК-10»';
-
-                return (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => handleQuickDemoLogin(u)}
-                    className="w-full text-left p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-all flex items-center justify-between gap-2 cursor-pointer group"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold truncate flex items-center gap-1.5">
-                        <span>{u.full_name}</span>
-                      </div>
-                      <div className="text-[10px] text-purple-100/80 truncate">
-                        {orgLabel} · Логин: <span className="font-mono font-bold text-white">{u.username}</span>
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 opacity-70 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                  </button>
-                );
-              })}
+            <div className="space-y-2 text-xs text-purple-100/90">
+              <div className="p-2.5 rounded-xl bg-white/10 border border-white/15">
+                <div className="font-bold text-white">Авторизация по логину и паролю</div>
+                <div className="text-[11px] opacity-85 mt-0.5">
+                  Вход в базу данных доступен только зарегистрированным и одобренным администратором сотрудникам.
+                </div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white/10 border border-white/15">
+                <div className="font-bold text-white">Изоляция организаций</div>
+                <div className="text-[11px] opacity-85 mt-0.5">
+                  Сотрудник видит только дома, заявки и задачи своей управляющей компании.
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -298,7 +284,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       required
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="admin, dispatcher или worker"
+                      placeholder="Введите ваш логин"
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
                     />
                   </div>
@@ -315,7 +301,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Введите пароль (admin или 123)"
+                      placeholder="Введите ваш пароль"
                       className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-purple-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
                     />
                     <button
