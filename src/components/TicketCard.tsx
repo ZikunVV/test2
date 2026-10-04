@@ -8,6 +8,9 @@ interface TicketCardProps {
   theme: ThemeConfig;
   isSelected?: boolean;
   canEdit?: boolean;
+  canAccept?: boolean;
+  canComplete?: boolean;
+  canSendMessenger?: boolean;
   onSelect?: (ticketId: string) => void;
   onAccept: (ticketId: string) => void;
   onComplete: (ticketId: string) => void;
@@ -21,6 +24,9 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   theme,
   isSelected = false,
   canEdit = true,
+  canAccept = canEdit,
+  canComplete = canEdit,
+  canSendMessenger = canEdit,
   onSelect,
   onAccept,
   onComplete,
@@ -212,8 +218,8 @@ export const TicketCard: React.FC<TicketCardProps> = ({
         onClick={(e) => e.stopPropagation()}
         onDoubleClick={(e) => e.stopPropagation()}
       >
-        <MessengerShareButtons ticket={ticket} compact />
-        {canEdit && ticket.status === 'in_waiting' ? (
+        {canSendMessenger && <MessengerShareButtons ticket={ticket} compact />}
+        {canAccept && ticket.status === 'in_waiting' ? (
           <button
             onClick={() => onAccept(ticket.id)}
             className="px-3.5 py-1.5 text-xs font-semibold rounded-xl border border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50 text-slate-700 transition-all duration-150 flex items-center gap-1.5 shadow-2xs"
@@ -221,7 +227,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             <span>Принять заявку</span>
             <ArrowRight className="w-3 h-3 text-purple-600" />
           </button>
-        ) : canEdit && ticket.status === 'in_progress' ? (
+        ) : canComplete && ticket.status === 'in_progress' ? (
           <button
             onClick={() => onComplete(ticket.id)}
             className="px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all duration-150 flex items-center gap-1.5 border text-white shadow-xs hover:scale-[1.02] active:scale-[0.98]"

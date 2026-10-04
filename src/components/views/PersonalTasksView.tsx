@@ -805,7 +805,15 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                         <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => onDeletePersonalPerson(p.id)}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Действительно удалить запись «${p.full_name}»?`
+                            )
+                          ) {
+                            onDeletePersonalPerson(p.id);
+                          }
+                        }}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                         title="Удалить запись"
                       >

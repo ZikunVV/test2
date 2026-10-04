@@ -22,6 +22,8 @@ interface PeopleViewProps {
   showFlatFallback: boolean;
   people: PersonalPerson[];
   canEdit?: boolean;
+  canAdd?: boolean;
+  canDelete?: boolean;
   isRegistered?: boolean;
   onUpdatePerson: (person: PersonalPerson) => void;
   onCreatePerson: (person: PersonalPerson) => void;
@@ -35,6 +37,8 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
   showFlatFallback,
   people,
   canEdit = true,
+  canAdd = canEdit,
+  canDelete = canEdit,
   isRegistered = true,
   onUpdatePerson,
   onCreatePerson,
@@ -50,6 +54,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
   // Modal create/edit
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<PersonalPerson | null>(null);
+  const [personToDelete, setPersonToDelete] = useState<PersonalPerson | null>(null);
 
   // Form states
   const [fullName, setFullName] = useState('');
@@ -159,7 +164,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
           <span className="font-bold text-slate-800">Сотрудники</span>
         </div>
 
-        {canEdit && (
+        {canAdd && (
           <button
             onClick={handleOpenCreate}
             className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-xs hover:opacity-95 transition-opacity"
@@ -205,10 +210,10 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
             <Users className="w-6 h-6" />
           </div>
           <h3 className="font-bold text-base text-slate-800">
-            Корпоративная информация
+            Справочник сотрудников
           </h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Здесь хранится корпоративная информация о сотрудниках. Просматривать этот раздел могут только зарегистрированные пользователи.
+            Просматривать и изменять этот раздел могут только сотрудники с соответствующим разрешением от администратора.
           </p>
         </div>
       ) : (
@@ -220,7 +225,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
             <div
               key={person.id}
               onClick={() => setSelectedPersonId(isSelected ? null : person.id)}
-              onDoubleClick={() => canEdit && handleOpenEdit(person)}
+              onDoubleClick={() => (canEdit || canDelete) && handleOpenEdit(person)}
               className={`p-4 rounded-2xl border transition-all text-xs space-y-2.5 flex flex-col justify-between cursor-pointer select-none ${
                 isSelected
                   ? 'ring-2 ring-purple-600 bg-purple-50/90 border-purple-400 shadow-md scale-[1.01]'
@@ -228,7 +233,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
               }`}
             >
               <div>
-                {/* Header: Full Name and Actions */}
+                {/* Header: Full Name */}
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-1.5 mb-0.5">
@@ -240,21 +245,6 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                       {person.full_name}
                     </h3>
                   </div>
-
-                  {canEdit && (
-                    <div
-                      className="flex items-center gap-1 shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        onClick={() => onDeletePerson(person.id)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Удалить запись"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
                 </div>
 
               {/* Work & Position */}
@@ -442,22 +432,103 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-purple-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-purple-700 text-white font-bold"
-                >
-                  Сохранить
-                </button>
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-purple-100">
+                <div>
+                  {editingPerson && canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsModalOpen(false);
+                        setPersonToDelete(editingPerson);
+                      }}
+                      className="px-3 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Удалить запись"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Удалить запись</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                  >
+                    Отмена
+                  </button>
+                  {((editingPerson && canEdit) || (!editingPerson && canAdd)) && (
+                    <button
+                      type="submit"
+                      className="px-4 py-1.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold cursor-pointer"
+                    >
+                      Сохранить
+                    </button>
+                  )}
+                </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE PERSON CONFIRMATION MODAL */}
+      {personToDelete && (
+        <div
+          className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setPersonToDelete(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl max-w-sm w-full p-5 sm:p-6 border border-rose-200 shadow-2xl space-y-4 text-xs animate-in fade-in zoom-in-95"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider block">
+                  Подтверждение удаления
+                </span>
+                <h3 className="text-base font-bold text-slate-900">
+                  Действительно удалить запись?
+                </h3>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-100 text-slate-700 space-y-1">
+              <div className="font-extrabold text-sm text-slate-900">
+                {personToDelete.full_name}
+              </div>
+              {(personToDelete.position || personToDelete.organization) && (
+                <div className="text-[11px] text-slate-500">
+                  {[personToDelete.position, personToDelete.organization]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setPersonToDelete(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold cursor-pointer"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeletePerson(personToDelete.id);
+                  setPersonToDelete(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-xs cursor-pointer"
+              >
+                Да, удалить
+              </button>
+            </div>
           </div>
         </div>
       )}

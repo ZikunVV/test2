@@ -212,20 +212,37 @@ export const AdminView: React.FC<AdminViewProps> = ({
     setIsOrgModalOpen(false);
   };
 
-  // Available permissions from app.py & v48.20
+  // Comprehensive permissions matrix for sections and granular actions
   const ALL_PERMISSIONS = [
-    { key: 'home', label: 'Главная (список работ)' },
-    { key: 'map', label: 'Карта объектов' },
-    { key: 'houses', label: 'Дома в управлении' },
-    { key: 'new_house', label: 'Создание нового дома' },
-    { key: 'new_request', label: 'Создание и правка заявок' },
-    { key: 'planned', label: 'Плановые работы и календарь' },
-    { key: 'search', label: 'Поиск выполненных работ' },
-    { key: 'audit', label: 'Журнал действий и отмена' },
-    { key: 'notifications', label: 'Уведомления' },
-    { key: 'internal', label: 'Корпоративная информация' },
-    { key: 'messages', label: 'Личные сообщения' },
-    { key: 'admin', label: 'Администрирование' },
+    // Разделы и просмотр
+    { key: 'home', label: 'Раздел: Главная (список работ)', group: 'Разделы меню' },
+    { key: 'map', label: 'Раздел: Карта объектов', group: 'Разделы меню' },
+    { key: 'houses', label: 'Раздел: Дома в управлении', group: 'Разделы меню' },
+    { key: 'planned', label: 'Раздел: Плановые работы и календарь', group: 'Разделы меню' },
+    { key: 'my_tasks_view', label: 'Раздел: Видеть Личный список дел (и изменять свой список)', group: 'Разделы меню' },
+    { key: 'people_view', label: 'Раздел: Видеть раздел «Сотрудники»', group: 'Разделы меню' },
+    { key: 'search', label: 'Раздел: Выполненные работы (архив)', group: 'Разделы меню' },
+    { key: 'audit', label: 'Раздел: История действий и отмена', group: 'Разделы меню' },
+    { key: 'notifications', label: 'Раздел: Уведомления', group: 'Разделы меню' },
+    { key: 'messages', label: 'Раздел: Личные сообщения', group: 'Разделы меню' },
+    { key: 'admin', label: 'Раздел: Администрирование', group: 'Разделы меню' },
+
+    // Действия с заявками
+    { key: 'new_request', label: 'Заявки: Подать заявку', group: 'Разрешения на действия с заявками' },
+    { key: 'send_messenger', label: 'Заявки: Отправить мастеру на Telegram или Viber', group: 'Разрешения на действия с заявками' },
+    { key: 'accept_request', label: 'Заявки: Принять заявку в работу', group: 'Разрешения на действия с заявками' },
+    { key: 'edit_request', label: 'Заявки: Редактировать заявку, акты и отчёты', group: 'Разрешения на действия с заявками' },
+    { key: 'complete_request', label: 'Заявки: Завершить заявку', group: 'Разрешения на действия с заявками' },
+    { key: 'delete_request', label: 'Заявки: Удалить / Снять заявку', group: 'Разрешения на действия с заявками' },
+
+    // Действия с домами и картой
+    { key: 'new_house', label: 'Дома: Добавить дом', group: 'Разрешения на действия с домами и сотрудниками' },
+    { key: 'edit_house', label: 'Дома: Изменить данные дома и координаты на карте', group: 'Разрешения на действия с домами и сотрудниками' },
+
+    // Действия с сотрудниками
+    { key: 'add_employee', label: 'Сотрудники: Добавить сотрудника', group: 'Разрешения на действия с домами и сотрудниками' },
+    { key: 'internal', label: 'Сотрудники: Редактировать сотрудника', group: 'Разрешения на действия с домами и сотрудниками' },
+    { key: 'delete_employee', label: 'Сотрудники: Удалить сотрудника', group: 'Разрешения на действия с домами и сотрудниками' },
   ];
 
   const [newStreetName, setNewStreetName] = useState('');
@@ -550,11 +567,43 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Expanded 12 Permissions Checkboxes */}
+                  {/* Expanded Permissions Checkboxes */}
                   {isExpanded && (
-                    <div className="p-3.5 rounded-xl bg-purple-50/60 border border-purple-200 animate-in fade-in duration-150">
-                      <div className="font-bold text-purple-950 mb-2">
-                        Матрица разрешений для {user.full_name}:
+                    <div className="p-3.5 rounded-xl bg-purple-50/60 border border-purple-200 animate-in fade-in duration-150 space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-bold text-purple-950">
+                          Матрица разрешений на разделы и действия для {user.full_name}:
+                        </div>
+                        {user.role !== 'admin' && onUpdateUserPermissions && (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onUpdateUserPermissions(
+                                  user.id,
+                                  ALL_PERMISSIONS.map((p) => p.key)
+                                )
+                              }
+                              className="px-2.5 py-1 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold text-[10px] cursor-pointer"
+                            >
+                              Включить все права
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onUpdateUserPermissions(user.id, [
+                                  'home',
+                                  'map',
+                                  'houses',
+                                  'search',
+                                ])
+                              }
+                              className="px-2.5 py-1 rounded-lg bg-white border border-purple-200 hover:bg-purple-100 text-purple-900 font-bold text-[10px] cursor-pointer"
+                            >
+                              Только чтение (базовые)
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                         {ALL_PERMISSIONS.map((perm) => {
@@ -573,7 +622,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 onChange={() =>
                                   handleTogglePermission(user, perm.key)
                                 }
-                                className="w-3.5 h-3.5 rounded accent-purple-700 cursor-pointer"
+                                className="w-3.5 h-3.5 rounded accent-purple-700 cursor-pointer shrink-0"
                               />
                               <span
                                 className={

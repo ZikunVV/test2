@@ -30,6 +30,8 @@ interface HousesViewProps {
   onCreateHouse: (house: House) => void;
   onBackToHome: () => void;
   isAdmin?: boolean;
+  canAddHouse?: boolean;
+  canEditHouse?: boolean;
 }
 
 export const HousesView: React.FC<HousesViewProps> = ({
@@ -47,6 +49,8 @@ export const HousesView: React.FC<HousesViewProps> = ({
   onCreateHouse,
   onBackToHome,
   isAdmin = true,
+  canAddHouse = isAdmin,
+  canEditHouse = isAdmin,
 }) => {
   // Search state
   const [streetQuery, setStreetQuery] = useState('');
@@ -493,7 +497,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
         </div>
 
         {/* Action Button: "Добавить дом" (without "+") */}
-        {isAdmin && !activeHouseDetail && (
+        {canAddHouse && !activeHouseDetail && (
           <button
             onClick={() => setIsNewHouseModalOpen(true)}
             className="px-4 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-xs hover:opacity-95 transition-opacity"
@@ -542,7 +546,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
                 <span>Показать дом на карте</span>
               </button>
 
-              {isAdmin && (
+              {canEditHouse && (
                 <button
                   type="button"
                   onClick={() => handleStartEdit(activeHouseDetail)}

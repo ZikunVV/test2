@@ -24,6 +24,10 @@ interface PlannedViewProps {
   onAccept?: (ticketId: string) => void;
   onComplete?: (ticketId: string) => void;
   canEdit?: boolean;
+  canCreate?: boolean;
+  canAccept?: boolean;
+  canComplete?: boolean;
+  canSendMessenger?: boolean;
   onInspectWorker?: (workerName: string) => void;
   onNewPlannedTicket: (prefilledDate?: string) => void;
   onBackToHome: () => void;
@@ -39,6 +43,10 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
   onAccept,
   onComplete,
   canEdit = true,
+  canCreate = canEdit,
+  canAccept = canEdit,
+  canComplete = canEdit,
+  canSendMessenger = canEdit,
   onInspectWorker,
   onNewPlannedTicket,
   onBackToHome,
@@ -173,16 +181,18 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
             </button>
           </div>
 
-          <button
-            onClick={() => onNewPlannedTicket()}
-            className="px-3.5 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-xs hover:opacity-95"
-            style={{
-              background: showFlatFallback ? '#7652B5' : gradient.cssGradient,
-            }}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Подать заявку</span>
-          </button>
+          {canCreate && (
+            <button
+              onClick={() => onNewPlannedTicket()}
+              className="px-3.5 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-xs hover:opacity-95"
+              style={{
+                background: showFlatFallback ? '#7652B5' : gradient.cssGradient,
+              }}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Подать заявку</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -379,6 +389,9 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
               theme={theme}
               isSelected={selectedTicketId === t.id}
               canEdit={canEdit}
+              canAccept={canAccept}
+              canComplete={canComplete}
+              canSendMessenger={canSendMessenger}
               onSelect={() => {
                 setSelectedTicketId(selectedTicketId === t.id ? null : t.id);
               }}
@@ -462,17 +475,19 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
                 Закрыть
               </button>
 
-              <button
-                onClick={() => {
-                  const targetDate = dayModalDate;
-                  setDayModalDate(null);
-                  onNewPlannedTicket(targetDate);
-                }}
-                className="px-3.5 py-1.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold flex items-center gap-1 shadow-xs"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Добавить заявку на эту дату</span>
-              </button>
+              {canCreate && (
+                <button
+                  onClick={() => {
+                    const targetDate = dayModalDate;
+                    setDayModalDate(null);
+                    onNewPlannedTicket(targetDate);
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold flex items-center gap-1 shadow-xs"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Добавить заявку на эту дату</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

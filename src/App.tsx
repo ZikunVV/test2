@@ -303,12 +303,29 @@ export default function App() {
   }, [currentUser, currentOrganizationId]);
   const isAdmin = currentUser.role === 'admin';
   const isApproved = currentUser?.approved ?? false;
-  // Moderators are approved users with admin or editor role
-  const isModerator = isApproved && (currentUser.role === 'admin' || currentUser.role === 'editor');
-  const canEditHouses = isModerator && (currentUser.role === 'admin' || currentUser.permissions?.includes('houses') || currentUser.permissions?.includes('new_house'));
-  const canEditTickets = isModerator && (currentUser.role === 'admin' || currentUser.permissions?.includes('new_request'));
-  const canEditCoordinates = isModerator && (currentUser.role === 'admin' || currentUser.permissions?.includes('map'));
-  const canEditPeople = isModerator && (currentUser.role === 'admin' || currentUser.permissions?.includes('internal') || currentUser.permissions?.includes('admin'));
+  const hasPermission = (key: string) => {
+    if (!isApproved) return false;
+    if (isAdmin) return true;
+    return Boolean(currentUser.permissions?.includes(key));
+  };
+
+  // Granular permissions for sections and actions
+  const canCreateTicket = hasPermission('new_request');
+  const canSendMessenger = hasPermission('send_messenger') || hasPermission('new_request');
+  const canAcceptTicket = hasPermission('accept_request') || hasPermission('new_request');
+  const canEditTickets = hasPermission('edit_request') || hasPermission('new_request');
+  const canCompleteTicket = hasPermission('complete_request') || hasPermission('new_request');
+  const canDeleteTicket = hasPermission('delete_request');
+
+  const canAddHouses = hasPermission('new_house');
+  const canEditHouses = hasPermission('edit_house') || hasPermission('new_house');
+  const canEditCoordinates = hasPermission('edit_house') || (currentUser.role === 'editor' && hasPermission('map'));
+
+  const canViewPeople = hasPermission('people_view') || hasPermission('internal') || hasPermission('add_employee');
+  const canAddPeople = hasPermission('add_employee') || hasPermission('internal');
+  const canEditPeople = hasPermission('internal');
+  const canDeletePeople = hasPermission('delete_employee') || hasPermission('internal');
+  const canViewPersonalTasks = hasPermission('my_tasks_view');
 
   // Planned ticket modal prefill state
   const [newTicketPrefilledDate, setNewTicketPrefilledDate] = useState<
@@ -826,8 +843,16 @@ export default function App() {
 
   // Handlers for Ticket Actions
   const handleUpdateStatus = (ticketId: string, newStatus: Ticket['status']) => {
-    if (!canEditTickets) {
-      alert('У вас нет прав доступа для изменения статуса заявок.');
+    if (newStatus === 'in_progress' && !canAcceptTicket && !canEditTickets) {
+      alert('У вас нет разрешения для принятия заявки в работу.');
+      return;
+    }
+    if (newStatus === 'completed' && !canCompleteTicket && !canEditTickets) {
+      alert('У вас нет разрешения для завершения заявки.');
+      return;
+    }
+    if (newStatus === 'in_waiting' && !canEditTickets) {
+      alert('У вас нет разрешения для изменения статуса заявки.');
       return;
     }
     const now = new Date();
@@ -865,7 +890,7 @@ export default function App() {
   const handleCreateTicket = (
     newTicketData: Omit<Ticket, 'id' | 'number'>
   ) => {
-    if (!canEditTickets) {
+    if (!canCreateTicket) {
       alert('У вас нет прав доступа для создания заявок.');
       return;
     }
@@ -1130,7 +1155,7 @@ export default function App() {
   };
 
   const handleCreateHouse = (newHouse: House) => {
-    if (!canEditHouses) {
+    if (!canAddHouses) {
       alert('У вас нет прав доступа для добавления новых домов.');
       return;
     }
@@ -1253,10 +1278,10 @@ export default function App() {
     ]);
   };
 
-  // Personal Tasks Handlers (Restricted strictly to the authenticated user account)
+  // Personal Tasks Handlers (Restricted strictly to the authenticated user account with my_tasks_view permission)
   const handleUpdatePersonalTask = (updated: PersonalTask) => {
-    if (!currentUser || !currentUser.approved) {
-      alert('Вносить изменения в личный список дел может только авторизованный пользователь под своей учётной записью.');
+    if (!currentUser || !currentUser.approved || !canViewPersonalTasks) {
+      alert('У вас нет разрешения для работы с личным списком дел.');
       return;
     }
     if (updated.owner_user_id !== undefined && updated.owner_user_id !== currentUser.id) {
@@ -1269,16 +1294,16 @@ export default function App() {
   };
 
   const handleCreatePersonalTask = (newTask: PersonalTask) => {
-    if (!currentUser || !currentUser.approved) {
-      alert('Добавлять записи в личный список дел может только авторизованный пользователь под своей учётной записью.');
+    if (!currentUser || !currentUser.approved || !canViewPersonalTasks) {
+      alert('У вас нет разрешения для добавления записей в личный список дел.');
       return;
     }
     setPersonalTasks((prev) => [newTask, ...prev]);
   };
 
   const handleDeletePersonalTask = (id: string) => {
-    if (!currentUser || !currentUser.approved) {
-      alert('Удалять записи из личного списка дел может только авторизованный пользователь.');
+    if (!currentUser || !currentUser.approved || !canViewPersonalTasks) {
+      alert('У вас нет разрешения для удаления записей из личного списка дел.');
       return;
     }
     setPersonalTasks((prev) =>
@@ -1291,7 +1316,7 @@ export default function App() {
 
   // Personal Account People Handlers (Made strictly inside PersonalTasksView, isolated to this account)
   const handleUpdateAccountPerson = (updated: PersonalPerson) => {
-    if (!currentUser || !currentUser.approved) return;
+    if (!currentUser || !currentUser.approved || !canViewPersonalTasks) return;
     if (updated.owner_user_id !== undefined && updated.owner_user_id !== currentUser.id) return;
     setPersonalPeople((prev) =>
       prev.map((p) => (p.id === updated.id ? updated : p))
@@ -1299,12 +1324,12 @@ export default function App() {
   };
 
   const handleCreateAccountPerson = (newPerson: PersonalPerson) => {
-    if (!currentUser || !currentUser.approved) return;
+    if (!currentUser || !currentUser.approved || !canViewPersonalTasks) return;
     setPersonalPeople((prev) => [newPerson, ...prev]);
   };
 
   const handleDeleteAccountPerson = (id: string) => {
-    if (!currentUser || !currentUser.approved) return;
+    if (!currentUser || !currentUser.approved || !canViewPersonalTasks) return;
     setPersonalPeople((prev) =>
       prev.filter((p) => {
         if (p.id !== id) return true;
@@ -1325,7 +1350,7 @@ export default function App() {
   };
 
   const handleCreatePersonalPerson = (newPerson: PersonalPerson) => {
-    if (!canEditPeople) {
+    if (!canAddPeople) {
       alert('У вас нет прав доступа для добавления сотрудников.');
       return;
     }
@@ -1333,7 +1358,7 @@ export default function App() {
   };
 
   const handleDeletePersonalPerson = (id: string) => {
-    if (!canEditPeople) {
+    if (!canDeletePeople) {
       alert('У вас нет прав доступа для удаления сотрудников.');
       return;
     }
@@ -1346,7 +1371,59 @@ export default function App() {
     role: 'admin' | 'editor' | 'viewer'
   ) => {
     setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, role } : u))
+      prev.map((u) => {
+        if (u.id !== userId) return u;
+        let nextPerms = u.permissions || [];
+        if (role === 'admin') {
+          nextPerms = [
+            'home',
+            'map',
+            'houses',
+            'new_house',
+            'edit_house',
+            'new_request',
+            'send_messenger',
+            'accept_request',
+            'edit_request',
+            'complete_request',
+            'delete_request',
+            'planned',
+            'my_tasks_view',
+            'people_view',
+            'add_employee',
+            'internal',
+            'delete_employee',
+            'search',
+            'audit',
+            'notifications',
+            'messages',
+            'admin',
+          ];
+        } else if (role === 'editor' && u.role === 'viewer') {
+          nextPerms = [
+            'home',
+            'map',
+            'houses',
+            'new_house',
+            'edit_house',
+            'new_request',
+            'send_messenger',
+            'accept_request',
+            'edit_request',
+            'complete_request',
+            'planned',
+            'my_tasks_view',
+            'people_view',
+            'add_employee',
+            'internal',
+            'search',
+            'notifications',
+          ];
+        } else if (role === 'viewer') {
+          nextPerms = ['home', 'map', 'houses', 'search'];
+        }
+        return { ...u, role, permissions: nextPerms };
+      })
     );
   };
 
@@ -1374,12 +1451,22 @@ export default function App() {
             'map',
             'houses',
             'new_house',
+            'edit_house',
             'new_request',
+            'send_messenger',
+            'accept_request',
+            'edit_request',
+            'complete_request',
+            'delete_request',
             'planned',
+            'my_tasks_view',
+            'people_view',
+            'add_employee',
+            'internal',
+            'delete_employee',
             'search',
             'audit',
             'notifications',
-            'internal',
             'messages',
             'admin',
           ]
@@ -1388,8 +1475,18 @@ export default function App() {
             'home',
             'map',
             'houses',
+            'new_house',
+            'edit_house',
             'new_request',
+            'send_messenger',
+            'accept_request',
+            'edit_request',
+            'complete_request',
             'planned',
+            'my_tasks_view',
+            'people_view',
+            'add_employee',
+            'internal',
             'search',
             'notifications',
           ]
@@ -1703,6 +1800,8 @@ export default function App() {
                   onCreateHouse={handleCreateHouse}
                   onBackToHome={() => setActiveSidebarNav('home')}
                   isAdmin={canEditHouses}
+                  canAddHouse={canAddHouses}
+                  canEditHouse={canEditHouses}
                 />
               )}
 
@@ -1737,6 +1836,10 @@ export default function App() {
                   onAccept={(id) => handleUpdateStatus(id, 'in_progress')}
                   onComplete={(id) => handleUpdateStatus(id, 'completed')}
                   canEdit={canEditTickets}
+                  canCreate={canCreateTicket}
+                  canAccept={canAcceptTicket}
+                  canComplete={canCompleteTicket}
+                  canSendMessenger={canSendMessenger}
                   onInspectWorker={handleInspectWorker}
                   onNewPlannedTicket={(prefilledDate) => {
                     setNewTicketPrefilledDate(prefilledDate);
@@ -1753,7 +1856,7 @@ export default function App() {
                   theme={theme}
                   gradient={currentGradient}
                   showFlatFallback={showFlatFallback}
-                  currentUser={currentUser}
+                  currentUser={canViewPersonalTasks ? currentUser : undefined}
                   tasks={personalTasks}
                   personalPeople={personalPeople}
                   onUpdateTask={handleUpdatePersonalTask}
@@ -1774,7 +1877,9 @@ export default function App() {
                   showFlatFallback={showFlatFallback}
                   people={personalPeople}
                   canEdit={canEditPeople}
-                  isRegistered={Boolean(currentUser && currentUser.approved)}
+                  canAdd={canAddPeople}
+                  canDelete={canDeletePeople}
+                  isRegistered={Boolean(currentUser && currentUser.approved && canViewPeople)}
                   onUpdatePerson={handleUpdatePersonalPerson}
                   onCreatePerson={handleCreatePersonalPerson}
                   onDeletePerson={handleDeletePersonalPerson}
@@ -1859,8 +1964,8 @@ export default function App() {
                       </h1>
                     </div>
 
-                    {/* Action Button: "Заявка" (только для модераторов с правами) */}
-                    {canEditTickets && (
+                    {/* Action Button: "Заявка" (только с разрешением на подачу заявки) */}
+                    {canCreateTicket && (
                       <div className="flex items-center gap-2 sm:gap-3">
                         {/* ЗАЯВКА BUTTON WITH SELECTED GRADIENT */}
                         <button
@@ -1982,6 +2087,9 @@ export default function App() {
                           theme={theme}
                           isSelected={selectedTicketId === ticket.id}
                           canEdit={canEditTickets}
+                          canAccept={canAcceptTicket}
+                          canComplete={canCompleteTicket}
+                          canSendMessenger={canSendMessenger}
                           onSelect={() => {
                             setSelectedTicketId(
                               selectedTicketId === ticket.id ? null : ticket.id
@@ -2049,6 +2157,11 @@ export default function App() {
         onClose={() => setSelectedTicketForDetail(null)}
         theme={theme}
         isAdmin={canEditTickets}
+        canAccept={canAcceptTicket}
+        canComplete={canCompleteTicket}
+        canEdit={canEditTickets}
+        canSendMessenger={canSendMessenger}
+        canDelete={canDeleteTicket}
         onOpenEdit={(t) => handleOpenEditTicket(t)}
         onUpdateStatus={handleUpdateStatus}
         onSubmitReport={handleSubmitReport}
@@ -2104,6 +2217,7 @@ export default function App() {
       <EmployeeDetailModal
         worker={inspectedWorker}
         onClose={() => setInspectedWorker(null)}
+        canSendMessenger={canSendMessenger}
       />
 
       {/* Admin Messages Modal ("Написать администратору" & "Сообщения") */}

@@ -76,8 +76,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'map', label: t('Карта объектов'), icon: MapPin, perm: 'map' },
     { id: 'buildings', label: t('Дома в управлении'), icon: Building2, perm: 'houses' },
     { id: 'scheduled', label: t('Плановые работы'), icon: Calendar, perm: 'planned' },
-    { id: 'my_tasks', label: t(`Личный список дел (${userSurname})`), icon: CheckSquare, perm: 'home' },
-    { id: 'people', label: t('Сотрудники'), icon: Users2 },
+    { id: 'my_tasks', label: t(`Личный список дел (${userSurname})`), icon: CheckSquare, perm: 'my_tasks_view' },
+    { id: 'people', label: t('Сотрудники'), icon: Users2, perm: 'people_view' },
     { id: 'completed', label: t('Выполненные работы'), icon: CheckCircle2, perm: 'search' },
     { id: 'history', label: t('История действий'), icon: History, perm: 'audit' },
     {
@@ -96,6 +96,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (!item.perm) return true;
     if (!currentUser) return true;
     if (currentUser.role === 'admin') return true;
+    if (item.perm === 'people_view') {
+      return (
+        currentUser.permissions?.includes('people_view') ||
+        currentUser.permissions?.includes('internal') ||
+        currentUser.permissions?.includes('add_employee')
+      );
+    }
     return currentUser.permissions?.includes(item.perm);
   });
 

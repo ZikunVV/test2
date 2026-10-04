@@ -17,9 +17,14 @@ export interface InspectedWorkerInfo {
 interface EmployeeDetailModalProps {
   worker: InspectedWorkerInfo | null;
   onClose: () => void;
+  canSendMessenger?: boolean;
 }
 
-export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({ worker, onClose }) => {
+export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
+  worker,
+  onClose,
+  canSendMessenger = true,
+}) => {
   if (!worker) return null;
 
   return (
@@ -118,7 +123,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({ worker
                         <Phone className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                         <span>{phone}</span>
                       </a>
-                      {intlPhone.length >= 10 && (
+                      {canSendMessenger && intlPhone.length >= 10 && (
                         <div className="flex items-center gap-1.5">
                           <a
                             href={`https://t.me/+${intlPhone}`}

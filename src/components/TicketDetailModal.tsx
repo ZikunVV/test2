@@ -29,6 +29,11 @@ interface TicketDetailModalProps {
   onClose: () => void;
   theme: ThemeConfig;
   isAdmin?: boolean;
+  canAccept?: boolean;
+  canComplete?: boolean;
+  canEdit?: boolean;
+  canSendMessenger?: boolean;
+  canDelete?: boolean;
   onOpenEdit?: (ticket: Ticket) => void;
   onUpdateStatus: (
     ticketId: string,
@@ -64,6 +69,11 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   onClose,
   theme,
   isAdmin = true,
+  canAccept = isAdmin,
+  canComplete = isAdmin,
+  canEdit = isAdmin,
+  canSendMessenger = isAdmin,
+  canDelete = isAdmin,
   onOpenEdit,
   onUpdateStatus,
   onSubmitReport,
@@ -237,8 +247,8 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            <MessengerShareButtons ticket={ticket} />
-            {isAdmin && onOpenEdit && (
+            {canSendMessenger && <MessengerShareButtons ticket={ticket} />}
+            {canEdit && onOpenEdit && (
               <button
                 onClick={() => onOpenEdit(ticket)}
                 className="px-3 py-1.5 rounded-xl border border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50 text-purple-900 font-semibold transition-all flex items-center gap-1.5 shadow-2xs"
@@ -269,20 +279,22 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
           >
             Сведения о заявке
           </button>
-          <button
-            onClick={() => setActiveTab('report')}
-            className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
-              activeTab === 'report'
-                ? 'bg-purple-100 text-purple-900 border border-purple-200'
-                : 'text-slate-600 hover:text-purple-900'
-            }`}
-          >
-            <Send className="w-3.5 h-3.5" />
-            <span>Отчёт сотрудника</span>
-            {ticket.worker_report && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            )}
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => setActiveTab('report')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                activeTab === 'report'
+                  ? 'bg-purple-100 text-purple-900 border border-purple-200'
+                  : 'text-slate-600 hover:text-purple-900'
+              }`}
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Отчёт сотрудника</span>
+              {ticket.worker_report && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              )}
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('works')}
             className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
@@ -295,7 +307,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             <span>Акты и работы ({ticket.works?.length || 0})</span>
           </button>
 
-          {isAdmin && (
+          {canDelete && (
             <button
               onClick={() => setActiveTab('withdraw')}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all ml-auto text-rose-700 hover:bg-rose-50 border ${
@@ -485,10 +497,10 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
 
             {/* Quick Status Action Buttons */}
             <div className="pt-3 border-t border-purple-100 flex flex-wrap items-center justify-between gap-3">
-              {isAdmin ? (
-                <div className="flex items-center gap-2">
+              {canAccept || canComplete || canEdit ? (
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-slate-500 font-semibold">Изменить статус:</span>
-                  {ticket.status !== 'in_progress' && (
+                  {canAccept && ticket.status !== 'in_progress' && (
                     <button
                       onClick={() => onUpdateStatus(ticket.id, 'in_progress')}
                       className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold border border-amber-300 transition-colors"
@@ -496,7 +508,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                       В работу
                     </button>
                   )}
-                  {ticket.status !== 'completed' && (
+                  {canComplete && ticket.status !== 'completed' && (
                     <button
                       onClick={() => onUpdateStatus(ticket.id, 'completed')}
                       className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-xs flex items-center gap-1"
@@ -505,7 +517,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                       <span>Завершить заявку</span>
                     </button>
                   )}
-                  {ticket.status !== 'in_waiting' && (
+                  {canEdit && ticket.status !== 'in_waiting' && (
                     <button
                       onClick={() => onUpdateStatus(ticket.id, 'in_waiting')}
                       className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold border border-rose-300 transition-colors"
@@ -516,7 +528,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 </div>
               ) : (
                 <div className="text-xs text-slate-500 font-medium">
-                  Режим просмотра (редактирование доступно только модераторам)
+                  Режим просмотра (изменение статуса доступно при наличии прав доступа)
                 </div>
               )}
 
@@ -667,85 +679,87 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             )}
 
             {/* Add new work act form */}
-            <form
-              onSubmit={handleAddWorkSubmit}
-              className="p-4 rounded-xl border border-purple-200 bg-[#F9F8FD] space-y-3"
-            >
-              <div className="font-bold text-slate-900">
-                Добавить акт выполненных работ
-              </div>
+            {canEdit && (
+              <form
+                onSubmit={handleAddWorkSubmit}
+                className="p-4 rounded-xl border border-purple-200 bg-[#F9F8FD] space-y-3"
+              >
+                <div className="font-bold text-slate-900">
+                  Добавить акт выполненных работ
+                </div>
 
-              <div>
-                <label className="font-semibold block mb-1 text-slate-700">
-                  Описание выполненных работ <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={workDesc}
-                  onChange={(e) => setWorkDesc(e.target.value)}
-                  placeholder="Заменен участок трубы ХВС 1/2 дюйма..."
-                  className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="font-semibold block mb-1 text-slate-700">
-                    Материалы
+                    Описание выполненных работ <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={workMats}
-                    onChange={(e) => setWorkMats(e.target.value)}
-                    placeholder="Муфта, труба 1.5м..."
+                    required
+                    value={workDesc}
+                    onChange={(e) => setWorkDesc(e.target.value)}
+                    placeholder="Заменен участок трубы ХВС 1/2 дюйма..."
                     className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white"
                   />
                 </div>
 
-                <div>
-                  <label className="font-semibold block mb-1 text-slate-700">
-                    Исполнители
-                  </label>
-                  <input
-                    type="text"
-                    value={workWorker}
-                    onChange={(e) => setWorkWorker(e.target.value)}
-                    placeholder="ФИО исполнителей..."
-                    className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white text-xs"
-                  />
-                  {ticket.assignees && ticket.assignees.length > 1 && (
-                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                      <span className="text-[10px] text-slate-400">Назначены:</span>
-                      {ticket.assignees.map((workerName) => (
-                        <button
-                          key={workerName}
-                          type="button"
-                          onClick={() => setWorkWorker(workerName)}
-                          className="text-[10px] px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 font-semibold hover:bg-purple-200 transition-colors"
-                        >
-                          {workerName}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setWorkWorker(ticket.assignees!.join(', '))}
-                        className="text-[10px] px-2 py-0.5 rounded-md bg-purple-600 text-white font-semibold hover:bg-purple-700 transition-colors"
-                      >
-                        Все ({ticket.assignees.length})
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-semibold block mb-1 text-slate-700">
+                      Материалы
+                    </label>
+                    <input
+                      type="text"
+                      value={workMats}
+                      onChange={(e) => setWorkMats(e.target.value)}
+                      placeholder="Муфта, труба 1.5м..."
+                      className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white"
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl bg-purple-700 text-white font-bold hover:bg-purple-800"
-              >
-                Сохранить акт
-              </button>
-            </form>
+                  <div>
+                    <label className="font-semibold block mb-1 text-slate-700">
+                      Исполнители
+                    </label>
+                    <input
+                      type="text"
+                      value={workWorker}
+                      onChange={(e) => setWorkWorker(e.target.value)}
+                      placeholder="ФИО исполнителей..."
+                      className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white text-xs"
+                    />
+                    {ticket.assignees && ticket.assignees.length > 1 && (
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        <span className="text-[10px] text-slate-400">Назначены:</span>
+                        {ticket.assignees.map((workerName) => (
+                          <button
+                            key={workerName}
+                            type="button"
+                            onClick={() => setWorkWorker(workerName)}
+                            className="text-[10px] px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 font-semibold hover:bg-purple-200 transition-colors"
+                          >
+                            {workerName}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setWorkWorker(ticket.assignees!.join(', '))}
+                          className="text-[10px] px-2 py-0.5 rounded-md bg-purple-600 text-white font-semibold hover:bg-purple-700 transition-colors"
+                        >
+                          Все ({ticket.assignees.length})
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-purple-700 text-white font-bold hover:bg-purple-800"
+                >
+                  Сохранить акт
+                </button>
+              </form>
+            )}
           </div>
         )}
 
