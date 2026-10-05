@@ -47,7 +47,7 @@ export const INITIAL_USERS: UserItem[] = [
     id: 1,
     organization_id: 'all',
     username: 'admin',
-    password: 'admin',
+    password: 'Vjqgfhjkm0639444986Admin',
     full_name: 'Главный администратор',
     phone: '+38 (050) 000-00-01',
     role: 'admin',

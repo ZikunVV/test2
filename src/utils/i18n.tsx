@@ -562,6 +562,50 @@ const UI_DICTIONARY: Record<string, [string, string]> = {
     'Планова перевірка щитових: вул. Доценка, 15Б, 21А',
     'Planned electrical panel check: Dotsenka St, 15B, 21A',
   ],
+  'По логину': ['За логіном', 'By Login'],
+  'По номеру телефона (SMS-код)': ['За номером телефону (SMS-код)', 'By Phone (SMS Code)'],
+  'Мобильный телефон (для SMS-кода)': ['Мобільний телефон (для SMS-коду)', 'Mobile Phone (for SMS code)'],
+  'Получить 6-значный код': ['Отримати 6-значний код', 'Get 6-digit Code'],
+  'Отправить код повторно': ['Надіслати код повторно', 'Resend Code'],
+  'Введите 6 цифр из SMS': ['Введіть 6 цифр із SMS', 'Enter 6-digit SMS code'],
+  'Код подтверждения (6 цифр)': ['Код підтвердження (6 цифр)', 'Verification Code (6 digits)'],
+  'Подтвердить код и войти': ['Підтвердити код і увійти', 'Verify Code & Sign In'],
+  'Укажите корректный номер телефона для отправки кода.': [
+    'Вкажіть коректний номер телефону для надсилання коду.',
+    'Please enter a valid phone number to receive the code.',
+  ],
+  'Неверный 6-значный код подтверждения. Проверьте цифры.': [
+    'Невірний 6-значний код підтвердження. Перевірте цифри.',
+    'Invalid 6-digit verification code. Please check the digits.',
+  ],
+  'Сначала запросите 6-значный код на телефон.': [
+    'Спочатку запросіть 6-значний код на телефон.',
+    'Please request the 6-digit code to your phone first.',
+  ],
+  'Этот номер телефона уже зарегистрирован в системе.': [
+    'Цей номер телефону вже зареєстрований у системі.',
+    'This phone number is already registered in the system.',
+  ],
+  'этот номер телефона уже авторизован, за более детальной информацией обращаться к Администратору': [
+    'цей номер телефону вже авторизований, за більш детальною інформацією звертатися до Адміністратора',
+    'this phone number is already authorized, for more detailed information please contact the Administrator',
+  ],
+  'Пожалуйста, придумайте пароль для дальнейших входов в систему.': [
+    'Будь ласка, придумайте пароль для подальших входів у систему.',
+    'Please create a password for future sign-ins.',
+  ],
+  'Пароль для дальнейших входов': [
+    'Пароль для подальших входів',
+    'Password for future sign-ins',
+  ],
+  'SMS-уведомление на телефон': ['SMS-сповіщення на телефон', 'SMS Notification to Phone'],
+  'Ваш 6-значный код подтверждения WORKFLOW:': [
+    'Ваш 6-значний код підтвердження WORKFLOW:',
+    'Your 6-digit WORKFLOW verification code:',
+  ],
+  'Подставить код автоматически': ['Підставити код автоматично', 'Auto-fill code'],
+  'Логин или номер телефона': ['Логін або номер телефону', 'Login or Phone Number'],
+  'Введите логин или телефон': ['Введіть логін або телефон', 'Enter login or phone'],
 };
 
 // Dynamic pattern rules for strings with numbers or dynamic suffixes

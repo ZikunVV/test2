@@ -50,13 +50,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 }) => {
   const { lang, setLang } = useLanguage();
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [regMethod, setRegMethod] = useState<'phone' | 'login'>('phone');
   const [activeSlide, setActiveSlide] = useState<number>(0);
 
-  // Auto-cycle through the 5 showcase sections every 3 seconds; resets timer when user clicks any card
+  // Auto-cycle through the 5 showcase sections every 6 seconds; resets timer when user clicks any card
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % 5);
-    }, 3000);
+    }, 6000);
     return () => clearInterval(timer);
   }, [activeSlide]);
 
@@ -71,6 +72,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [regPhone, setRegPhone] = useState('');
   const [regOrgId, setRegOrgId] = useState<string>(organizations[0]?.id || 'org-1');
 
+  // Phone 6-digit SMS verification state
+  const [sentOtpCode, setSentOtpCode] = useState<string | null>(null);
+  const [enteredOtpCode, setEnteredOtpCode] = useState('');
+  const [otpResendTimer, setOtpResendTimer] = useState<number>(0);
+
+  useEffect(() => {
+    if (otpResendTimer <= 0) return;
+    const t = setTimeout(() => setOtpResendTimer((prev) => prev - 1), 1000);
+    return () => clearTimeout(t);
+  }, [otpResendTimer]);
+
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -81,6 +93,43 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [msgText, setMsgText] = useState('');
   const [msgSentSuccess, setMsgSentSuccess] = useState(false);
 
+  const normalizeDigits = (val: string) => val.replace(/\D/g, '');
+
+  const isPhoneAlreadyAuthorized = (rawPhone: string) => {
+    const phoneDigits = normalizeDigits(rawPhone);
+    if (phoneDigits.length < 9) return false;
+    const tail9 = phoneDigits.slice(-9);
+    return users.some((u) => {
+      const uPhoneDigits = normalizeDigits(u.phone || '');
+      const uLoginDigits = normalizeDigits(u.username || '');
+      if (uPhoneDigits.length >= 9 && uPhoneDigits.slice(-9) === tail9) return true;
+      if (uLoginDigits.length >= 9 && uLoginDigits.slice(-9) === tail9) return true;
+      return false;
+    });
+  };
+
+  const handleSendPhoneOtp = () => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    const digits = normalizeDigits(regPhone);
+    if (digits.length < 9) {
+      setErrorMsg('Укажите корректный номер телефона для отправки кода.');
+      return;
+    }
+
+    if (isPhoneAlreadyAuthorized(regPhone)) {
+      setErrorMsg(
+        'этот номер телефона уже авторизован, за более детальной информацией обращаться к Администратору'
+      );
+      return;
+    }
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    setSentOtpCode(code);
+    setEnteredOtpCode(code);
+    setOtpResendTimer(30);
+  };
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -88,22 +137,30 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
     const trimmedLogin = username.trim().toLowerCase();
     const trimmedPass = password.trim();
+    const loginDigits = normalizeDigits(trimmedLogin);
 
     if (!trimmedLogin || !trimmedPass) {
       setErrorMsg('Пожалуйста, введите логин и пароль.');
       return;
     }
 
-    const foundUser = users.find(
-      (u) => u.username.toLowerCase() === trimmedLogin
-    );
+    const foundUser = users.find((u) => {
+      if (u.username.toLowerCase() === trimmedLogin) return true;
+      const userPhoneDigits = normalizeDigits(u.phone || '');
+      if (loginDigits.length >= 9 && userPhoneDigits.length >= 9) {
+        return userPhoneDigits.endsWith(loginDigits.slice(-9));
+      }
+      return false;
+    });
 
     if (!foundUser) {
       setErrorMsg('Пользователь с таким логином не найден.');
       return;
     }
 
-    const expectedPass = foundUser.password || (foundUser.username === 'admin' ? 'admin' : '123');
+    const expectedPass =
+      foundUser.password ||
+      (foundUser.username === 'admin' ? 'Vjqgfhjkm0639444986Admin' : '123');
     if (trimmedPass !== expectedPass) {
       setErrorMsg('Неверный пароль. Попробуйте ещё раз.');
       return;
@@ -124,8 +181,56 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    if (regMethod === 'phone') {
+      const phoneDigits = normalizeDigits(regPhone);
+      if (!regFullName.trim() || phoneDigits.length < 9) {
+        setErrorMsg('Укажите корректный номер телефона для отправки кода.');
+        return;
+      }
+      if (isPhoneAlreadyAuthorized(regPhone)) {
+        setErrorMsg(
+          'этот номер телефона уже авторизован, за более детальной информацией обращаться к Администратору'
+        );
+        return;
+      }
+      if (!sentOtpCode) {
+        setErrorMsg('Сначала запросите 6-значный код на телефон.');
+        return;
+      }
+      if (enteredOtpCode.trim() !== sentOtpCode) {
+        setErrorMsg('Неверный 6-значный код подтверждения. Проверьте цифры.');
+        return;
+      }
+      if (!regPassword.trim()) {
+        setErrorMsg('Пожалуйста, придумайте пароль для дальнейших входов в систему.');
+        return;
+      }
+
+      const autoUsername = regUsername.trim() || `+${phoneDigits}`;
+      const finalPassword = regPassword.trim();
+
+      const created = onRegisterUser({
+        full_name: regFullName.trim(),
+        username: autoUsername,
+        password: finalPassword,
+        phone: regPhone.trim(),
+        organization_id: regOrgId,
+        role: 'viewer',
+      });
+
+      onLoginSuccess(created);
+      return;
+    }
+
     if (!regFullName.trim() || !regUsername.trim() || !regPassword.trim()) {
       setErrorMsg('Заполните ФИО, логин и пароль.');
+      return;
+    }
+
+    if (regPhone.trim() && isPhoneAlreadyAuthorized(regPhone)) {
+      setErrorMsg(
+        'этот номер телефона уже авторизован, за более детальной информацией обращаться к Администратору'
+      );
       return;
     }
 
@@ -821,7 +926,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Логин пользователя
+                      Логин или номер телефона
                     </label>
                     <div className="relative">
                       <User className="w-4 h-4 text-purple-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -830,7 +935,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         required
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Введите ваш логин"
+                        placeholder="Введите логин или телефон"
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
                       />
                     </div>
@@ -877,7 +982,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 </button>
               </form>
             ) : (
-              <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+              <form onSubmit={handleRegisterSubmit} className="space-y-3">
                 <div>
                   <h2 className="text-lg font-black text-slate-900">
                     Регистрация нового сотрудника
@@ -885,6 +990,40 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   <p className="text-xs text-slate-500 mt-0.5">
                     Выберите вашу организацию и заполните данные для получения доступа.
                   </p>
+                </div>
+
+                {/* Sub-tabs: By Phone (6-digit SMS) vs By Login */}
+                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200/80">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRegMethod('phone');
+                      setErrorMsg(null);
+                    }}
+                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      regMethod === 'phone'
+                        ? 'bg-white text-purple-900 shadow-2xs border border-purple-200/80'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Phone className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <span className="truncate">По номеру телефона (SMS-код)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRegMethod('login');
+                      setErrorMsg(null);
+                    }}
+                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      regMethod === 'login'
+                        ? 'bg-white text-purple-900 shadow-2xs border border-purple-200/80'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <User className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <span className="truncate">По логину</span>
+                  </button>
                 </div>
 
                 <div>
@@ -904,61 +1043,153 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Логин для входа <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={regUsername}
-                      onChange={(e) => setRegUsername(e.target.value)}
-                      placeholder="ivanenko"
-                      className="w-full px-3.5 py-2 rounded-xl border border-purple-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Пароль <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      placeholder="Придумайте пароль"
-                      className="w-full px-3.5 py-2 rounded-xl border border-purple-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    />
-                  </div>
-                </div>
+                {regMethod === 'phone' ? (
+                  <div className="space-y-2.5 p-3 rounded-2xl bg-purple-50/60 border border-purple-200/90">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Мобильный телефон (для SMS-кода) <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="relative flex-1">
+                          <Phone className="w-3.5 h-3.5 text-purple-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="tel"
+                            required
+                            value={regPhone}
+                            onChange={(e) => setRegPhone(e.target.value)}
+                            placeholder="+38 (067) 123-45-67"
+                            className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-purple-200 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleSendPhoneOtp}
+                          disabled={otpResendTimer > 0}
+                          className={`px-3 py-2 rounded-xl text-[11px] font-extrabold transition-all shrink-0 cursor-pointer ${
+                            otpResendTimer > 0
+                              ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                              : 'bg-purple-700 hover:bg-purple-800 text-white shadow-2xs'
+                          }`}
+                        >
+                          {otpResendTimer > 0
+                            ? `${otpResendTimer} сек`
+                            : sentOtpCode
+                            ? 'Отправить код повторно'
+                            : 'Получить 6-значный код'}
+                        </button>
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Контактный телефон
-                    </label>
-                    <div className="relative">
-                      <Phone className="w-3.5 h-3.5 text-purple-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={regPhone}
-                        onChange={(e) => setRegPhone(e.target.value)}
-                        placeholder="+38 (067) 123-45-67"
-                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-purple-200 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400"
-                      />
+                    {/* Simulated SMS Notification Banner with 6 digits */}
+                    {sentOtpCode && (
+                      <div className="p-2.5 rounded-xl bg-slate-900 text-white border border-purple-400/40 shadow-md flex items-center justify-between gap-2 animate-in fade-in">
+                        <div className="space-y-0.5">
+                          <div className="text-[10px] font-bold text-emerald-300 flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>SMS-уведомление на телефон</span>
+                          </div>
+                          <div className="text-[11px] text-purple-100">
+                            <span>Ваш 6-значный код подтверждения WORKFLOW:</span>{' '}
+                            <span className="font-mono font-black text-sm tracking-widest text-amber-300 bg-white/10 px-1.5 py-0.5 rounded">
+                              {sentOtpCode}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Код подтверждения (6 цифр) <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          required
+                          value={enteredOtpCode}
+                          onChange={(e) =>
+                            setEnteredOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                          }
+                          placeholder="Введите 6 цифр из SMS"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-purple-300 text-xs font-mono font-black tracking-widest text-center text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Пароль для дальнейших входов <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={regPassword}
+                          onChange={(e) => setRegPassword(e.target.value)}
+                          placeholder="Придумайте пароль"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-purple-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </div>
                     </div>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Статус при регистрации
-                    </label>
-                    <div className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-purple-50/70 text-xs font-bold text-purple-900">
-                      Только чтение (по умолчанию)
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Логин для входа <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={regUsername}
+                          onChange={(e) => setRegUsername(e.target.value)}
+                          placeholder="ivanenko"
+                          className="w-full px-3.5 py-2 rounded-xl border border-purple-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Пароль <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={regPassword}
+                          onChange={(e) => setRegPassword(e.target.value)}
+                          placeholder="Придумайте пароль"
+                          className="w-full px-3.5 py-2 rounded-xl border border-purple-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Контактный телефон
+                        </label>
+                        <div className="relative">
+                          <Phone className="w-3.5 h-3.5 text-purple-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={regPhone}
+                            onChange={(e) => setRegPhone(e.target.value)}
+                            placeholder="+38 (067) 123-45-67"
+                            className="w-full pl-9 pr-3 py-2 rounded-xl border border-purple-200 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Статус при регистрации
+                        </label>
+                        <div className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-purple-50/70 text-xs font-bold text-purple-900">
+                          Только чтение (по умолчанию)
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -988,7 +1219,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   }}
                 >
                   <Shield className="w-4 h-4" />
-                  <span>Зарегистрироваться и войти</span>
+                  <span>
+                    {regMethod === 'phone'
+                      ? 'Подтвердить код и войти'
+                      : 'Зарегистрироваться и войти'}
+                  </span>
                 </button>
               </form>
             )}

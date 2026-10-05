@@ -126,11 +126,19 @@ export default function App() {
   );
   const [users, setUsers] = useState<UserItem[]>(() => {
     const loaded = loadStorage('app_users', INITIAL_USERS);
-    return loaded.map((u) => ({
-      ...u,
-      organization_id: u.organization_id || (u.username === 'admin' ? 'all' : 'org-1'),
-      password: u.password || (u.username === 'admin' ? 'admin' : '123'),
-    }));
+    return loaded.map((u) => {
+      const isAdminUser = u.username === 'admin';
+      const nextPass = isAdminUser
+        ? !u.password || u.password === 'admin'
+          ? 'Vjqgfhjkm0639444986Admin'
+          : u.password
+        : u.password || '123';
+      return {
+        ...u,
+        organization_id: u.organization_id || (isAdminUser ? 'all' : 'org-1'),
+        password: nextPass,
+      };
+    });
   });
 
   useEffect(() => {
@@ -411,7 +419,13 @@ export default function App() {
             setStreets(cloudData.streets);
           }
           if (cloudData.users && cloudData.users.length > 0) {
-            setUsers(cloudData.users);
+            setUsers(
+              cloudData.users.map((u) =>
+                u.username === 'admin' && (!u.password || u.password === 'admin')
+                  ? { ...u, password: 'Vjqgfhjkm0639444986Admin' }
+                  : u
+              )
+            );
           }
           if (cloudData.personalTasks) setPersonalTasks(cloudData.personalTasks);
           if (cloudData.personalPeople) setPersonalPeople(cloudData.personalPeople);
