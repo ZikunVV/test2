@@ -1974,7 +1974,7 @@ export default function App() {
                         className="text-2xl md:text-3xl font-black tracking-tight"
                         style={{ color: theme.keyColors.textPrimary }}
                       >
-                        Добрый день, Главный!
+                        Добрый день!
                       </h1>
                     </div>
 
