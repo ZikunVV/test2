@@ -60,6 +60,7 @@ interface AdminViewProps {
   onDeleteUser?: (userId: number) => void;
   onToggleUserApproved: (userId: number) => void;
   onUpdateUserPermissions?: (userId: number, permissions: string[]) => void;
+  onUpdateUserPersonalLimit?: (userId: number, limit: number) => void;
   onUndoAuditAction: (logId: number) => void;
   onBackToHome: () => void;
   onOpenBackupModal?: () => void;
@@ -88,6 +89,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onDeleteUser,
   onToggleUserApproved,
   onUpdateUserPermissions,
+  onUpdateUserPersonalLimit,
   onUndoAuditAction,
   onBackToHome,
   onOpenBackupModal,
@@ -97,6 +99,52 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
   // Expanded user permissions matrix
   const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
+
+  // Active organization for quick 6-digit code editing in AdminView
+  const currentOrgObj =
+    organizations.find((o) => o.id === currentOrganizationId) || organizations[0];
+  const [quickRegCode, setQuickRegCode] = useState<string>(
+    currentOrgObj?.registration_code || '101010'
+  );
+
+  React.useEffect(() => {
+    if (currentOrgObj?.registration_code) {
+      setQuickRegCode(currentOrgObj.registration_code);
+    }
+  }, [currentOrgObj?.id, currentOrgObj?.registration_code]);
+
+  const handleSaveQuickRegCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentOrgObj || !onUpdateOrganization) return;
+    const digits = quickRegCode.replace(/\D/g, '').slice(0, 6);
+    if (digits.length !== 6) {
+      alert('Код регистрации должен состоять ровно из 6 цифр.');
+      return;
+    }
+    onUpdateOrganization({
+      ...currentOrgObj,
+      registration_code: digits,
+    });
+    setUndoSuccessMsg(
+      `6-значный код регистрации для «${currentOrgObj.name}» обновлён на: ${digits}`
+    );
+    setTimeout(() => setUndoSuccessMsg(null), 4000);
+  };
+
+  const handleGenerateRandomRegCode = () => {
+    const random6 = String(Math.floor(100000 + Math.random() * 900000));
+    setQuickRegCode(random6);
+    if (currentOrgObj && onUpdateOrganization) {
+      onUpdateOrganization({
+        ...currentOrgObj,
+        registration_code: random6,
+      });
+      setUndoSuccessMsg(
+        `Сгенерирован и сохранён новый 6-значный код для «${currentOrgObj.name}»: ${random6}`
+      );
+      setTimeout(() => setUndoSuccessMsg(null), 4000);
+    }
+  };
 
   // Add User Modal state
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
@@ -130,6 +178,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
   const [orgName, setOrgName] = useState('');
   const [orgSlug, setOrgSlug] = useState('');
+  const [orgRegCode, setOrgRegCode] = useState('101010');
   const [orgPhone, setOrgPhone] = useState('');
   const [orgAddress, setOrgAddress] = useState('');
   const [orgContact, setOrgContact] = useState('');
@@ -158,6 +207,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
     setEditingOrg(null);
     setOrgName('');
     setOrgSlug('');
+    setOrgRegCode(String(Math.floor(100000 + Math.random() * 900000)));
     setOrgPhone('');
     setOrgAddress('');
     setOrgContact('');
@@ -169,6 +219,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
     setEditingOrg(org);
     setOrgName(org.name);
     setOrgSlug(org.slug);
+    setOrgRegCode(org.registration_code || '101010');
     setOrgPhone(org.phone || '');
     setOrgAddress(org.address || '');
     setOrgContact(org.contact_person || '');
@@ -181,6 +232,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
     if (!orgName.trim()) return;
 
     const finalSlug = (orgSlug.trim() || generateSlug(orgName)).toLowerCase();
+    const cleanCode = orgRegCode.replace(/\D/g, '').slice(0, 6);
+    const finalRegCode = cleanCode.length === 6 ? cleanCode : '101010';
 
     if (editingOrg) {
       if (onUpdateOrganization) {
@@ -188,6 +241,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
           ...editingOrg,
           name: orgName.trim(),
           slug: finalSlug,
+          registration_code: finalRegCode,
           phone: orgPhone.trim(),
           address: orgAddress.trim(),
           contact_person: orgContact.trim(),
@@ -200,6 +254,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
           id: `org-${Date.now()}`,
           name: orgName.trim(),
           slug: finalSlug,
+          registration_code: finalRegCode,
           phone: orgPhone.trim(),
           address: orgAddress.trim(),
           contact_person: orgContact.trim(),
@@ -417,7 +472,60 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* TAB 1: USERS & PERMISSIONS MATRIX */}
       {activeTab === 'users' && (
-        <div className="bg-white rounded-2xl border border-purple-200/80 shadow-xs overflow-hidden">
+        <div className="space-y-4">
+          {/* 6-Digit Registration Code Control Card for Administrator */}
+          {currentOrgObj && (
+            <div className="bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 text-white p-4 sm:p-5 rounded-2xl border border-purple-400/40 shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Key className="w-4 h-4 text-amber-300 shrink-0" />
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">
+                    Защита от спама и посторонних регистраций
+                  </span>
+                </div>
+                <h3 className="text-sm sm:text-base font-black text-white">
+                  Секретный 6-значный код для регистрации новых сотрудников ({currentOrgObj.name})
+                </h3>
+                <p className="text-xs text-purple-100 max-w-2xl">
+                  Сообщите эти 6 цифр сотруднику лично при встрече или по телефону. Без этого кода никто не сможет зарегистрироваться на сайте. Вы можете изменить код в любой момент.
+                </p>
+              </div>
+
+              <form
+                onSubmit={handleSaveQuickRegCode}
+                className="flex flex-wrap items-center gap-2 shrink-0"
+              >
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={quickRegCode}
+                  onChange={(e) =>
+                    setQuickRegCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                  }
+                  placeholder="6 цифр"
+                  className="w-32 px-3 py-2 rounded-xl bg-white text-purple-950 font-mono font-black text-base tracking-widest text-center border-2 border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-inner"
+                />
+                <button
+                  type="submit"
+                  className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Сохранить код</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateRandomRegCode}
+                  className="px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/30 text-white font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                  title="Случайные 6 цифр"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Случайный</span>
+                </button>
+              </form>
+            </div>
+          )}
+
+          <div className="bg-white rounded-2xl border border-purple-200/80 shadow-xs overflow-hidden">
           <div className="p-4 border-b border-purple-100 bg-purple-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="font-bold text-sm text-slate-900">
@@ -638,11 +746,47 @@ export const AdminView: React.FC<AdminViewProps> = ({
                           );
                         })}
                       </div>
+
+                      {/* Per-user Personal Tasks Limit Setting inside "Права" */}
+                      <div className="mt-3 pt-3 border-t border-purple-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-purple-200">
+                        <div>
+                          <div className="font-bold text-xs text-purple-950">
+                            Лимит записей в «Личном списке дел» (задач и личных контактов):
+                          </div>
+                          <div className="text-[11px] text-slate-500">
+                            Максимальное количество личных заметок, которое может создать этот сотрудник (по умолчанию: 100 шт.)
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <input
+                            type="number"
+                            min={0}
+                            max={5000}
+                            value={
+                              typeof user.personal_tasks_limit === 'number'
+                                ? user.personal_tasks_limit
+                                : 100
+                            }
+                            onChange={(e) =>
+                              onUpdateUserPersonalLimit &&
+                              onUpdateUserPersonalLimit(
+                                user.id,
+                                Number(e.target.value)
+                              )
+                            }
+                            className="w-24 px-3 py-1.5 rounded-lg border border-purple-300 font-mono font-black text-xs text-center text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          />
+                          <span className="text-xs font-bold text-slate-600">
+                            записей
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
               );
             })}
+          </div>
           </div>
         </div>
       )}
@@ -911,9 +1055,18 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1 text-[11px] text-purple-700 font-mono font-medium">
-                        <Globe className="w-3 h-3 text-purple-500" />
-                        <span>{org.slug}.azikun.com</span>
+                      <div className="flex items-center gap-3 flex-wrap mt-1">
+                        <div className="flex items-center gap-1 text-[11px] text-purple-700 font-mono font-medium">
+                          <Globe className="w-3 h-3 text-purple-500" />
+                          <span>{org.slug}.azikun.com</span>
+                        </div>
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-900">
+                          <Key className="w-3 h-3 text-amber-600" />
+                          <span>Код регистрации (6 цифр):</span>
+                          <span className="font-mono font-black tracking-wider">
+                            {org.registration_code || '101010'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1042,6 +1195,37 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1">
                   Сотрудники этой организации в будущем будут входить по этой ссылке.
+                </p>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  6-значный код регистрации сотрудников <span className="text-rose-500">*</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    maxLength={6}
+                    required
+                    value={orgRegCode}
+                    onChange={(e) =>
+                      setOrgRegCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                    }
+                    placeholder="101010"
+                    className="w-36 px-3 py-2 rounded-xl border border-purple-300 font-mono font-black tracking-widest text-center text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOrgRegCode(String(Math.floor(100000 + Math.random() * 900000)))
+                    }
+                    className="px-3 py-2 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-xs cursor-pointer"
+                  >
+                    Сгенерировать
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Этот код вы сообщаете новым сотрудникам при встрече или по телефону для регистрации.
                 </p>
               </div>
 

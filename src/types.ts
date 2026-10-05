@@ -132,6 +132,7 @@ export interface Organization {
   id: string;
   name: string;
   slug: string;
+  registration_code?: string; // 6-значный код регистрации, который задаёт Администратор
   phone?: string;
   address?: string;
   email?: string;
@@ -221,6 +222,7 @@ export interface UserItem {
   approved: boolean;
   created_at: string;
   permissions: string[];
+  personal_tasks_limit?: number; // Лимит записей в Личном списке дел (по умолчанию 100)
 }
 
 export interface StreetItem {

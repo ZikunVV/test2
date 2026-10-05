@@ -606,6 +606,22 @@ const UI_DICTIONARY: Record<string, [string, string]> = {
   'Подставить код автоматически': ['Підставити код автоматично', 'Auto-fill code'],
   'Логин или номер телефона': ['Логін або номер телефону', 'Login or Phone Number'],
   'Введите логин или телефон': ['Введіть логін або телефон', 'Enter login or phone'],
+  'По номеру телефона': ['За номером телефону', 'By Phone Number'],
+  'Мобильный телефон': ['Мобільний телефон', 'Mobile Phone'],
+  'Код от Администратора (6 цифр)': ['Код від Адміністратора (6 цифр)', 'Code from Administrator (6 digits)'],
+  '6 цифр от Админа': ['6 цифр від Адміна', '6 digits from Admin'],
+  'Введите 6-значный код доступа, который вам сообщил Администратор лично или по телефону.': [
+    'Введіть 6-значний код доступу, який вам повідомив Адміністратор особисто або телефоном.',
+    'Enter the 6-digit access code provided to you by the Administrator in person or by phone.',
+  ],
+  'Неверный 6-значный код регистрации. Получите актуальный код у Администратора (лично или по телефону).': [
+    'Невірний 6-значний код реєстрації. Отримайте актуальний код у Адміністратора (особисто або телефоном).',
+    'Invalid 6-digit registration code. Get the current code from the Administrator (in person or by phone).',
+  ],
+  'Укажите корректный номер телефона.': [
+    'Вкажіть коректний номер телефону.',
+    'Please enter a valid phone number.',
+  ],
 };
 
 // Dynamic pattern rules for strings with numbers or dynamic suffixes

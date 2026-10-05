@@ -137,6 +137,8 @@ export default function App() {
         ...u,
         organization_id: u.organization_id || (isAdminUser ? 'all' : 'org-1'),
         password: nextPass,
+        personal_tasks_limit:
+          typeof u.personal_tasks_limit === 'number' ? u.personal_tasks_limit : 100,
       };
     });
   });
@@ -165,6 +167,7 @@ export default function App() {
         id: 'org-1',
         name: 'КП «ЖЄК-10»',
         slug: 'zhek10',
+        registration_code: '101010',
         phone: '+38 (067) 123-45-67',
         address: 'г. Киев, ул. Шевченко, 10',
         contact_person: 'Главный Администратор',
@@ -175,6 +178,7 @@ export default function App() {
         id: 'org-2',
         name: 'ООО «Комфорт»',
         slug: 'comfort',
+        registration_code: '202020',
         phone: '+38 (050) 987-65-43',
         address: 'г. Киев, ул. Победы, 8',
         contact_person: 'Алексей (Управляющий)',
@@ -182,12 +186,20 @@ export default function App() {
         created_at: '2026-10-02',
       },
     ]);
-    // Migrate legacy name "Участок «Доценка»" to "КП «ЖЄК-10»"
-    return loaded.map((org: Organization) =>
-      org.id === 'org-1' && (org.name === 'Участок «Доценка»' || org.name.includes('Доценка'))
-        ? { ...org, name: 'КП «ЖЄК-10»' }
-        : org
-    );
+    // Migrate legacy name "Участок «Доценка»" to "КП «ЖЄК-10»" and ensure registration_code
+    return loaded.map((org: Organization, idx: number) => ({
+      ...org,
+      name:
+        org.id === 'org-1' && (org.name === 'Участок «Доценка»' || org.name.includes('Доценка'))
+          ? 'КП «ЖЄК-10»'
+          : org.name,
+      registration_code:
+        org.registration_code && /^\d{6}$/.test(org.registration_code)
+          ? org.registration_code
+          : idx === 0
+          ? '101010'
+          : '202020',
+    }));
   });
 
   // Active organization state (Multi-Tenancy Шаг 2)
@@ -1322,6 +1334,19 @@ export default function App() {
       alert('У вас нет разрешения для добавления записей в личный список дел.');
       return;
     }
+    const maxLimit =
+      typeof currentUser.personal_tasks_limit === 'number'
+        ? currentUser.personal_tasks_limit
+        : 100;
+    const userTaskCount = personalTasks.filter((t) =>
+      t.owner_user_id !== undefined ? t.owner_user_id === currentUser.id : currentUser.id === 1
+    ).length;
+    if (userTaskCount >= maxLimit) {
+      alert(
+        `Достигнут установленный администратором лимит записей в Личном списке дел (${maxLimit} шт.). Удалите старые записи или обратитесь к Администратору для увеличения лимита.`
+      );
+      return;
+    }
     setPersonalTasks((prev) => [newTask, ...prev]);
   };
 
@@ -1349,6 +1374,19 @@ export default function App() {
 
   const handleCreateAccountPerson = (newPerson: PersonalPerson) => {
     if (!currentUser || !currentUser.approved || !canViewPersonalTasks) return;
+    const maxLimit =
+      typeof currentUser.personal_tasks_limit === 'number'
+        ? currentUser.personal_tasks_limit
+        : 100;
+    const userPeopleCount = personalPeople.filter(
+      (p) => p.owner_user_id === currentUser.id
+    ).length;
+    if (userPeopleCount >= maxLimit) {
+      alert(
+        `Достигнут установленный администратором лимит личных контактов (${maxLimit} шт.). Удалите неактуальные записи или обратитесь к Администратору.`
+      );
+      return;
+    }
     setPersonalPeople((prev) => [newPerson, ...prev]);
   };
 
@@ -1526,6 +1564,10 @@ export default function App() {
       approved: true,
       created_at: new Date().toISOString().split('T')[0],
       permissions: defaultPerms,
+      personal_tasks_limit:
+        typeof newUser.personal_tasks_limit === 'number'
+          ? newUser.personal_tasks_limit
+          : 100,
     };
 
     setUsers((prev) => [...prev, created]);
@@ -1567,6 +1609,15 @@ export default function App() {
   ) => {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, permissions } : u))
+    );
+  };
+
+  const handleUpdateUserPersonalLimit = (userId: number, limit: number) => {
+    const safeLimit = Math.max(0, Math.min(5000, Math.floor(Number(limit) || 0)));
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === userId ? { ...u, personal_tasks_limit: safeLimit } : u
+      )
     );
   };
 
@@ -1966,6 +2017,7 @@ export default function App() {
                   onDeleteUser={handleDeleteUser}
                   onToggleUserApproved={handleToggleUserApproved}
                   onUpdateUserPermissions={handleUpdateUserPermissions}
+                  onUpdateUserPersonalLimit={handleUpdateUserPersonalLimit}
                   onUndoAuditAction={handleUndoAuditAction}
                   onBackToHome={() => setActiveSidebarNav('home')}
                   onOpenBackupModal={() => setIsBackupModalOpen(true)}

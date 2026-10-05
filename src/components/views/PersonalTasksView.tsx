@@ -333,6 +333,12 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
           <span className="font-bold text-slate-800">
             Личный список дел ({userSurname})
           </span>
+          <span
+            className="px-2 py-0.5 rounded-lg bg-purple-100 text-purple-900 border border-purple-200 font-mono font-bold text-[11px]"
+            title="Лимит личных записей, установленный Администратором в разделе «Права»"
+          >
+            Записей: {myTasks.length} / {typeof currentUser?.personal_tasks_limit === 'number' ? currentUser.personal_tasks_limit : 100}
+          </span>
         </div>
 
         {/* View toggle: Календарь - Список (как в Плановые работы) */}
