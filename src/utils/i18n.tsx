@@ -622,6 +622,37 @@ const UI_DICTIONARY: Record<string, [string, string]> = {
     'Вкажіть коректний номер телефону.',
     'Please enter a valid phone number.',
   ],
+  'Голосовой набор': ['Голосовий набір', 'Voice Input'],
+  'Остановить запись...': ['Зупинити запис...', 'Stop recording...'],
+  'Надиктовать название заметки голосом': [
+    'Надиктувати назву нотатки голосом',
+    'Dictate note title by voice',
+  ],
+  'Надиктовать текст заметки голосом': [
+    'Надиктувати текст нотатки голосом',
+    'Dictate note description by voice',
+  ],
+  'Надиктовать заметку голосом': [
+    'Надиктувати нотатку голосом',
+    'Dictate note by voice',
+  ],
+  'Говорите в микрофон — речь автоматически преобразуется в текст...': [
+    'Говоріть у мікрофон — мовлення автоматично перетворюється на текст...',
+    'Speak into the microphone — speech is automatically converted to text...',
+  ],
+  'Голосовое управление и заметки': ['Голосове керування та нотатки', 'Voice Control & Notes'],
+  'Голосовой набор WORKFLOW': ['Голосовий набір WORKFLOW', 'WORKFLOW Voice Input'],
+  'Навигация по сайту': ['Навігація по сайту', 'Site Navigation'],
+  'Голосовая заметка': ['Голосова нотатка', 'Voice Note'],
+  'Слушаю вас... Говорите в микрофон': [
+    'Слухаю вас... Говоріть у мікрофон',
+    'Listening... Speak into the microphone',
+  ],
+  'Нажмите на микрофон и произнесите команду': [
+    'Натисніть на мікрофон і скажіть команду',
+    'Tap the microphone and speak a command',
+  ],
+  'Сохранить заметку': ['Зберегти нотатку', 'Save Note'],
 };
 
 // Dynamic pattern rules for strings with numbers or dynamic suffixes

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ThemeConfig, GradientOption, PersonalTask, PersonalPerson, UserItem } from '../../types';
 import { getUserSurname } from '../../utils/userUtils';
+import { useLanguage } from '../../utils/i18n';
 import {
   CheckSquare,
   FileText,
@@ -24,6 +25,8 @@ import {
   BookOpen,
   Search,
   Edit,
+  Mic,
+  MicOff,
 } from 'lucide-react';
 
 interface PersonalTasksViewProps {
@@ -31,6 +34,8 @@ interface PersonalTasksViewProps {
   gradient: GradientOption;
   showFlatFallback: boolean;
   currentUser?: UserItem;
+  canUseVoiceControl?: boolean;
+  onOpenWriteToAdmin?: () => void;
   tasks: PersonalTask[];
   personalPeople: PersonalPerson[];
   onUpdateTask: (task: PersonalTask) => void;
@@ -47,6 +52,8 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   gradient,
   showFlatFallback,
   currentUser,
+  canUseVoiceControl = false,
+  onOpenWriteToAdmin,
   tasks,
   personalPeople,
   onUpdateTask,
@@ -155,6 +162,107 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   const [personPhones, setPersonPhones] = useState<string[]>(['']);
   const [personNotes, setPersonNotes] = useState('');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+
+  // Voice dictation (SpeechRecognition) for notes
+  const { lang } = useLanguage();
+  const [listeningField, setListeningField] = useState<'title' | 'desc' | 'personNotes' | null>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const stopVoiceInput = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+    setListeningField(null);
+  };
+
+  useEffect(() => {
+    if (!isModalOpen && !isPersonModalOpen) {
+      stopVoiceInput();
+      setVoiceError(null);
+    }
+  }, [isModalOpen, isPersonModalOpen]);
+
+  useEffect(() => {
+    return () => {
+      stopVoiceInput();
+    };
+  }, []);
+
+  const toggleVoiceInput = (field: 'title' | 'desc' | 'personNotes') => {
+    setVoiceError(null);
+
+    if (!canUseVoiceControl) {
+      setVoiceError(
+        'Функция «Голосовой набор» доступна по разрешению Администратора. Чтобы подключить голосовое управление и диктовку заметок, обратитесь к Администратору.'
+      );
+      return;
+    }
+
+    if (listeningField === field) {
+      stopVoiceInput();
+      return;
+    }
+
+    stopVoiceInput();
+
+    const SpeechRecognitionAPI =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognitionAPI) {
+      setVoiceError('Ваш браузер не поддерживает голосовой набор (рекомендуется Chrome, Edge или Safari).');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognitionAPI();
+      recognition.lang = lang === 'ua' ? 'uk-UA' : lang === 'en' ? 'en-US' : 'ru-RU';
+      recognition.continuous = true;
+      recognition.interimResults = false;
+
+      recognition.onresult = (event: any) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + ' ';
+          }
+        }
+        const cleaned = finalTranscript.trim();
+        if (!cleaned) return;
+
+        if (field === 'title') {
+          setTaskTitle((prev) => (prev.trim() ? `${prev.trim()} ${cleaned}` : cleaned));
+        } else if (field === 'desc') {
+          setTaskDesc((prev) => (prev.trim() ? `${prev.trim()} ${cleaned}` : cleaned));
+        } else if (field === 'personNotes') {
+          setPersonNotes((prev) => (prev.trim() ? `${prev.trim()} ${cleaned}` : cleaned));
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        if (event.error === 'not-allowed') {
+          setVoiceError('Доступ к микрофону запрещён. Разрешите использование микрофона в браузере.');
+        } else if (event.error !== 'aborted' && event.error !== 'no-speech') {
+          setVoiceError('Не удалось распознать речь. Попробуйте ещё раз.');
+        }
+        setListeningField(null);
+      };
+
+      recognition.onend = () => {
+        setListeningField((current) => (current === field ? null : current));
+      };
+
+      recognitionRef.current = recognition;
+      setListeningField(field);
+      recognition.start();
+    } catch (err) {
+      setVoiceError('Не удалось запустить голосовой ввод.');
+      setListeningField(null);
+    }
+  };
 
   // Телефонная книга search
   const [phonebookSearch, setPhonebookSearch] = useState('');
@@ -873,10 +981,61 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
             </div>
 
             <form onSubmit={handleSaveTask} className="space-y-3">
+              {voiceError && (
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-[11px] font-semibold flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>{voiceError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setVoiceError(null)}
+                      className="text-amber-600 hover:text-amber-900 font-bold"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {!canUseVoiceControl && onOpenWriteToAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsModalOpen(false);
+                        onOpenWriteToAdmin();
+                      }}
+                      className="self-start px-2.5 py-1 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold text-[10px] cursor-pointer"
+                    >
+                      Написать администратору
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Название <span className="text-rose-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block">
+                    Название <span className="text-rose-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => toggleVoiceInput('title')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      listeningField === 'title'
+                        ? 'bg-rose-600 text-white animate-pulse shadow-xs'
+                        : 'bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200'
+                    }`}
+                    title="Надиктовать название заметки голосом"
+                  >
+                    {listeningField === 'title' ? (
+                      <>
+                        <MicOff className="w-3.5 h-3.5" />
+                        <span>Остановить запись...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="w-3.5 h-3.5 text-purple-700" />
+                        <span>Голосовой набор</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <input
                   type="text"
                   required
@@ -933,9 +1092,33 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Описание / подробности
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block">
+                    Описание / подробности
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => toggleVoiceInput('desc')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      listeningField === 'desc'
+                        ? 'bg-rose-600 text-white animate-pulse shadow-xs'
+                        : 'bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200'
+                    }`}
+                    title="Надиктовать текст заметки голосом"
+                  >
+                    {listeningField === 'desc' ? (
+                      <>
+                        <MicOff className="w-3.5 h-3.5" />
+                        <span>Остановить запись...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="w-3.5 h-3.5 text-purple-700" />
+                        <span>Голосовой набор</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <textarea
                   rows={3}
                   value={taskDesc}
@@ -943,6 +1126,12 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                   placeholder="Дополнительные детали..."
                   className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium"
                 />
+                {listeningField && (
+                  <p className="text-[10px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
+                    <span>Говорите в микрофон — речь автоматически преобразуется в текст...</span>
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-purple-100">
@@ -988,6 +1177,33 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
             </div>
 
             <form onSubmit={handleSavePerson} className="space-y-3">
+              {voiceError && (
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-[11px] font-semibold flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>{voiceError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setVoiceError(null)}
+                      className="text-amber-600 hover:text-amber-900 font-bold"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {!canUseVoiceControl && onOpenWriteToAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsPersonModalOpen(false);
+                        onOpenWriteToAdmin();
+                      }}
+                      className="self-start px-2.5 py-1 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold text-[10px] cursor-pointer"
+                    >
+                      Написать администратору
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="font-bold text-slate-700 block mb-1">
                   ФИО <span className="text-rose-500">*</span>
@@ -1056,9 +1272,33 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Заметки
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block">
+                    Заметки
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => toggleVoiceInput('personNotes')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      listeningField === 'personNotes'
+                        ? 'bg-rose-600 text-white animate-pulse shadow-xs'
+                        : 'bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200'
+                    }`}
+                    title="Надиктовать заметку голосом"
+                  >
+                    {listeningField === 'personNotes' ? (
+                      <>
+                        <MicOff className="w-3.5 h-3.5" />
+                        <span>Остановить запись...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="w-3.5 h-3.5 text-purple-700" />
+                        <span>Голосовой набор</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <textarea
                   rows={2}
                   value={personNotes}

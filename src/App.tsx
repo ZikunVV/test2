@@ -59,9 +59,11 @@ import {
   DatabaseBackupModal,
   DatabaseBackupPayload,
 } from './components/DatabaseBackupModal';
+import { VoiceControlModal } from './components/VoiceControlModal';
 
 import {
   Search,
+  Mic,
 } from 'lucide-react';
 
 function loadStorage<T>(key: string, fallback: T): T {
@@ -353,6 +355,7 @@ export default function App() {
   const canEditPeople = hasPermission('internal');
   const canDeletePeople = hasPermission('delete_employee') || hasPermission('internal');
   const canViewPersonalTasks = hasPermission('my_tasks_view');
+  const canUseVoiceControl = hasPermission('voice_control');
 
   // Planned ticket modal prefill state
   const [newTicketPrefilledDate, setNewTicketPrefilledDate] = useState<
@@ -746,6 +749,8 @@ export default function App() {
   const [isDownloadingProject, setIsDownloadingProject] =
     useState<boolean>(false);
   const [isNotificationsOpen, setIsNotificationsOpen] =
+    useState<boolean>(false);
+  const [isVoiceControlOpen, setIsVoiceControlOpen] =
     useState<boolean>(false);
   const [isInsightsOpen, setIsInsightsOpen] = useState<boolean>(false);
 
@@ -1460,6 +1465,7 @@ export default function App() {
             'audit',
             'notifications',
             'messages',
+            'voice_control',
             'admin',
           ];
         } else if (role === 'editor' && u.role === 'viewer') {
@@ -1847,6 +1853,7 @@ export default function App() {
               onBackClick={handleResetFilters}
               onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               onOpenNotifications={() => setIsNotificationsOpen(true)}
+              onOpenVoiceControl={() => setIsVoiceControlOpen(true)}
               unreadCount={unreadNotificationsCount}
               isAdmin={isAdmin}
               onOpenBackupModal={isAdmin ? () => setIsBackupModalOpen(true) : undefined}
@@ -1936,6 +1943,8 @@ export default function App() {
                   gradient={currentGradient}
                   showFlatFallback={showFlatFallback}
                   currentUser={canViewPersonalTasks ? currentUser : undefined}
+                  canUseVoiceControl={canUseVoiceControl}
+                  onOpenWriteToAdmin={() => setIsAdminMessagesOpen(true)}
                   tasks={personalTasks}
                   personalPeople={personalPeople}
                   onUpdateTask={handleUpdatePersonalTask}
@@ -2044,13 +2053,22 @@ export default function App() {
                       </h1>
                     </div>
 
-                    {/* Action Button: "Заявка" (только с разрешением на подачу заявки) */}
-                    {canCreateTicket && (
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        {/* ЗАЯВКА BUTTON WITH SELECTED GRADIENT */}
+                    {/* Action Buttons on Home ("Главная"): "Голосовой набор" + "Подать заявку" */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsVoiceControlOpen(true)}
+                        className="px-4 py-2.5 rounded-xl text-xs font-extrabold text-purple-950 bg-purple-100 hover:bg-purple-200 border border-purple-300 transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] shadow-2xs cursor-pointer"
+                        title="Голосовой набор заметки и голосовая навигация по разделам сайта"
+                      >
+                        <Mic className="w-4 h-4 text-purple-700 shrink-0" />
+                        <span>Голосовой набор</span>
+                      </button>
+
+                      {canCreateTicket && (
                         <button
                           onClick={() => setIsNewTicketModalOpen(true)}
-                          className="group relative px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all duration-200 flex items-center justify-center hover:scale-[1.02] active:scale-[0.98] overflow-hidden shadow-sm"
+                          className="group relative px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all duration-200 flex items-center justify-center hover:scale-[1.02] active:scale-[0.98] overflow-hidden shadow-sm cursor-pointer"
                           style={{
                             background: showFlatFallback
                               ? '#7652B5'
@@ -2063,8 +2081,8 @@ export default function App() {
                           <div className="absolute inset-0 opacity-25 pointer-events-none bg-gradient-to-b from-white to-transparent" />
                           <span className="tracking-wide">Подать заявку</span>
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
 
                   {/* 4. STAT SUMMARY CARDS ("В работе", "В ожидании", "Выполнено") */}
@@ -2274,6 +2292,24 @@ export default function App() {
         onMarkAllAsRead={() =>
           setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })))
         }
+      />
+
+      {/* Voice Control & Quick Voice Note Modal */}
+      <VoiceControlModal
+        isOpen={isVoiceControlOpen}
+        onClose={() => setIsVoiceControlOpen(false)}
+        theme={theme}
+        gradient={currentGradient}
+        showFlatFallback={showFlatFallback}
+        currentUser={currentUser}
+        canUseVoiceControl={canUseVoiceControl}
+        canCreateTicket={canCreateTicket}
+        canViewPersonalTasks={canViewPersonalTasks}
+        onNavigate={(navId) => handleSelectNav(navId)}
+        onOpenNewTicket={() => setIsNewTicketModalOpen(true)}
+        onCreatePersonalTask={handleCreatePersonalTask}
+        onSetHomeSearch={(q) => setSearchQuery(q)}
+        onOpenWriteToAdmin={() => setIsAdminMessagesOpen(true)}
       />
 
       {/* Database Backup & Export / Import Modal (Only for Chief Administrator) */}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ThemeConfig, GradientOption, UserItem } from '../types';
 import { useLanguage } from '../utils/i18n';
 import { PWAInstallButton } from './PWAInstallButton';
-import { ArrowLeft, Globe, ChevronDown, Menu, User, Bell, Database, FolderDown } from 'lucide-react';
+import { ArrowLeft, Globe, ChevronDown, Menu, User, Bell, Database, FolderDown, Mic } from 'lucide-react';
 
 interface HeaderProps {
   theme: ThemeConfig;
@@ -11,6 +11,7 @@ interface HeaderProps {
   onBackClick: () => void;
   onToggleMobileMenu: () => void;
   onOpenNotifications: () => void;
+  onOpenVoiceControl?: () => void;
   unreadCount: number;
   isAdmin?: boolean;
   onOpenBackupModal?: () => void;
@@ -26,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   onBackClick,
   onToggleMobileMenu,
   onOpenNotifications,
+  onOpenVoiceControl,
   unreadCount,
   isAdmin = false,
   onOpenBackupModal,
@@ -38,13 +40,13 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header
-      className="px-6 py-3.5 border-b flex items-center justify-between gap-4 transition-colors sticky top-0 z-20 backdrop-blur-sm bg-white/95"
+      className="px-4 sm:px-6 py-3.5 border-b flex items-center justify-between gap-2 sm:gap-4 transition-colors sticky top-0 z-20 backdrop-blur-sm bg-white/95"
       style={{
         borderColor: theme.keyColors.cardBorder,
       }}
     >
-      {/* Left: Mobile trigger */}
-      <div className="flex items-center gap-3">
+      {/* Left: Mobile trigger + Quick Voice Button on mobile */}
+      <div className="flex items-center gap-2">
         <button
           onClick={onToggleMobileMenu}
           className="p-1.5 rounded-lg lg:hidden text-slate-500 hover:text-slate-800"
@@ -52,6 +54,18 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Menu className="w-5 h-5" />
         </button>
+
+        {onOpenVoiceControl && (
+          <button
+            type="button"
+            onClick={onOpenVoiceControl}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-950 border border-purple-300 font-bold text-xs transition-all cursor-pointer active:scale-95 shadow-2xs"
+            title="Голосовой набор заметок и голосовая навигация по сайту"
+          >
+            <Mic className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+            <span className="hidden xs:inline sm:inline">Голосовой набор</span>
+          </button>
+        )}
       </div>
 
       {/* Right controls: Back button, Display Settings, Notifications, Language, User */}

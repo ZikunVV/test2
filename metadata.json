@@ -1,6 +1,6 @@
 {
   "name": "WORK FLOW — Редизайн ЖКХ Контроль",
   "description": "Панель управления заявками ЖКХ со стилистикой и 4 цветовыми вариантами в палитре мягкого фиолетового.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
