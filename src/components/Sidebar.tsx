@@ -20,6 +20,8 @@ import {
   ChevronDown,
   Shield,
   Building,
+  Sliders,
+  Volume2,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -62,6 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { t } = useLanguage();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
+  const [settingsFolderOpen, setSettingsFolderOpen] = useState(false);
   const userSurname = getUserSurname(currentUser);
 
   const canSwitchOrganizations =
@@ -316,6 +319,71 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               );
             })}
+
+            {/* Отдельно вынесенная активная кнопка "Настройки" и внутри неё папка "Звуки" */}
+            <div className="pt-2 mt-2 border-t border-purple-200/70 space-y-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSettingsFolderOpen((prev) => !prev);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all group cursor-pointer ${
+                  activeNav === 'sounds' || settingsFolderOpen
+                    ? 'bg-purple-100/90 text-purple-950 border border-purple-300/80 shadow-2xs'
+                    : 'text-slate-800 hover:text-slate-950 hover:bg-white/80 border border-transparent'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Sliders className="w-4 h-4 text-purple-700 stroke-[2.2] transition-transform group-hover:scale-110" />
+                  <span className="tracking-tight">{t('Настройки')}</span>
+                </div>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-purple-700 transition-transform duration-200 ${
+                    settingsFolderOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {settingsFolderOpen && (
+                <div className="pl-3.5 pr-0.5 py-0.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectNav('sounds');
+                      onCloseMobile();
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all group relative overflow-hidden cursor-pointer ${
+                      activeNav === 'sounds'
+                        ? 'text-white shadow-sm'
+                        : 'text-slate-700 hover:text-slate-950 bg-white/50 hover:bg-white/90 border border-purple-200/60'
+                    }`}
+                    style={{
+                      background:
+                        activeNav === 'sounds'
+                          ? showFlatFallback
+                            ? '#7652B5'
+                            : gradient.activeItemGradient
+                          : undefined,
+                      boxShadow:
+                        activeNav === 'sounds' && !showFlatFallback
+                          ? gradient.buttonShadow
+                          : 'none',
+                    }}
+                  >
+                    <div className="flex items-center gap-2 z-10">
+                      <Volume2
+                        className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                          activeNav === 'sounds'
+                            ? 'text-white stroke-[2.5]'
+                            : 'text-purple-700 stroke-2'
+                        }`}
+                      />
+                      <span className="tracking-tight">{t('Звуки')}</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </nav>
         </div>
 

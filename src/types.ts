@@ -172,6 +172,9 @@ export interface PersonalTask {
   status: 'pending' | 'in_progress' | 'completed';
   owner_user_id?: number;
   owner_surname?: string; // неизменяемый статус «фамилия учётной записи»
+  reminder_at_iso?: string; // ISO время срабатывания звукового напоминания
+  reminder_time_label?: string; // Человекочитаемое время напоминания (например, «12:00» или «Сегодня в 14:30»)
+  reminder_fired?: boolean; // Флаг, что звуковое напоминание уже прозвучало
 }
 
 export interface PersonalPerson {

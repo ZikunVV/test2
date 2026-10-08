@@ -55,6 +55,17 @@ import { PeopleView } from './components/views/PeopleView';
 import { SearchView } from './components/views/SearchView';
 import { InternalView } from './components/views/InternalView';
 import { AdminView } from './components/views/AdminView';
+import { SoundSettingsView } from './components/views/SoundSettingsView';
+import {
+  UserSoundSettings,
+  AlertEventType,
+  loadUserSoundSettings,
+  saveUserSoundSettings,
+  playSoundVariant,
+  speakAlertText,
+  triggerDeviceVibration,
+  sendBrowserNotification,
+} from './utils/soundAlerts';
 import {
   DatabaseBackupModal,
   DatabaseBackupPayload,
@@ -64,6 +75,10 @@ import { VoiceControlModal } from './components/VoiceControlModal';
 import {
   Search,
   Mic,
+  Volume2,
+  AlertTriangle,
+  Bell,
+  X,
 } from 'lucide-react';
 
 function loadStorage<T>(key: string, fallback: T): T {
@@ -371,6 +386,90 @@ export default function App() {
     loadStorage('app_admin_messages', [])
   );
 
+  // Per-user Sound & Alert Signal settings (stored per user ID)
+  const [soundSettings, setSoundSettings] = useState<UserSoundSettings>(() =>
+    loadUserSoundSettings(currentUserId)
+  );
+  const [activeAlertToast, setActiveAlertToast] = useState<{
+    id: string;
+    type: AlertEventType;
+    title: string;
+    description: string;
+  } | null>(null);
+  const soundSettingsRef = useRef<UserSoundSettings>(soundSettings);
+  useEffect(() => {
+    soundSettingsRef.current = soundSettings;
+  }, [soundSettings]);
+
+  useEffect(() => {
+    setSoundSettings(loadUserSoundSettings(currentUserId));
+  }, [currentUserId]);
+
+  const handleUpdateSoundSettings = (next: UserSoundSettings) => {
+    setSoundSettings(next);
+    saveUserSoundSettings(currentUserId, next);
+  };
+
+  const triggerAlertSignal = (
+    type: AlertEventType,
+    title: string,
+    description: string,
+    forceTest: boolean = false
+  ) => {
+    const cfg = soundSettingsRef.current;
+    if (!forceTest && !cfg.masterEnabled) return;
+
+    const isEventEnabled =
+      forceTest ||
+      (type === 'new_ticket' && cfg.enableNewTicket) ||
+      (type === 'urgent_ticket' && cfg.enableUrgentTicket) ||
+      (type === 'ticket_status' && cfg.enableTicketStatus) ||
+      (type === 'new_message' && cfg.enableNewMessage) ||
+      (type === 'personal_task' && cfg.enablePersonalTask);
+
+    if (!isEventEnabled) return;
+
+    const variantId =
+      type === 'urgent_ticket'
+        ? cfg.urgentSoundVariant
+        : type === 'ticket_status'
+        ? cfg.statusSoundVariant
+        : type === 'new_message'
+        ? cfg.messageSoundVariant
+        : type === 'personal_task'
+        ? cfg.taskSoundVariant
+        : cfg.normalSoundVariant;
+
+    if (cfg.masterEnabled || forceTest) {
+      playSoundVariant(variantId, cfg.volume);
+    }
+
+    if (cfg.enableVibration) {
+      triggerDeviceVibration(type === 'urgent_ticket');
+    }
+
+    if (cfg.enableVoiceAnnounce) {
+      speakAlertText(`${title}. ${description}`, cfg.volume);
+    }
+
+    if (cfg.enableBrowserPush) {
+      sendBrowserNotification(title, description);
+    }
+
+    if (cfg.enableVisualBanner || forceTest) {
+      const toastId = `alert-${Date.now()}`;
+      setActiveAlertToast({
+        id: toastId,
+        type,
+        title,
+        description,
+      });
+      setTimeout(() => {
+        setActiveAlertToast((prev) => (prev?.id === toastId ? null : prev));
+      }, 6500);
+    }
+  };
+
   useEffect(() => {
     try {
       localStorage.setItem('app_admin_messages', JSON.stringify(adminMessages));
@@ -429,7 +528,33 @@ export default function App() {
             setOrganizations(cloudData.organizations);
           }
           if (cloudData.houses) setHouses(cloudData.houses);
-          if (cloudData.tickets) setTickets(cloudData.tickets);
+          if (cloudData.tickets) {
+            if (initialCloudCheckDoneRef.current) {
+              setTickets((prevTickets) => {
+                const prevIds = new Set(prevTickets.map((t) => t.id));
+                const newlyAdded = cloudData.tickets!.filter((t) => !prevIds.has(t.id));
+                if (newlyAdded.length > 0) {
+                  const latest = newlyAdded[0];
+                  const isUrgent =
+                    latest.urgency === 'critical' ||
+                    latest.urgency === 'high' ||
+                    (latest.title || '').toLowerCase().includes('авар');
+                  setTimeout(() => {
+                    triggerAlertSignal(
+                      isUrgent ? 'urgent_ticket' : 'new_ticket',
+                      isUrgent
+                        ? 'Внимание! Новая аварийная заявка'
+                        : 'Поступила новая заявка',
+                      `${latest.number}: ${latest.title} (${latest.address})`
+                    );
+                  }, 100);
+                }
+                return cloudData.tickets!;
+              });
+            } else {
+              setTickets(cloudData.tickets);
+            }
+          }
           if (cloudData.streets && cloudData.streets.length > 0) {
             setStreets(cloudData.streets);
           }
@@ -445,7 +570,29 @@ export default function App() {
           if (cloudData.personalTasks) setPersonalTasks(cloudData.personalTasks);
           if (cloudData.personalPeople) setPersonalPeople(cloudData.personalPeople);
           if (cloudData.auditLogs) setAuditLogs(cloudData.auditLogs);
-          if (cloudData.adminMessages) setAdminMessages(cloudData.adminMessages);
+          if (cloudData.adminMessages) {
+            if (initialCloudCheckDoneRef.current) {
+              setAdminMessages((prevMsgs) => {
+                const prevIds = new Set(prevMsgs.map((m) => m.id));
+                const newlyAdded = cloudData.adminMessages!.filter(
+                  (m) => !prevIds.has(m.id)
+                );
+                if (newlyAdded.length > 0) {
+                  const latest = newlyAdded[0];
+                  setTimeout(() => {
+                    triggerAlertSignal(
+                      'new_message',
+                      `Новое сообщение: ${latest.subject}`,
+                      `${latest.senderName}: ${latest.text}`
+                    );
+                  }, 100);
+                }
+                return cloudData.adminMessages!;
+              });
+            } else {
+              setAdminMessages(cloudData.adminMessages);
+            }
+          }
 
           try {
             if (cloudData.organizations) {
@@ -606,6 +753,11 @@ export default function App() {
       },
       ...prev,
     ]);
+    triggerAlertSignal(
+      'new_message',
+      `Новое сообщение: ${subject}`,
+      `${currentUser.full_name}: ${text}`
+    );
   };
 
   const handleReplyAdminMessage = (id: string, replyText: string) => {
@@ -620,6 +772,11 @@ export default function App() {
             }
           : m
       )
+    );
+    triggerAlertSignal(
+      'new_message',
+      'Ответ администратора',
+      replyText
     );
   };
 
@@ -707,6 +864,66 @@ export default function App() {
       localStorage.setItem('app_personal_tasks', JSON.stringify(personalTasks));
     } catch (e) {}
   }, [personalTasks]);
+
+  // Фоновый таймер звуковых напоминаний («Напомни мне через два часа», «Напомни в 12:00»)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const checkDueReminders = () => {
+      const nowMs = Date.now();
+      let hasTriggered = false;
+      const firedTasks: PersonalTask[] = [];
+
+      setPersonalTasks((prev) => {
+        const next = prev.map((task) => {
+          if (
+            task.status !== 'completed' &&
+            !task.reminder_fired &&
+            task.reminder_at_iso &&
+            (task.owner_user_id === currentUser.id ||
+              (task.owner_user_id === undefined && currentUser.id === 1))
+          ) {
+            const targetMs = new Date(task.reminder_at_iso).getTime();
+            if (!isNaN(targetMs) && nowMs >= targetMs) {
+              hasTriggered = true;
+              firedTasks.push(task);
+              return { ...task, reminder_fired: true };
+            }
+          }
+          return task;
+        });
+        return hasTriggered ? next : prev;
+      });
+
+      if (firedTasks.length > 0) {
+        const latest = firedTasks[0];
+        const cleanTitle = latest.title.replace(/^🔔\s*/, '');
+        triggerAlertSignal(
+          'personal_task',
+          `🔔 Звуковое напоминание: ${cleanTitle}`,
+          latest.reminder_time_label
+            ? `Время напоминания (${latest.reminder_time_label}): ${cleanTitle}`
+            : cleanTitle,
+          true
+        );
+
+        setNotifications((prev) => [
+          {
+            id: `rem-${Date.now()}`,
+            time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+            title: `🔔 Напоминание: ${cleanTitle}`,
+            description: latest.description || 'Сработало голосовое звуковое напоминание',
+            unread: true,
+            type: 'urgent',
+          },
+          ...prev,
+        ]);
+      }
+    };
+
+    const intervalId = setInterval(checkDueReminders, 5000);
+    return () => clearInterval(intervalId);
+  }, [currentUser, soundSettings]);
 
   useEffect(() => {
     try {
@@ -979,6 +1196,18 @@ export default function App() {
       },
       ...prev,
     ]);
+
+    const isUrgent =
+      newTicket.urgency === 'critical' ||
+      newTicket.urgency === 'high' ||
+      newTicket.title.toLowerCase().includes('авар') ||
+      newTicket.title.toLowerCase().includes('прорыв');
+
+    triggerAlertSignal(
+      isUrgent ? 'urgent_ticket' : 'new_ticket',
+      isUrgent ? 'Внимание! Аварийная заявка' : 'Новая заявка создана',
+      `${newTicket.number}: ${newTicket.title} (${newTicket.address})`
+    );
   };
 
   const handleOpenEditTicket = (ticket: Ticket) => {
@@ -1083,9 +1312,12 @@ export default function App() {
       },
       ...prev,
     ]);
+    triggerAlertSignal(
+      'ticket_status',
+      'Сдан отчёт сотрудника',
+      `${currentUser.full_name}: ${reportText}`
+    );
   };
-
-  // Admin Withdraw ticket
   const handleWithdrawTicket = (
     ticketId: string,
     adminName: string,
@@ -1353,6 +1585,11 @@ export default function App() {
       return;
     }
     setPersonalTasks((prev) => [newTask, ...prev]);
+    triggerAlertSignal(
+      'personal_task',
+      'Личный список дел',
+      `Добавлена запись: ${newTask.title}`
+    );
   };
 
   const handleDeletePersonalTask = (id: string) => {
@@ -2033,6 +2270,50 @@ export default function App() {
                 />
               )}
 
+              {/* VIEW: SETTINGS -> SOUNDS (НАСТРОЙКИ -> ПАПКА "ЗВУКИ") */}
+              {activeSidebarNav === 'sounds' && (
+                <SoundSettingsView
+                  theme={theme}
+                  gradient={currentGradient}
+                  showFlatFallback={showFlatFallback}
+                  currentUser={currentUser}
+                  soundSettings={soundSettings}
+                  onUpdateSoundSettings={handleUpdateSoundSettings}
+                  onTriggerTestAlert={(type) => {
+                    if (type === 'urgent_ticket') {
+                      triggerAlertSignal(
+                        'urgent_ticket',
+                        'Тест: Внимание! Аварийная заявка',
+                        'Прорыв трубы ХВС по адресу ул. Шевченко, 10',
+                        true
+                      );
+                    } else if (type === 'new_message') {
+                      triggerAlertSignal(
+                        'new_message',
+                        'Тест: Новое сообщение',
+                        'Проверка звукового сигнала входящего сообщения',
+                        true
+                      );
+                    } else if (type === 'personal_task') {
+                      triggerAlertSignal(
+                        'personal_task',
+                        'Тест: Личный список дел',
+                        'Напоминание о запланированной задаче',
+                        true
+                      );
+                    } else {
+                      triggerAlertSignal(
+                        'new_ticket',
+                        'Тест: Новая заявка создана',
+                        'Проверка выбранной мелодии оповещения',
+                        true
+                      );
+                    }
+                  }}
+                  onBackToHome={() => setActiveSidebarNav('home')}
+                />
+              )}
+
               {/* VIEW: HOME (ГЛАВНАЯ СТРАНИЦА: СПИСОК РАБОТ) */}
               {activeSidebarNav === 'home' && (
                 <>
@@ -2352,6 +2633,86 @@ export default function App() {
         onToggleResolved={handleToggleAdminMessageResolved}
         onDeleteMessage={handleDeleteAdminMessage}
       />
+
+      {/* Visual Signal-Alert Banner (Всплывающий сигнал-оповещение сверху экрана) */}
+      {activeAlertToast && (
+        <div className="fixed top-4 right-4 left-4 sm:left-auto sm:w-96 z-50 animate-in fade-in slide-in-from-top-4 duration-200">
+          <div
+            className={`rounded-2xl p-4 shadow-2xl border-2 flex items-start gap-3 ${
+              activeAlertToast.type === 'urgent_ticket'
+                ? 'bg-rose-600 text-white border-rose-300'
+                : 'bg-white text-slate-900 border-purple-400'
+            }`}
+          >
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                activeAlertToast.type === 'urgent_ticket'
+                  ? 'bg-white/20 text-white animate-bounce'
+                  : 'bg-purple-100 text-purple-800'
+              }`}
+            >
+              {activeAlertToast.type === 'urgent_ticket' ? (
+                <AlertTriangle className="w-5 h-5" />
+              ) : (
+                <Bell className="w-5 h-5" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <span
+                  className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                    activeAlertToast.type === 'urgent_ticket'
+                      ? 'bg-white/25 text-white'
+                      : 'bg-purple-100 text-purple-900'
+                  }`}
+                >
+                  Сигнал-оповещение
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveAlertToast(null)}
+                  className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                    activeAlertToast.type === 'urgent_ticket'
+                      ? 'hover:bg-white/20 text-white'
+                      : 'hover:bg-slate-100 text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="text-sm font-black mt-1 leading-snug">
+                {activeAlertToast.title}
+              </div>
+              <div
+                className={`text-xs mt-0.5 line-clamp-2 ${
+                  activeAlertToast.type === 'urgent_ticket'
+                    ? 'text-rose-100'
+                    : 'text-slate-600'
+                }`}
+              >
+                {activeAlertToast.description}
+              </div>
+              <div className="mt-2.5 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveSidebarNav('sounds');
+                    setActiveAlertToast(null);
+                  }}
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer ${
+                    activeAlertToast.type === 'urgent_ticket'
+                      ? 'bg-white text-rose-700 hover:bg-rose-50'
+                      : 'bg-purple-100 text-purple-900 hover:bg-purple-200'
+                  }`}
+                >
+                  <Volume2 className="w-3 h-3" />
+                  <span>Настроить звуки</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* PWA Offline Indicator */}
       <OfflineIndicator />

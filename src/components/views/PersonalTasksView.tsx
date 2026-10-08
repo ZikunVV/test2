@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ThemeConfig, GradientOption, PersonalTask, PersonalPerson, UserItem } from '../../types';
 import { getUserSurname } from '../../utils/userUtils';
 import { useLanguage } from '../../utils/i18n';
+import { parseVoiceReminderCommand } from '../../utils/voiceReminderParser';
 import {
   CheckSquare,
   FileText,
@@ -13,6 +14,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock,
+  BellRing,
   Trash2,
   X,
   Check,
@@ -149,6 +151,7 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   const [editingTask, setEditingTask] = useState<PersonalTask | null>(null);
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDate, setTaskDate] = useState('');
+  const [taskReminderTime, setTaskReminderTime] = useState('');
   const [taskDesc, setTaskDesc] = useState('');
   const [taskStatus, setTaskStatus] = useState<'pending' | 'in_progress' | 'completed'>('pending');
 
@@ -234,7 +237,17 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
         if (!cleaned) return;
 
         if (field === 'title') {
-          setTaskTitle((prev) => (prev.trim() ? `${prev.trim()} ${cleaned}` : cleaned));
+          const parsedRem = parseVoiceReminderCommand(cleaned);
+          if (parsedRem) {
+            setTaskTitle(`🔔 ${parsedRem.title}`);
+            setTaskDate(parsedRem.taskDateIso);
+            const dt = new Date(parsedRem.reminderAtIso);
+            setTaskReminderTime(
+              `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
+            );
+          } else {
+            setTaskTitle((prev) => (prev.trim() ? `${prev.trim()} ${cleaned}` : cleaned));
+          }
         } else if (field === 'desc') {
           setTaskDesc((prev) => (prev.trim() ? `${prev.trim()} ${cleaned}` : cleaned));
         } else if (field === 'personNotes') {
@@ -285,6 +298,7 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
     setEditingTask(null);
     setTaskTitle('');
     setTaskDate(prefilledDate || '');
+    setTaskReminderTime('');
     setTaskDesc('');
     setTaskStatus('pending');
     setIsModalOpen(true);
@@ -295,6 +309,18 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
     setEditingTask(task);
     setTaskTitle(task.title);
     setTaskDate(task.task_date || '');
+    if (task.reminder_at_iso) {
+      const dt = new Date(task.reminder_at_iso);
+      if (!isNaN(dt.getTime())) {
+        setTaskReminderTime(
+          `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
+        );
+      } else {
+        setTaskReminderTime('');
+      }
+    } else {
+      setTaskReminderTime('');
+    }
     setTaskDesc(task.description);
     setTaskStatus(task.status);
     setIsModalOpen(true);
@@ -304,25 +330,53 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
     e.preventDefault();
     if (!taskTitle.trim() || !currentUser) return;
 
+    let finalDate = taskDate.trim();
+    let reminderAtIso: string | undefined;
+    let reminderLabel: string | undefined;
+
+    if (taskReminderTime.trim()) {
+      const now = new Date();
+      const [hhStr, mmStr] = taskReminderTime.trim().split(':');
+      const hh = parseInt(hhStr || '0', 10);
+      const mm = parseInt(mmStr || '0', 10);
+      const target = finalDate ? new Date(`${finalDate}T00:00:00`) : new Date(now);
+      target.setHours(hh, mm, 0, 0);
+      if (!finalDate && target.getTime() <= now.getTime() - 60 * 1000) {
+        target.setDate(target.getDate() + 1);
+      }
+      const yyyy = target.getFullYear();
+      const mo = String(target.getMonth() + 1).padStart(2, '0');
+      const dd = String(target.getDate()).padStart(2, '0');
+      finalDate = `${yyyy}-${mo}-${dd}`;
+      reminderAtIso = target.toISOString();
+      reminderLabel = `${finalDate} в ${taskReminderTime.trim()}`;
+    }
+
     if (editingTask) {
       onUpdateTask({
         ...editingTask,
         title: taskTitle.trim(),
-        task_date: taskDate.trim(),
+        task_date: finalDate,
         description: taskDesc.trim(),
         status: taskStatus,
         owner_user_id: currentUser.id,
         owner_surname: editingTask.owner_surname || userSurname,
+        reminder_at_iso: reminderAtIso,
+        reminder_time_label: reminderLabel,
+        reminder_fired: reminderAtIso ? false : undefined,
       });
     } else {
       const newTask: PersonalTask = {
         id: `pt-${Date.now()}`,
         title: taskTitle.trim(),
-        task_date: taskDate.trim(),
+        task_date: finalDate,
         description: taskDesc.trim(),
         status: taskStatus,
         owner_user_id: currentUser.id,
         owner_surname: userSurname,
+        reminder_at_iso: reminderAtIso,
+        reminder_time_label: reminderLabel,
+        reminder_fired: reminderAtIso ? false : undefined,
       };
       onCreateTask(newTask);
     }
@@ -736,6 +790,19 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                             </span>
                           )}
 
+                          {task.reminder_time_label && (
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-md font-bold flex items-center gap-1 border ${
+                                task.reminder_fired
+                                  ? 'bg-slate-100 text-slate-500 border-slate-200'
+                                  : 'bg-amber-100 text-amber-950 border-amber-300'
+                              }`}
+                            >
+                              <BellRing className="w-3 h-3 text-amber-600" />
+                              <span>Сигнал: {task.reminder_time_label}</span>
+                            </span>
+                          )}
+
                           {task.status === 'completed' ? (
                             <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -1061,12 +1128,33 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                     </button>
                   )}
                 </div>
-                <input
-                  type="date"
-                  value={taskDate}
-                  onChange={(e) => setTaskDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium bg-white"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <input
+                      type="date"
+                      value={taskDate}
+                      onChange={(e) => setTaskDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium bg-white"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="time"
+                        value={taskReminderTime}
+                        onChange={(e) => setTaskReminderTime(e.target.value)}
+                        title="Время звукового напоминания"
+                        className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+                {taskReminderTime && (
+                  <p className="text-[10px] text-amber-900 mt-1 font-bold bg-amber-50 px-2 py-1 rounded-md border border-amber-200 flex items-center gap-1">
+                    <BellRing className="w-3 h-3 text-amber-600 shrink-0" />
+                    <span>В {taskReminderTime} прозвучит звуковой сигнал-напоминание</span>
+                  </p>
+                )}
                 {!taskDate && (
                   <p className="text-[10px] text-purple-700 mt-1 font-medium bg-purple-50 px-2 py-1 rounded-md border border-purple-200">
                     Заметка будет создана без даты и видна в разделе «Список заметок».

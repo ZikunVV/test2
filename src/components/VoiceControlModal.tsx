@@ -2,12 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ThemeConfig, GradientOption, UserItem, PersonalTask } from '../types';
 import { getUserSurname } from '../utils/userUtils';
 import { useLanguage } from '../utils/i18n';
+import { parseVoiceReminderCommand } from '../utils/voiceReminderParser';
 import {
   Mic,
   MicOff,
   X,
   Compass,
   FileText,
+  BellRing,
+  Clock,
   Check,
   Sparkles,
   CheckCircle2,
@@ -62,12 +65,13 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
   const { lang } = useLanguage();
   const userSurname = getUserSurname(currentUser);
 
-  const [mode, setMode] = useState<'smart' | 'note'>('smart');
+  const [mode, setMode] = useState<'smart' | 'note' | 'reminder'>('smart');
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [noteTitle, setNoteTitle] = useState('');
   const [noteDesc, setNoteDesc] = useState('');
   const [noteDate, setNoteDate] = useState('');
+  const [reminderTime, setReminderTime] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState<{
     type: 'success' | 'info' | 'error';
     text: string;
@@ -108,6 +112,40 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
     const lower = text.toLowerCase();
 
     if (!lower) return;
+
+    // 0. Voice Sound Reminder Command ("Напомни мне через два часа...", "Напомни в 12 00...", "Напомни через 15 минут...")
+    const parsedReminder = parseVoiceReminderCommand(text);
+    if (parsedReminder) {
+      if (!canViewPersonalTasks || !currentUser) {
+        setFeedbackMsg({
+          type: 'error',
+          text: 'У вас нет доступа к разделу «Личный список дел» для сохранения напоминания.',
+        });
+        return;
+      }
+      const newTask: PersonalTask = {
+        id: `pt-${Date.now()}`,
+        title: `🔔 ${parsedReminder.title}`,
+        task_date: parsedReminder.taskDateIso,
+        description: `Звуковое напоминание назначено на: ${parsedReminder.timeLabel} (из фразы: «${text}»)`,
+        status: 'pending',
+        owner_user_id: currentUser.id,
+        owner_surname: userSurname,
+        reminder_at_iso: parsedReminder.reminderAtIso,
+        reminder_time_label: parsedReminder.timeLabel,
+        reminder_fired: false,
+      };
+      onCreatePersonalTask(newTask);
+      setFeedbackMsg({
+        type: 'success',
+        text: `Звуковое напоминание установлено на ${parsedReminder.timeLabel}: «${parsedReminder.title}»`,
+      });
+      setTimeout(() => {
+        onNavigate('my_tasks');
+        onClose();
+      }, 1600);
+      return;
+    }
 
     // 1. Direct Note Creation Command ("заметка ...", "запиши ...", "нотатка ...", "note ...")
     const noteMatch = text.match(/^(?:заметка|сделать заметку|запиши|записать|нотатка|note)\s+(.+)/i);
@@ -321,6 +359,22 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
     }
 
     if (
+      lower.includes('звук') ||
+      lower.includes('сигнал') ||
+      lower.includes('мелод') ||
+      lower.includes('настройк') ||
+      lower.includes('налаштуван') ||
+      lower.includes('sounds')
+    ) {
+      setFeedbackMsg({ type: 'success', text: 'Открываю «Настройки → Звуки»...' });
+      setTimeout(() => {
+        onNavigate('sounds');
+        onClose();
+      }, 600);
+      return;
+    }
+
+    if (
       lower.includes('админ') ||
       lower.includes('права') ||
       lower.includes('пользовател') ||
@@ -360,7 +414,7 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
     });
   };
 
-  const startListening = (targetMode: 'smart' | 'note' = mode) => {
+  const startListening = (targetMode: 'smart' | 'note' | 'reminder' = mode) => {
     setFeedbackMsg(null);
     stopListening();
 
@@ -395,8 +449,54 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
 
         if (targetMode === 'smart') {
           executeVoiceCommand(cleaned);
+        } else if (targetMode === 'reminder') {
+          const parsed = parseVoiceReminderCommand(
+            cleaned.toLowerCase().includes('напомн') || cleaned.toLowerCase().includes('нагад')
+              ? cleaned
+              : `Напомни ${cleaned}`
+          );
+          if (parsed && currentUser && canViewPersonalTasks) {
+            const newTask: PersonalTask = {
+              id: `pt-${Date.now()}`,
+              title: `🔔 ${parsed.title}`,
+              task_date: parsed.taskDateIso,
+              description: `Звуковое напоминание назначено на: ${parsed.timeLabel}`,
+              status: 'pending',
+              owner_user_id: currentUser.id,
+              owner_surname: userSurname,
+              reminder_at_iso: parsed.reminderAtIso,
+              reminder_time_label: parsed.timeLabel,
+              reminder_fired: false,
+            };
+            onCreatePersonalTask(newTask);
+            setFeedbackMsg({
+              type: 'success',
+              text: `Звуковое напоминание установлено на ${parsed.timeLabel}: «${parsed.title}»`,
+            });
+            setTimeout(() => {
+              onNavigate('my_tasks');
+              onClose();
+            }, 1500);
+          } else {
+            setNoteTitle((prev) => (prev.trim() ? `${prev.trim()} ${cleaned}` : cleaned));
+          }
         } else {
-          setNoteTitle((prev) => (prev.trim() ? `${prev.trim()} ${cleaned}` : cleaned));
+          // Even in 'note' mode, if the user explicitly says "Напомни мне через 2 часа...", parse the time automatically!
+          const maybeReminder = parseVoiceReminderCommand(cleaned);
+          if (maybeReminder) {
+            setNoteTitle(maybeReminder.title);
+            setNoteDate(maybeReminder.taskDateIso);
+            const dt = new Date(maybeReminder.reminderAtIso);
+            setReminderTime(
+              `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
+            );
+            setFeedbackMsg({
+              type: 'info',
+              text: `Распознано время напоминания: ${maybeReminder.timeLabel}. Нажмите «Сохранить»!`,
+            });
+          } else {
+            setNoteTitle((prev) => (prev.trim() ? `${prev.trim()} ${cleaned}` : cleaned));
+          }
         }
       };
 
@@ -435,27 +535,91 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
     e.preventDefault();
     if (!noteTitle.trim() || !currentUser) return;
 
+    let reminderAtIso: string | undefined;
+    let reminderLabel: string | undefined;
+    let finalDate = noteDate.trim();
+
+    if (reminderTime.trim()) {
+      const now = new Date();
+      const [hhStr, mmStr] = reminderTime.trim().split(':');
+      const hh = parseInt(hhStr || '0', 10);
+      const mm = parseInt(mmStr || '0', 10);
+      const target = finalDate ? new Date(`${finalDate}T00:00:00`) : new Date(now);
+      target.setHours(hh, mm, 0, 0);
+      if (!finalDate && target.getTime() <= now.getTime() - 60 * 1000) {
+        target.setDate(target.getDate() + 1);
+      }
+      const yyyy = target.getFullYear();
+      const mo = String(target.getMonth() + 1).padStart(2, '0');
+      const dd = String(target.getDate()).padStart(2, '0');
+      finalDate = `${yyyy}-${mo}-${dd}`;
+      reminderAtIso = target.toISOString();
+      reminderLabel = `${finalDate} в ${reminderTime.trim()}`;
+    }
+
     const newTask: PersonalTask = {
       id: `pt-${Date.now()}`,
-      title: noteTitle.trim(),
-      task_date: noteDate.trim(),
-      description: noteDesc.trim(),
+      title: reminderAtIso && !noteTitle.trim().startsWith('🔔') ? `🔔 ${noteTitle.trim()}` : noteTitle.trim(),
+      task_date: finalDate,
+      description:
+        noteDesc.trim() ||
+        (reminderLabel ? `Звуковое напоминание назначено на: ${reminderLabel}` : ''),
       status: 'pending',
       owner_user_id: currentUser.id,
       owner_surname: userSurname,
+      reminder_at_iso: reminderAtIso,
+      reminder_time_label: reminderLabel,
+      reminder_fired: reminderAtIso ? false : undefined,
     };
 
     onCreatePersonalTask(newTask);
     setNoteTitle('');
     setNoteDesc('');
     setNoteDate('');
+    setReminderTime('');
     setFeedbackMsg({
       type: 'success',
-      text: 'Заметка успешно сохранена в ваш «Личный список дел»!',
+      text: reminderLabel
+        ? `Звуковое напоминание на ${reminderLabel} сохранено!`
+        : 'Заметка успешно сохранена в ваш «Личный список дел»!',
     });
     setTimeout(() => {
       onClose();
-    }, 900);
+    }, 1000);
+  };
+
+  const handleQuickPresetReminder = (minutesFromNow: number, labelText: string) => {
+    if (!currentUser || !canViewPersonalTasks) return;
+    const target = new Date(Date.now() + minutesFromNow * 60 * 1000);
+    const yyyy = target.getFullYear();
+    const mm = String(target.getMonth() + 1).padStart(2, '0');
+    const dd = String(target.getDate()).padStart(2, '0');
+    const hh = String(target.getHours()).padStart(2, '0');
+    const min = String(target.getMinutes()).padStart(2, '0');
+    const timeLabel = `Сегодня в ${hh}:${min}`;
+    const customTitle = noteTitle.trim() || `Напоминание (${labelText})`;
+
+    const newTask: PersonalTask = {
+      id: `pt-${Date.now()}`,
+      title: `🔔 ${customTitle}`,
+      task_date: `${yyyy}-${mm}-${dd}`,
+      description: `Звуковое напоминание назначено на ${timeLabel}`,
+      status: 'pending',
+      owner_user_id: currentUser.id,
+      owner_surname: userSurname,
+      reminder_at_iso: target.toISOString(),
+      reminder_time_label: timeLabel,
+      reminder_fired: false,
+    };
+    onCreatePersonalTask(newTask);
+    setFeedbackMsg({
+      type: 'success',
+      text: `Звуковое напоминание установлено на ${timeLabel}: «${customTitle}»`,
+    });
+    setTimeout(() => {
+      onNavigate('my_tasks');
+      onClose();
+    }, 1300);
   };
 
   if (!isOpen) return null;
@@ -590,15 +754,15 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
           </div>
         ) : (
           <>
-        {/* Mode Switcher: Навигация / Умная команда vs Быстрая голосовая заметка */}
-        <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-purple-50 border border-purple-200/80">
+        {/* Mode Switcher: Навигация / Заметка / Звуковое напоминание */}
+        <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-purple-50 border border-purple-200/80">
           <button
             type="button"
             onClick={() => {
               setMode('smart');
               startListening('smart');
             }}
-            className={`py-1.5 px-2 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer min-w-0 ${
+            className={`py-1.5 px-1.5 rounded-lg font-bold text-[10px] sm:text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer min-w-0 ${
               mode === 'smart'
                 ? 'bg-purple-700 text-white shadow-xs'
                 : 'text-slate-600 hover:text-purple-950'
@@ -610,10 +774,25 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
           <button
             type="button"
             onClick={() => {
+              setMode('reminder');
+              startListening('reminder');
+            }}
+            className={`py-1.5 px-1.5 rounded-lg font-bold text-[10px] sm:text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer min-w-0 ${
+              mode === 'reminder'
+                ? 'bg-purple-700 text-white shadow-xs'
+                : 'text-slate-600 hover:text-purple-950'
+            }`}
+          >
+            <BellRing className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Напоминание</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
               setMode('note');
               startListening('note');
             }}
-            className={`py-1.5 px-2 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer min-w-0 ${
+            className={`py-1.5 px-1.5 rounded-lg font-bold text-[10px] sm:text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer min-w-0 ${
               mode === 'note'
                 ? 'bg-purple-700 text-white shadow-xs'
                 : 'text-slate-600 hover:text-purple-950'
@@ -653,7 +832,9 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
             </div>
             <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 leading-snug break-words">
               {mode === 'smart'
-                ? 'Скажите раздел («Карта», «Дома», «Плановые»), «Подать заявку», «Поиск...» или «Заметка...»'
+                ? 'Скажите раздел («Карта», «Дома»), «Напомни мне через два часа...» или «Напомни в 12 00...»'
+                : mode === 'reminder'
+                ? 'Скажите: «Напомни мне через два часа позвонить мастеру» или «Напомни в 12 00 проверить подвал»'
                 : 'Продиктуйте текст вашей заметки — он запишется в поле ниже'}
             </p>
           </div>
@@ -717,9 +898,78 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
 
             <div className="p-2.5 rounded-xl bg-purple-50/70 border border-purple-200/80 space-y-1 text-[10px] sm:text-[11px] text-slate-600 leading-snug">
               <div className="font-extrabold text-purple-950">Примеры голосовых команд:</div>
+              <div>• <strong>«Напомни мне через два часа»</strong> — звуковой сигнал</div>
+              <div>• <strong>«Напомни в 12 00»</strong> — звуковое напоминание на 12:00</div>
               <div>• <strong>«Подать заявку»</strong> — окно новой заявки</div>
               <div>• <strong>«Поиск Шевченко»</strong> — поиск по адресу</div>
-              <div>• <strong>«Заметка купить кабель»</strong> — создаст заметку</div>
+            </div>
+          </div>
+        ) : mode === 'reminder' ? (
+          <div className="space-y-2.5">
+            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/90 space-y-1.5 text-[10px] sm:text-[11px] text-amber-950">
+              <div className="font-extrabold flex items-center gap-1.5 text-amber-900">
+                <BellRing className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>Голосовое звуковое напоминание:</span>
+              </div>
+              <div>• Скажите: <strong>«Напомни мне через два часа»</strong></div>
+              <div>• Скажите: <strong>«Напомни в 12 00 позвонить диспетчеру»</strong></div>
+              <div>• Скажите: <strong>«Напомни через 15 минут»</strong></div>
+              <div className="text-[10px] text-amber-800 pt-0.5">
+                В назначенное время на сайте сработает выбранный вами звуковой сигнал и голосовое оповещение!
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="font-bold text-[11px] text-slate-700 block">
+                О чём напомнить (необязательно):
+              </label>
+              <input
+                type="text"
+                value={noteTitle}
+                onChange={(e) => setNoteTitle(e.target.value)}
+                placeholder="Например: Проверить заявку или позвонить..."
+                className="w-full px-2.5 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 font-bold text-slate-900"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <div className="font-bold text-[10px] text-slate-500 uppercase tracking-wider">
+                Или нажмите быструю кнопку:
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleQuickPresetReminder(15, 'через 15 минут')}
+                  className="p-2 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-950 font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <Clock className="w-3 h-3 text-purple-700 shrink-0" />
+                  <span>Через 15 мин</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickPresetReminder(30, 'через 30 минут')}
+                  className="p-2 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-950 font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <Clock className="w-3 h-3 text-purple-700 shrink-0" />
+                  <span>Через 30 мин</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickPresetReminder(60, 'через 1 час')}
+                  className="p-2 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-950 font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <Clock className="w-3 h-3 text-purple-700 shrink-0" />
+                  <span>Через 1 час</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickPresetReminder(120, 'через 2 часа')}
+                  className="p-2 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100 text-purple-950 font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <Clock className="w-3 h-3 text-purple-700 shrink-0" />
+                  <span>Через 2 часа</span>
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -738,30 +988,42 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="font-bold text-[11px] text-slate-700 block mb-1">
-                  Дата (необязательно)
+                  Дата
                 </label>
                 <input
                   type="date"
                   value={noteDate}
                   onChange={(e) => setNoteDate(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  className="w-full px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
                 />
               </div>
               <div>
                 <label className="font-bold text-[11px] text-slate-700 block mb-1">
-                  Подробности
+                  Время сигнала 🔔
                 </label>
                 <input
-                  type="text"
-                  value={noteDesc}
-                  onChange={(e) => setNoteDesc(e.target.value)}
-                  placeholder="Описание..."
-                  className="w-full px-2.5 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  type="time"
+                  value={reminderTime}
+                  onChange={(e) => setReminderTime(e.target.value)}
+                  className="w-full px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="font-bold text-[11px] text-slate-700 block mb-1">
+                Подробности
+              </label>
+              <input
+                type="text"
+                value={noteDesc}
+                onChange={(e) => setNoteDesc(e.target.value)}
+                placeholder="Описание..."
+                className="w-full px-2.5 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+              />
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-purple-100">
