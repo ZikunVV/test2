@@ -62,6 +62,7 @@ import {
   loadUserSoundSettings,
   saveUserSoundSettings,
   playSoundVariant,
+  playReminderAlarm5Seconds,
   speakAlertText,
   triggerDeviceVibration,
   sendBrowserNotification,
@@ -443,11 +444,15 @@ export default function App() {
         : cfg.normalSoundVariant;
 
     if (cfg.masterEnabled || forceTest) {
-      playSoundVariant(variantId, cfg.volume);
+      if (type === 'personal_task') {
+        playReminderAlarm5Seconds(variantId, Math.max(95, cfg.volume));
+      } else {
+        playSoundVariant(variantId, cfg.volume);
+      }
     }
 
-    if (cfg.enableVibration) {
-      triggerDeviceVibration(type === 'urgent_ticket');
+    if (cfg.enableVibration || type === 'personal_task') {
+      triggerDeviceVibration(type === 'urgent_ticket', type === 'personal_task');
     }
 
     if (cfg.enableVoiceAnnounce) {
@@ -957,7 +962,7 @@ export default function App() {
     };
 
     checkDueReminders();
-    const intervalId = setInterval(checkDueReminders, 3000);
+    const intervalId = setInterval(checkDueReminders, 1000);
     return () => clearInterval(intervalId);
   }, [currentUser, soundSettings]);
 
@@ -2171,6 +2176,7 @@ export default function App() {
                   gradient={currentGradient}
                   showFlatFallback={showFlatFallback}
                   houses={currentOrgHouses}
+                  streets={streets}
                   initialSelectedHouseId={selectedHouseIdOnMap}
                   onClearInitialSelectedHouseId={() => setSelectedHouseIdOnMap(null)}
                   onOpenHouse={(h) => {

@@ -7,7 +7,11 @@ import {
   buildGoogleCalendarReminderUrl,
   downloadIcsReminderFile,
 } from '../utils/voiceReminderParser';
-import { setBackgroundKeepAliveActive } from '../utils/soundAlerts';
+import {
+  setBackgroundKeepAliveActive,
+  playReminderAlarm5Seconds,
+  unlockMobileAudio,
+} from '../utils/soundAlerts';
 import {
   Mic,
   MicOff,
@@ -432,6 +436,7 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
   const startListening = (targetMode: 'smart' | 'note' | 'reminder' = mode) => {
     setFeedbackMsg(null);
     stopListening();
+    unlockMobileAudio();
 
     const SpeechRecognitionAPI =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -605,6 +610,7 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
 
   const handleQuickPresetReminder = (minutesFromNow: number, labelText: string) => {
     if (!currentUser || !canViewPersonalTasks) return;
+    unlockMobileAudio();
     const target = new Date(Date.now() + minutesFromNow * 60 * 1000);
     const yyyy = target.getFullYear();
     const mm = String(target.getMonth() + 1).padStart(2, '0');
@@ -993,10 +999,22 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
         ) : mode === 'reminder' ? (
           <div className="space-y-2.5">
             <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/90 space-y-1.5 text-[10px] sm:text-[11px] text-amber-950">
-              <div className="font-extrabold flex items-center gap-1.5 text-amber-900">
-                <BellRing className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>Голосовое звуковое напоминание:</span>
-              </div>
+                <div className="font-extrabold flex items-center justify-between gap-1.5 text-amber-900">
+                  <span className="flex items-center gap-1.5">
+                    <BellRing className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Голосовое звуковое напоминание (сигнал 5 сек):</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      unlockMobileAudio();
+                      playReminderAlarm5Seconds('dispatcher_bell', 100);
+                    }}
+                    className="px-2 py-0.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] cursor-pointer shrink-0 shadow-2xs"
+                  >
+                    🔊 Тест звука (5 сек)
+                  </button>
+                </div>
               <div>• Скажите: <strong>«Напомни мне через два часа»</strong></div>
               <div>• Скажите: <strong>«Напомни в 12 00 позвонить диспетчеру»</strong></div>
               <div>• Скажите: <strong>«Напомни через 15 минут»</strong></div>

@@ -12,48 +12,75 @@ const WORD_NUMBERS: Record<string, number> = {
   одну: 1,
   одна: 1,
   одно: 1,
+  первый: 1,
+  первую: 1,
   два: 2,
   две: 2,
+  двух: 2,
   три: 3,
+  трех: 3,
+  трёх: 3,
   четыре: 4,
+  четырех: 4,
+  четырёх: 4,
   чотири: 4,
   пять: 5,
+  пяти: 5,
   "п'ять": 5,
   шесть: 6,
+  шести: 6,
   шість: 6,
   семь: 7,
+  семи: 7,
   сім: 7,
   восемь: 8,
+  восьми: 8,
   вісім: 8,
   девять: 9,
+  девяти: 9,
   "дев'ять": 9,
   десять: 10,
+  десяти: 10,
   одиннадцать: 11,
+  одиннадцати: 11,
   одинадцять: 11,
   двенадцать: 12,
+  двенадцати: 12,
   дванадцять: 12,
   тринадцать: 13,
+  тринадцати: 13,
   тринадцять: 13,
   четырнадцать: 14,
+  четырнадцати: 14,
   чотирнадцять: 14,
   пятнадцать: 15,
+  пятнадцати: 15,
   "п'ятнадцять": 15,
   шестнадцать: 16,
+  шестнадцати: 16,
   шістнадцять: 16,
   семнадцать: 17,
+  семнадцати: 17,
   сімнадцять: 17,
   восемнадцать: 18,
+  восемнадцати: 18,
   вісімнадцять: 18,
   девятнадцать: 19,
+  девятнадцати: 19,
   "дев'ятнадцять": 19,
   двадцать: 20,
+  двадцати: 20,
   двадцять: 20,
   тридцать: 30,
+  тридцати: 30,
   тридцять: 30,
   сорок: 40,
+  сорока: 40,
   пятьдесят: 50,
+  пятидесяти: 50,
   "п'ятдесят": 50,
   шестьдесят: 60,
+  шестидесяти: 60,
   шістдесят: 60,
 };
 
@@ -61,7 +88,9 @@ function parseSpokenNumberTokens(raw: string): number | null {
   const clean = raw
     .trim()
     .toLowerCase()
-    .replace(/[.,!?]/g, '');
+    .replace(/[.,!?;:\-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!clean) return null;
 
   if (/^\d+$/.test(clean)) {
@@ -101,14 +130,15 @@ function formatTimeHHMM(date: Date): string {
 
 /**
  * Распознаёт голосовые фразы с временем в любом падеже и порядке слов (UTF-8 Кириллица):
+ * - «Напомни через 15 минут»
  * - «Напомнить через 15 минут»
  * - «Напомни мне через два часа позвонить мастеру»
  * - «Через 15 минут проверить кран»
  * - «Напомни в 12 00 проверить подвал»
  * - «Напомни мне в 14:30»
  * - «Напомни завтра в 9 утра»
- * - «Напомни через полчаса»
- * - «Через 5 минут»
+ * - «Напомни через полчаса» / «через четверть часа»
+ * - «Через 5 минут» / «15 минут»
  */
 export function parseVoiceReminderCommand(
   rawText: string,
@@ -120,7 +150,7 @@ export function parseVoiceReminderCommand(
   // Check if it contains reminder keywords OR explicit time expressions like "через 15 минут"
   const hasReminderKeyword = /(?:напомн|напомин|нагад|будильник|сигнал)/i.test(text);
   const hasExplicitRelativeTime =
-    /(?:^|\s)через\s+(?:полчаса|пол\s+часа|півгодини|полтора\s+часа|півтори\s+години|(?:\d+|[а-яёіїєґ']+(?:\s+[а-яёіїєґ']+)?)\s*(?:час|годин|мин|хвил|сек)|(?:час|годин|мин|хвил|сек))/i.test(
+    /(?:^|\s)(?:через\s+)?(?:полчаса|пол\s+часа|півгодини|четверть\s+часа|чверть\s+години|полтора\s+часа|півтори\s+години|(?:\d+|[а-яёіїєґ']+(?:\s+[а-яёіїєґ']+)?)\s*(?:час|годин|мин|хвил|сек)|через\s+(?:час|годин|мин|хвил|сек))/i.test(
       text
     );
   const hasExplicitAbsoluteTime =
@@ -144,7 +174,7 @@ export function parseVoiceReminderCommand(
     )
     .trim();
 
-  // If the user repeated "напомни / напомнить" (e.g. when "Напомни " was prepended to "напомнить через 15 минут")
+  // If the user repeated "напомни / напомнить"
   remainingText = remainingText
     .replace(
       /^(?:напоминание|напомнить|напомни|нагадай|нагадати|нагадування|будильник|сигнал)(?:\s+мне|\s+мені)?\s*/i,
@@ -152,17 +182,30 @@ export function parseVoiceReminderCommand(
     )
     .trim();
 
-  // 1. Check "через полчаса" / "через півгодини" anywhere in the phrase
-  const halfHourRegex = /(?:^|\s)(?:через\s+)?(полчаса|пол\s+часа|півгодини|пів\s+години)(?=\s|$|[.,!?])/i;
-  const halfHourMatch = remainingText.match(halfHourRegex);
-  if (halfHourMatch) {
-    targetDate = new Date(now.getTime() + 30 * 60 * 1000);
-    remainingText = remainingText.replace(halfHourRegex, ' ').trim();
+  // 0. Check "четверть часа" / "чверть години" (= 15 минут)
+  const quarterHourRegex =
+    /(?:^|\s)(?:через\s+|на\s+)?(четверть\s+часа|чверть\s+години)(?=\s|$|[.,!?])/i;
+  const quarterHourMatch = remainingText.match(quarterHourRegex);
+  if (quarterHourMatch) {
+    targetDate = new Date(now.getTime() + 15 * 60 * 1000);
+    remainingText = remainingText.replace(quarterHourRegex, ' ').trim();
   }
 
-  // 2. Check "через полтора часа" / "через півтори години"
+  // 1. Check "через полчаса" / "через півгодини" anywhere in the phrase (= 30 минут)
   if (!targetDate) {
-    const oneHalfRegex = /(?:^|\s)(?:через\s+)?(полтора\s+часа|півтори\s+години)(?=\s|$|[.,!?])/i;
+    const halfHourRegex =
+      /(?:^|\s)(?:через\s+|на\s+)?(полчаса|пол\s+часа|пол-часа|півгодини|пів\s+години)(?=\s|$|[.,!?])/i;
+    const halfHourMatch = remainingText.match(halfHourRegex);
+    if (halfHourMatch) {
+      targetDate = new Date(now.getTime() + 30 * 60 * 1000);
+      remainingText = remainingText.replace(halfHourRegex, ' ').trim();
+    }
+  }
+
+  // 2. Check "через полтора часа" / "через півтори години" (= 90 минут)
+  if (!targetDate) {
+    const oneHalfRegex =
+      /(?:^|\s)(?:через\s+|на\s+)?(полтора\s+часа|півтори\s+години)(?=\s|$|[.,!?])/i;
     const oneHalfMatch = remainingText.match(oneHalfRegex);
     if (oneHalfMatch) {
       targetDate = new Date(now.getTime() + 90 * 60 * 1000);
@@ -170,43 +213,60 @@ export function parseVoiceReminderCommand(
     }
   }
 
-  // 3. Check "через [число] (минут|минуты|минуту|мин|часов|часа|час|секунд)" OR "через час / через минуту"
-  // Note: No \b used around Cyrillic!
+  // 3. Check explicit "через [число] (минут|минуты|минуту|мин|часов|часа|час|секунд)" OR "через час / через минуту"
   if (!targetDate) {
-    const relativeRegex =
-      /(?:^|\s)через\s+(?:(\d+|[а-яёіїєґ']+(?:\s+[а-яёіїєґ']+)?)\s+)?(час(?:а|ов)?|годин(?:у|и)?|минут(?:у|ы)?|мин\.?|хвилин(?:у|и)?|хв\.?|секунд(?:у|ы)?|сек\.?)(?=\s|$|[.,!?])/i;
-    const relMatch = remainingText.match(relativeRegex);
-    if (relMatch) {
-      const rawNum = relMatch[1];
-      const rawUnit = relMatch[2].toLowerCase();
-      let amount = 1;
-      if (rawNum) {
-        const parsed = parseSpokenNumberTokens(rawNum);
-        if (parsed !== null && parsed > 0) {
-          amount = parsed;
+    const relativeWithNumberRegex =
+      /(?:^|\s)(?:через|за|на)\s+(\d+|[а-яёіїєґ']+(?:\s+[а-яёіїєґ']+)?)\s*(час(?:а|ов|у)?|годин(?:у|и)?|ч\.?|минут(?:у|ы|ам|ах)?|мин\.?|хвилин(?:у|и)?|хв\.?|секунд(?:у|ы)?|сек\.?)(?=\s|$|[.,!?])/i;
+    const relNumMatch = remainingText.match(relativeWithNumberRegex);
+    if (relNumMatch) {
+      const rawNum = relNumMatch[1];
+      const rawUnit = relNumMatch[2].toLowerCase();
+      const parsed = parseSpokenNumberTokens(rawNum);
+      if (parsed !== null && parsed > 0) {
+        let deltaMs = 0;
+        if (rawUnit.startsWith('час') || rawUnit.startsWith('годин') || rawUnit.startsWith('ч')) {
+          deltaMs = parsed * 60 * 60 * 1000;
+        } else if (rawUnit.startsWith('мин') || rawUnit.startsWith('хв')) {
+          deltaMs = parsed * 60 * 1000;
+        } else if (rawUnit.startsWith('сек')) {
+          deltaMs = parsed * 1000;
         }
-      }
 
-      let deltaMs = 0;
-      if (rawUnit.startsWith('час') || rawUnit.startsWith('годин')) {
-        deltaMs = amount * 60 * 60 * 1000;
-      } else if (rawUnit.startsWith('мин') || rawUnit.startsWith('хв')) {
-        deltaMs = amount * 60 * 1000;
-      } else if (rawUnit.startsWith('сек')) {
-        deltaMs = amount * 1000;
-      }
-
-      if (deltaMs > 0) {
-        targetDate = new Date(now.getTime() + deltaMs);
-        remainingText = remainingText.replace(relativeRegex, ' ').trim();
+        if (deltaMs > 0) {
+          targetDate = new Date(now.getTime() + deltaMs);
+          remainingText = remainingText.replace(relativeWithNumberRegex, ' ').trim();
+        }
       }
     }
   }
 
-  // 4. Also handle if user said just "15 минут" or "2 часа" without the word "через" (e.g. "Напомнить 15 минут")
+  // 3b. Check "через час" / "через минуту" (without number)
+  if (!targetDate) {
+    const relativeUnitOnlyRegex =
+      /(?:^|\s)через\s+(час(?:ик)?|годину|минут(?:у|ку)?|хвилину|секунду)(?=\s|$|[.,!?])/i;
+    const relUnitMatch = remainingText.match(relativeUnitOnlyRegex);
+    if (relUnitMatch) {
+      const rawUnit = relUnitMatch[1].toLowerCase();
+      let deltaMs = 0;
+      if (rawUnit.startsWith('час') || rawUnit.startsWith('годин')) {
+        deltaMs = 60 * 60 * 1000;
+      } else if (rawUnit.startsWith('мин') || rawUnit.startsWith('хв')) {
+        deltaMs = 60 * 1000;
+      } else if (rawUnit.startsWith('сек')) {
+        deltaMs = 1000;
+      }
+      if (deltaMs > 0) {
+        targetDate = new Date(now.getTime() + deltaMs);
+        remainingText = remainingText.replace(relativeUnitOnlyRegex, ' ').trim();
+      }
+    }
+  }
+
+  // 4. Also handle if user said "[число] минут / [число] часа" anywhere in the phrase without "через"
+  // (e.g. "Напомни мне 15 минут", "Напомнить 15 минут", "15 минут")
   if (!targetDate) {
     const bareRelativeRegex =
-      /^(?:на\s+)?(\d+|[а-яёіїєґ']+)\s+(час(?:а|ов)?|годин(?:у|и)?|минут(?:у|ы)?|мин\.?|хвилин(?:у|и)?|секунд(?:у|ы)?)(?=\s|$|[.,!?])/i;
+      /(?:^|\s)(\d+|[а-яёіїєґ']+(?:\s+[а-яёіїєґ']+)?)\s*(час(?:а|ов)?|годин(?:у|и)?|минут(?:у|ы)?|мин\.?|хвилин(?:у|и)?|хв\.?|секунд(?:у|ы)?|сек\.?)(?=\s|$|[.,!?])/i;
     const bareMatch = remainingText.match(bareRelativeRegex);
     if (bareMatch) {
       const parsed = parseSpokenNumberTokens(bareMatch[1]);

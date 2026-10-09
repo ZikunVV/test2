@@ -178,6 +178,8 @@ export function saveUserSoundSettings(
 }
 
 let sharedAudioCtx: AudioContext | null = null;
+let activeReminderLoopTimer: ReturnType<typeof setInterval> | null = null;
+let activeReminderStopTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -194,17 +196,93 @@ function getAudioContext(): AudioContext | null {
 }
 
 /**
- * Проигрывает выбранный вариант звука через Web Audio API
+ * Разблокирует аудио-движок на мобильных браузерах (iOS Safari / Android Chrome)
+ * при нажатии на кнопку микрофона или быструю кнопку напоминания.
+ */
+export function unlockMobileAudio(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  try {
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  } catch (e) {}
+}
+
+/**
+ * Останавливает текущий 5-секундный сигнал напоминания, если он играет
+ */
+export function stopReminderAlarmSound(): void {
+  if (activeReminderLoopTimer) {
+    clearInterval(activeReminderLoopTimer);
+    activeReminderLoopTimer = null;
+  }
+  if (activeReminderStopTimeout) {
+    clearTimeout(activeReminderStopTimeout);
+    activeReminderStopTimeout = null;
+  }
+}
+
+/**
+ * Проигрывает громкий 5-секундный сигнал напоминания (для мобильных телефонов и ПК),
+ * чтобы его было отчётливо слышно даже из кармана или на громкой связи.
+ */
+export function playReminderAlarm5Seconds(
+  variantId: SoundVariantId = 'dispatcher_bell',
+  volumePercent: number = 100
+): void {
+  stopReminderAlarmSound();
+  const boostedVolume = Math.max(85, volumePercent);
+
+  // Сразу запускаем первый цикл мелодии + усиливающий звонок будильника
+  playSoundVariant(variantId, boostedVolume, true);
+
+  let elapsedMs = 0;
+  const intervalMs = 1000;
+
+  activeReminderLoopTimer = setInterval(() => {
+    elapsedMs += intervalMs;
+    if (elapsedMs >= 5000) {
+      stopReminderAlarmSound();
+      return;
+    }
+    playSoundVariant(variantId, boostedVolume, true);
+  }, intervalMs);
+
+  activeReminderStopTimeout = setTimeout(() => {
+    stopReminderAlarmSound();
+  }, 5100);
+}
+
+/**
+ * Проигрывает выбранный вариант звука через Web Audio API.
+ * Если передан флаг isLoudBoost (для напоминаний на телефоне), используется максимальное усиление с компрессором.
  */
 export function playSoundVariant(
   variantId: SoundVariantId,
-  volumePercent: number = 80
+  volumePercent: number = 80,
+  isLoudBoost: boolean = false
 ): void {
   const ctx = getAudioContext();
   if (!ctx) return;
 
-  const gainScale = Math.max(0.02, Math.min(1, volumePercent / 100)) * 0.45;
+  // Увеличенная громкость для динамика телефона (с динамическим компрессором без искажений)
+  const normalizedVol = Math.max(0.1, Math.min(1, volumePercent / 100));
+  const gainScale = isLoudBoost ? Math.max(0.85, normalizedVol * 0.98) : normalizedVol * 0.78;
   const now = ctx.currentTime;
+
+  const compressor = ctx.createDynamicsCompressor();
+  compressor.threshold.setValueAtTime(-14, now);
+  compressor.knee.setValueAtTime(12, now);
+  compressor.ratio.setValueAtTime(6, now);
+  compressor.attack.setValueAtTime(0.002, now);
+  compressor.release.setValueAtTime(0.15, now);
+  compressor.connect(ctx.destination);
 
   const playTone = (
     freq: number,
@@ -223,14 +301,34 @@ export function playSoundVariant(
     }
 
     gain.gain.setValueAtTime(0.0001, startTime);
-    gain.gain.linearRampToValueAtTime(peakGain, startTime + Math.min(0.025, duration * 0.2));
+    gain.gain.linearRampToValueAtTime(peakGain, startTime + Math.min(0.02, duration * 0.15));
     gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(compressor);
 
     osc.start(startTime);
     osc.stop(startTime + duration + 0.02);
+
+    // Для громкого режима на телефоне добавляем гармонику в средне-высоком диапазоне (1.5-2.5 кГц),
+    // который лучше всего воспроизводится динамиком смартфона
+    if (isLoudBoost) {
+      const overtone = ctx.createOscillator();
+      const overtoneGain = ctx.createGain();
+      overtone.type = 'triangle';
+      overtone.frequency.setValueAtTime(freq * 2, startTime);
+      if (endFreq) {
+        overtone.frequency.linearRampToValueAtTime(endFreq * 2, startTime + duration);
+      }
+      overtoneGain.gain.setValueAtTime(0.0001, startTime);
+      overtoneGain.gain.linearRampToValueAtTime(peakGain * 0.55, startTime + Math.min(0.02, duration * 0.15));
+      overtoneGain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+      overtone.connect(overtoneGain);
+      overtoneGain.connect(compressor);
+      overtone.start(startTime);
+      overtone.stop(startTime + duration + 0.02);
+    }
   };
 
   switch (variantId) {
@@ -319,12 +417,20 @@ export function speakAlertText(text: string, volumePercent: number = 80): void {
 }
 
 /**
- * Короткая вибрация на смартфоне
+ * Вибрация на смартфоне (при напоминании — интенсивная серия на 5 секунд)
  */
-export function triggerDeviceVibration(isUrgent: boolean = false): void {
+export function triggerDeviceVibration(isUrgent: boolean = false, isFiveSecReminder: boolean = false): void {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      navigator.vibrate(isUrgent ? [250, 100, 250, 100, 350] : [180, 80, 180]);
+      if (isFiveSecReminder) {
+        navigator.vibrate([
+          400, 150, 400, 150, 400, 200,
+          400, 150, 400, 150, 400, 200,
+          400, 150, 500
+        ]);
+      } else {
+        navigator.vibrate(isUrgent ? [250, 100, 250, 100, 350] : [180, 80, 180]);
+      }
     } catch (e) {}
   }
 }

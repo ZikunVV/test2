@@ -56,6 +56,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
   const [streetQuery, setStreetQuery] = useState('');
   const [houseNumQuery, setHouseNumQuery] = useState('');
   const [buildingQuery, setBuildingQuery] = useState('');
+  const [isStreetSuggestionsOpen, setIsStreetSuggestionsOpen] = useState(false);
 
   // Mode: 'recent' (last 20 viewed houses) vs 'all' (all houses)
   const [viewMode, setViewMode] = useState<'recent' | 'all'>('recent');
@@ -179,6 +180,25 @@ export const HousesView: React.FC<HousesViewProps> = ({
   }, [initialSelectedHouseId, houses, onClearInitialSelectedHouseId]);
 
   // Determine list of houses to show
+  const sortedAllHouses = React.useMemo(() => {
+    return [...houses].sort((a, b) => {
+      const streetCmp = (a.street || '').localeCompare(b.street || '', 'ru', {
+        numeric: true,
+        sensitivity: 'base',
+      });
+      if (streetCmp !== 0) return streetCmp;
+      const numCmp = (a.house_number || '').localeCompare(b.house_number || '', 'ru', {
+        numeric: true,
+        sensitivity: 'base',
+      });
+      if (numCmp !== 0) return numCmp;
+      return (a.building || '').localeCompare(b.building || '', 'ru', {
+        numeric: true,
+        sensitivity: 'base',
+      });
+    });
+  }, [houses]);
+
   const baseHouses = React.useMemo(() => {
     if (viewMode === 'recent') {
       const houseMap = new Map(houses.map((h) => [h.id, h]));
@@ -197,26 +217,112 @@ export const HousesView: React.FC<HousesViewProps> = ({
       }
       return recentList;
     }
-    // "Все дома": сортировать улицы и номер дома по алфавиту
-    return [...houses].sort((a, b) => {
-      const streetCmp = (a.street || '').localeCompare(b.street || '', 'ru', { numeric: true, sensitivity: 'base' });
-      if (streetCmp !== 0) return streetCmp;
-      const numCmp = (a.house_number || '').localeCompare(b.house_number || '', 'ru', { numeric: true, sensitivity: 'base' });
-      if (numCmp !== 0) return numCmp;
-      return (a.building || '').localeCompare(b.building || '', 'ru', { numeric: true, sensitivity: 'base' });
-    });
-  }, [houses, viewMode, viewedHouseIds]);
+    return sortedAllHouses;
+  }, [houses, viewMode, viewedHouseIds, sortedAllHouses]);
 
-  // Filtered houses by search inputs
-  const filteredHouses = baseHouses.filter((h) => {
-    const matchStreet =
-      !streetQuery || h.street.toLowerCase().includes(streetQuery.toLowerCase());
+  // All unique streets from both houses and streets directory (with house counts and old names)
+  const allStreetDirectoryItems = React.useMemo(() => {
+    const map = new Map<
+      string,
+      { name: string; oldNames: string; housesCount: number }
+    >();
+
+    streets.forEach((s) => {
+      const clean = (s.current_name || '').trim();
+      if (!clean) return;
+      const key = clean.toLocaleLowerCase('ru-RU');
+      map.set(key, {
+        name: clean,
+        oldNames: s.old_names || '',
+        housesCount: 0,
+      });
+    });
+
+    houses.forEach((h) => {
+      const clean = (h.street || '').trim();
+      if (!clean) return;
+      const key = clean.toLocaleLowerCase('ru-RU');
+      const existing = map.get(key);
+      if (existing) {
+        existing.housesCount += 1;
+      } else {
+        map.set(key, {
+          name: clean,
+          oldNames: '',
+          housesCount: 1,
+        });
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'ru', { sensitivity: 'base' })
+    );
+  }, [houses, streets]);
+
+  // Autocomplete street suggestions starting from first typed letters (any case: uppercase or lowercase)
+  const matchingStreetSuggestions = React.useMemo(() => {
+    const raw = streetQuery.trim();
+    const cleanedQuery = raw
+      .replace(/^(?:ул\.|улица|вул\.|вулиця|пр-т|проспект|просп\.|пер\.|переулок|провулок)\s+/i, '')
+      .trim()
+      .toLocaleLowerCase('ru-RU');
+
+    if (!cleanedQuery) {
+      return allStreetDirectoryItems;
+    }
+
+    // Prioritize streets starting with the typed letters, then streets containing the typed letters or matching old names
+    const startsWithList: typeof allStreetDirectoryItems = [];
+    const containsList: typeof allStreetDirectoryItems = [];
+
+    allStreetDirectoryItems.forEach((item) => {
+      const lowerName = item.name.toLocaleLowerCase('ru-RU');
+      const lowerOld = item.oldNames.toLocaleLowerCase('ru-RU');
+      if (lowerName.startsWith(cleanedQuery)) {
+        startsWithList.push(item);
+      } else if (lowerName.includes(cleanedQuery) || lowerOld.includes(cleanedQuery)) {
+        containsList.push(item);
+      }
+    });
+
+    return [...startsWithList, ...containsList];
+  }, [streetQuery, allStreetDirectoryItems]);
+
+  // Filtered houses by search inputs (when any search query is entered, search across ALL houses regardless of recent/all tab, and completely case-insensitively)
+  const hasActiveSearchFilter = Boolean(
+    streetQuery.trim() || houseNumQuery.trim() || buildingQuery.trim()
+  );
+  const sourceListForFilter = hasActiveSearchFilter ? sortedAllHouses : baseHouses;
+
+  const filteredHouses = sourceListForFilter.filter((h) => {
+    const rawStreetQ = streetQuery
+      .trim()
+      .replace(/^(?:ул\.|улица|вул\.|вулиця|пр-т|проспект|просп\.|пер\.|переулок|провулок)\s+/i, '')
+      .trim()
+      .toLocaleLowerCase('ru-RU');
+
+    let matchStreet = true;
+    if (rawStreetQ) {
+      const houseStreetLower = (h.street || '').trim().toLocaleLowerCase('ru-RU');
+      const directMatch = houseStreetLower.includes(rawStreetQ);
+      // Also check if user typed an old street name in any case
+      const normalizedQuery = normalizeStreetName(rawStreetQ, streets);
+      const normalizedMatch =
+        normalizedQuery.officialName &&
+        houseStreetLower.includes(normalizedQuery.officialName.toLocaleLowerCase('ru-RU'));
+      matchStreet = directMatch || Boolean(normalizedMatch);
+    }
+
+    const rawNumQ = houseNumQuery.trim().toLocaleLowerCase('ru-RU');
     const matchNum =
-      !houseNumQuery ||
-      h.house_number.toLowerCase().includes(houseNumQuery.toLowerCase());
+      !rawNumQ ||
+      (h.house_number || '').trim().toLocaleLowerCase('ru-RU').includes(rawNumQ);
+
+    const rawBldQ = buildingQuery.trim().toLocaleLowerCase('ru-RU');
     const matchBuilding =
-      !buildingQuery ||
-      (h.building || '').toLowerCase().includes(buildingQuery.toLowerCase());
+      !rawBldQ ||
+      (h.building || '').trim().toLocaleLowerCase('ru-RU').includes(rawBldQ);
+
     return matchStreet && matchNum && matchBuilding;
   });
 
@@ -827,17 +933,76 @@ export const HousesView: React.FC<HousesViewProps> = ({
 
           {/* Search filter: Улица, № дома, Корпус */}
           <div className="p-4 rounded-2xl border border-purple-200/80 bg-white grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
+            <div className="relative">
               <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                Улица
+                Улица (поиск в любом регистре с подсказкой)
               </label>
-              <input
-                type="text"
-                value={streetQuery}
-                onChange={(e) => setStreetQuery(e.target.value)}
-                placeholder="Например: Доценка"
-                className="w-full px-3 py-1.5 text-xs rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={streetQuery}
+                  onFocus={() => setIsStreetSuggestionsOpen(true)}
+                  onBlur={() => {
+                    setTimeout(() => setIsStreetSuggestionsOpen(false), 180);
+                  }}
+                  onChange={(e) => {
+                    setStreetQuery(e.target.value);
+                    setIsStreetSuggestionsOpen(true);
+                  }}
+                  placeholder="Начните вводить первые буквы (напр.: доц, шев)..."
+                  autoComplete="off"
+                  className="w-full px-3 py-1.5 pr-7 text-xs rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium text-slate-900"
+                />
+                {streetQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStreetQuery('');
+                      setIsStreetSuggestionsOpen(false);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                    title="Очистить улицу"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Выпадающие подсказки улиц с первых букв */}
+              {isStreetSuggestionsOpen && matchingStreetSuggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white rounded-xl border border-purple-200 shadow-xl max-h-52 overflow-y-auto divide-y divide-purple-50">
+                  <div className="px-2.5 py-1 bg-purple-50/80 text-[10px] font-extrabold text-purple-800 uppercase tracking-wider flex items-center justify-between">
+                    <span>Подсказки улиц ({matchingStreetSuggestions.length})</span>
+                    <span className="text-[9px] text-purple-600 font-semibold">Нажмите для выбора</span>
+                  </div>
+                  {matchingStreetSuggestions.map((item) => (
+                    <button
+                      key={item.name}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setStreetQuery(item.name);
+                        setIsStreetSuggestionsOpen(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs hover:bg-purple-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-extrabold text-slate-900 truncate">
+                          ул. {item.name}
+                        </div>
+                        {item.oldNames && (
+                          <div className="text-[10px] text-slate-500 truncate">
+                            ранее: {item.oldNames}
+                          </div>
+                        )}
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 font-bold text-[10px] shrink-0">
+                        Домов: {item.housesCount}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-[11px] font-bold text-slate-600 block mb-1">
