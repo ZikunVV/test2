@@ -1197,12 +1197,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       {/* Modal: Write to Administrator from AuthScreen */}
       {isMessageModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs p-4"
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/55 backdrop-blur-xs px-3 py-3 sm:p-4 overflow-y-auto overflow-x-hidden"
           onClick={() => setIsMessageModalOpen(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl bg-white p-5 sm:p-6 shadow-2xl border border-purple-200 text-xs space-y-4 animate-in fade-in zoom-in-95"
+            className="w-full max-w-[calc(100vw-24px)] sm:max-w-md rounded-2xl bg-white p-3.5 sm:p-6 shadow-2xl border border-purple-200 text-xs space-y-3.5 sm:space-y-4 animate-in fade-in zoom-in-95 my-auto max-h-[90vh] overflow-y-auto overflow-x-hidden box-border"
           >
             <div className="flex items-center justify-between border-b border-purple-100 pb-3">
               <div className="flex items-center gap-2.5">

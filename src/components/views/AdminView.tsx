@@ -1139,8 +1139,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* ADD / EDIT ORGANIZATION MODAL */}
       {isOrgModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-purple-200 shadow-2xl space-y-4 text-xs animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-start sm:items-center justify-center px-3 py-3 sm:p-4 overflow-y-auto overflow-x-hidden">
+          <div className="bg-white rounded-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-md p-3.5 sm:p-6 border border-purple-200 shadow-2xl space-y-3.5 sm:space-y-4 text-xs animate-in fade-in zoom-in-95 my-auto max-h-[90vh] overflow-y-auto overflow-x-hidden box-border">
             <div className="flex items-center justify-between border-b border-purple-100 pb-3">
               <div>
                 <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider block">
@@ -1306,8 +1306,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* ADD USER MODAL */}
       {isAddUserModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-purple-200 shadow-2xl space-y-4 text-xs animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-start sm:items-center justify-center px-3 py-3 sm:p-4 overflow-y-auto overflow-x-hidden">
+          <div className="bg-white rounded-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-md p-3.5 sm:p-6 border border-purple-200 shadow-2xl space-y-3.5 sm:space-y-4 text-xs animate-in fade-in zoom-in-95 my-auto max-h-[90vh] overflow-y-auto overflow-x-hidden box-border">
             <div className="flex items-center justify-between border-b border-purple-100 pb-3">
               <div>
                 <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider block">

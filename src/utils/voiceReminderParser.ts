@@ -4,6 +4,7 @@ export interface ParsedVoiceReminder {
   taskDateIso: string;
   timeLabel: string;
   title: string;
+  rawTargetDate: Date;
 }
 
 const WORD_NUMBERS: Record<string, number> = {
@@ -31,26 +32,58 @@ const WORD_NUMBERS: Record<string, number> = {
   одинадцять: 11,
   двенадцать: 12,
   дванадцять: 12,
+  тринадцать: 13,
+  тринадцять: 13,
+  четырнадцать: 14,
+  чотирнадцять: 14,
   пятнадцать: 15,
   "п'ятнадцять": 15,
+  шестнадцать: 16,
+  шістнадцять: 16,
+  семнадцать: 17,
+  сімнадцять: 17,
+  восемнадцать: 18,
+  вісімнадцять: 18,
+  девятнадцать: 19,
+  "дев'ятнадцять": 19,
   двадцать: 20,
   двадцять: 20,
   тридцать: 30,
   тридцять: 30,
   сорок: 40,
   пятьдесят: 50,
+  "п'ятдесят": 50,
   шестьдесят: 60,
+  шістдесят: 60,
 };
 
-function parseSpokenNumber(token: string): number | null {
-  const clean = token.trim().toLowerCase();
+function parseSpokenNumberTokens(raw: string): number | null {
+  const clean = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[.,!?]/g, '');
+  if (!clean) return null;
+
   if (/^\d+$/.test(clean)) {
     return parseInt(clean, 10);
   }
-  if (WORD_NUMBERS[clean] !== undefined) {
-    return WORD_NUMBERS[clean];
+
+  // Handle compound spoken numbers like "двадцать пять", "тридцать пять", "сорок пять"
+  const parts = clean.split(/\s+/);
+  let sum = 0;
+  let matchedAny = false;
+  for (const part of parts) {
+    if (/^\d+$/.test(part)) {
+      sum += parseInt(part, 10);
+      matchedAny = true;
+    } else if (WORD_NUMBERS[part] !== undefined) {
+      sum += WORD_NUMBERS[part];
+      matchedAny = true;
+    } else {
+      return null;
+    }
   }
-  return null;
+  return matchedAny ? sum : null;
 }
 
 function formatDateIso(date: Date): string {
@@ -67,206 +100,204 @@ function formatTimeHHMM(date: Date): string {
 }
 
 /**
- * Распознаёт голосовые фразы вида:
+ * Распознаёт голосовые фразы с временем в любом падеже и порядке слов (UTF-8 Кириллица):
+ * - «Напомнить через 15 минут»
  * - «Напомни мне через два часа позвонить мастеру»
- * - «Напомни через 15 минут»
+ * - «Через 15 минут проверить кран»
  * - «Напомни в 12 00 проверить подвал»
  * - «Напомни мне в 14:30»
  * - «Напомни завтра в 9 утра»
  * - «Напомни через полчаса»
- * - «Нагадати мені через 2 години»
+ * - «Через 5 минут»
  */
-export function parseVoiceReminderCommand(rawText: string): ParsedVoiceReminder | null {
-  const text = rawText.trim();
+export function parseVoiceReminderCommand(
+  rawText: string,
+  forceAssumeReminder: boolean = false
+): ParsedVoiceReminder | null {
+  const text = rawText.trim().replace(/\s+/g, ' ');
   if (!text) return null;
 
-  const lower = text.toLowerCase();
+  // Check if it contains reminder keywords OR explicit time expressions like "через 15 минут"
+  const hasReminderKeyword = /(?:напомн|напомин|нагад|будильник|сигнал)/i.test(text);
+  const hasExplicitRelativeTime =
+    /(?:^|\s)через\s+(?:полчаса|пол\s+часа|півгодини|полтора\s+часа|півтори\s+години|(?:\d+|[а-яёіїєґ']+(?:\s+[а-яёіїєґ']+)?)\s*(?:час|годин|мин|хвил|сек)|(?:час|годин|мин|хвил|сек))/i.test(
+      text
+    );
+  const hasExplicitAbsoluteTime =
+    /(?:^|\s)(?:в|о|на)\s*(?:\d{1,2}[:.\s-]\d{2}|\d{1,2}\s*(?:час|годин|утра|вечера|дня|ночи))/i.test(
+      text
+    );
 
-  // Check if it starts with or contains reminder keywords
-  const hasReminderKeyword =
-    lower.includes('напомни') ||
-    lower.includes('напоминание') ||
-    lower.includes('напомнить') ||
-    lower.includes('нагадай') ||
-    lower.includes('нагадування') ||
-    lower.includes('будильник') ||
-    lower.includes('сигнал через') ||
-    lower.includes('сигнал в ');
-
-  if (!hasReminderKeyword) return null;
+  if (!forceAssumeReminder && !hasReminderKeyword && !hasExplicitRelativeTime && !hasExplicitAbsoluteTime) {
+    return null;
+  }
 
   const now = new Date();
   let targetDate: Date | null = null;
-  let remainingText = text;
 
-  // Strip leading reminder trigger words: "напомни мне", "напомни", "сделай напоминание", etc.
-  remainingText = remainingText
+  // Strip all leading reminder trigger phrases ("Напомни мне", "Напомнить", "Напомни пожалуйста", etc.)
+  // Using (?:^|\s) instead of \b because \b in JS RegExp does NOT work with Cyrillic characters!
+  let remainingText = text
     .replace(
-      /^(?:пожалуйста\s+)?(?:сделай\s+|поставь\s+|установи\s+|создай\s+)?(?:звуковое\s+)?(?:напоминание|напомни|напомнить|нагадай|нагадування|будильник)(?:\s+мне|\s+мені)?\s*/i,
+      /^(?:пожалуйста\s+|будь\s+ласка\s+)?(?:сделай\s+|поставь\s+|установи\s+|создай\s+|включи\s+)?(?:звуковое\s+|голосовое\s+)?(?:напоминание|напомнить|напомни|нагадай|нагадати|нагадування|будильник|сигнал)(?:\s+мне|\s+мені)?(?:\s+пожалуйста|\s+будь\s+ласка)?\s*/i,
       ''
     )
     .trim();
 
-  // Case 1: "через полчаса" / "через півгодини"
-  const halfHourMatch = remainingText.match(/^(?:через\s+)?(?:полчаса|пол\s+часа|півгодини|пів\s+години)\b\s*(.*)/i);
+  // If the user repeated "напомни / напомнить" (e.g. when "Напомни " was prepended to "напомнить через 15 минут")
+  remainingText = remainingText
+    .replace(
+      /^(?:напоминание|напомнить|напомни|нагадай|нагадати|нагадування|будильник|сигнал)(?:\s+мне|\s+мені)?\s*/i,
+      ''
+    )
+    .trim();
+
+  // 1. Check "через полчаса" / "через півгодини" anywhere in the phrase
+  const halfHourRegex = /(?:^|\s)(?:через\s+)?(полчаса|пол\s+часа|півгодини|пів\s+години)(?=\s|$|[.,!?])/i;
+  const halfHourMatch = remainingText.match(halfHourRegex);
   if (halfHourMatch) {
     targetDate = new Date(now.getTime() + 30 * 60 * 1000);
-    remainingText = (halfHourMatch[1] || '').trim();
+    remainingText = remainingText.replace(halfHourRegex, ' ').trim();
   }
 
-  // Case 2: "через полтора часа"
+  // 2. Check "через полтора часа" / "через півтори години"
   if (!targetDate) {
-    const oneAndHalfMatch = remainingText.match(/^(?:через\s+)?(?:полтора\s+часа|півтори\s+години)\b\s*(.*)/i);
-    if (oneAndHalfMatch) {
+    const oneHalfRegex = /(?:^|\s)(?:через\s+)?(полтора\s+часа|півтори\s+години)(?=\s|$|[.,!?])/i;
+    const oneHalfMatch = remainingText.match(oneHalfRegex);
+    if (oneHalfMatch) {
       targetDate = new Date(now.getTime() + 90 * 60 * 1000);
-      remainingText = (oneAndHalfMatch[1] || '').trim();
+      remainingText = remainingText.replace(oneHalfRegex, ' ').trim();
     }
   }
 
-  // Case 3: "через [N] (часов|часа|час|минут|минуты|минуту|секунд)" or "через час" / "через минуту"
+  // 3. Check "через [число] (минут|минуты|минуту|мин|часов|часа|час|секунд)" OR "через час / через минуту"
+  // Note: No \b used around Cyrillic!
   if (!targetDate) {
-    const relativeMatch = remainingText.match(
-      /^через\s+(?:(\d+|один|одну|одна|два|две|три|четыре|чотири|пять|п'ять|шесть|шість|семь|сім|восемь|вісім|девять|дев'ять|десять|одиннадцать|двенадцать|пятнадцать|двадцать|тридцать|сорок|пятьдесят|шестьдесят)\s+)?(час(?:а|ов)?|годин(?:у|и)?|минут(?:у|ы)?|хвилин(?:у|и)?|секунд(?:у|ы)?)\b\s*(.*)/i
-    );
-    if (relativeMatch) {
-      const numToken = relativeMatch[1];
-      const unitToken = relativeMatch[2].toLowerCase();
-      const amount = numToken ? parseSpokenNumber(numToken) || 1 : 1;
+    const relativeRegex =
+      /(?:^|\s)через\s+(?:(\d+|[а-яёіїєґ']+(?:\s+[а-яёіїєґ']+)?)\s+)?(час(?:а|ов)?|годин(?:у|и)?|минут(?:у|ы)?|мин\.?|хвилин(?:у|и)?|хв\.?|секунд(?:у|ы)?|сек\.?)(?=\s|$|[.,!?])/i;
+    const relMatch = remainingText.match(relativeRegex);
+    if (relMatch) {
+      const rawNum = relMatch[1];
+      const rawUnit = relMatch[2].toLowerCase();
+      let amount = 1;
+      if (rawNum) {
+        const parsed = parseSpokenNumberTokens(rawNum);
+        if (parsed !== null && parsed > 0) {
+          amount = parsed;
+        }
+      }
 
       let deltaMs = 0;
-      if (unitToken.startsWith('час') || unitToken.startsWith('годин')) {
+      if (rawUnit.startsWith('час') || rawUnit.startsWith('годин')) {
         deltaMs = amount * 60 * 60 * 1000;
-      } else if (unitToken.startsWith('мин') || unitToken.startsWith('хвил')) {
+      } else if (rawUnit.startsWith('мин') || rawUnit.startsWith('хв')) {
         deltaMs = amount * 60 * 1000;
-      } else if (unitToken.startsWith('сек')) {
+      } else if (rawUnit.startsWith('сек')) {
         deltaMs = amount * 1000;
       }
 
       if (deltaMs > 0) {
         targetDate = new Date(now.getTime() + deltaMs);
-        remainingText = (relativeMatch[3] || '').trim();
+        remainingText = remainingText.replace(relativeRegex, ' ').trim();
       }
     }
   }
 
-  // Case 4: "(завтра | сегодня )? в HH:MM" or "в HH MM" or "в HH часов (MM минут)?"
+  // 4. Also handle if user said just "15 минут" or "2 часа" without the word "через" (e.g. "Напомнить 15 минут")
   if (!targetDate) {
-    const absoluteMatch = remainingText.match(
-      /^(?:(сегодня|сьогодні|завтра)\s+)?(?:в|о|на)\s*(\d{1,2}|один|два|три|четыре|пять|шесть|семь|восемь|девять|десять|одиннадцать|двенадцать)(?:[:.\s-](\d{1,2}|ноль\s*ноль|00|тридцать|пятнадцать|сорок\s*пять))?(?:\s*(?:час(?:а|ов)?|годин(?:и|у)?|утра|вечера|дня|ночи))?\b\s*(.*)/i
-    );
+    const bareRelativeRegex =
+      /^(?:на\s+)?(\d+|[а-яёіїєґ']+)\s+(час(?:а|ов)?|годин(?:у|и)?|минут(?:у|ы)?|мин\.?|хвилин(?:у|и)?|секунд(?:у|ы)?)(?=\s|$|[.,!?])/i;
+    const bareMatch = remainingText.match(bareRelativeRegex);
+    if (bareMatch) {
+      const parsed = parseSpokenNumberTokens(bareMatch[1]);
+      const rawUnit = bareMatch[2].toLowerCase();
+      if (parsed !== null && parsed > 0) {
+        let deltaMs = 0;
+        if (rawUnit.startsWith('час') || rawUnit.startsWith('годин')) {
+          deltaMs = parsed * 60 * 60 * 1000;
+        } else if (rawUnit.startsWith('мин') || rawUnit.startsWith('хв')) {
+          deltaMs = parsed * 60 * 1000;
+        } else if (rawUnit.startsWith('сек')) {
+          deltaMs = parsed * 1000;
+        }
+        if (deltaMs > 0) {
+          targetDate = new Date(now.getTime() + deltaMs);
+          remainingText = remainingText.replace(bareRelativeRegex, ' ').trim();
+        }
+      }
+    }
+  }
 
-    if (absoluteMatch) {
-      const dayModifier = (absoluteMatch[1] || '').toLowerCase();
-      const rawHour = absoluteMatch[2];
-      const rawMin = absoluteMatch[3];
-      const tail = (absoluteMatch[4] || '').trim();
+  // 5. Check absolute time: "(сегодня|завтра)? (в|о|на) HH:MM" or "в HH MM" or "в HH часов"
+  if (!targetDate) {
+    const absRegex =
+      /(?:^|\s)(?:(сегодня|сьогодні|завтра)\s+)?(?:в|о|на)\s*(\d{1,2}|один|два|три|четыре|чотири|пять|п'ять|шесть|шість|семь|сім|восемь|вісім|девять|дев'ять|десять|одиннадцать|одинадцять|двенадцать|дванадцять)(?:[:.\s-](\d{1,2}|00|ноль\s*ноль|нуль\s*нуль|пятнадцать|тридцать|сорок\s*пять))?(?:\s*(?:час(?:а|ов)?|годин(?:и|у)?|утра|вечера|дня|ночи))?(?=\s|$|[.,!?])/i;
+    const absMatch = remainingText.match(absRegex);
+    if (absMatch) {
+      const dayMod = (absMatch[1] || '').toLowerCase();
+      const rawHour = absMatch[2];
+      const rawMin = absMatch[3];
 
-      let hours = parseSpokenNumber(rawHour);
+      let hours = parseSpokenNumberTokens(rawHour);
       let minutes = 0;
       if (rawMin) {
-        if (/ноль/i.test(rawMin)) {
+        if (/ноль|нуль/i.test(rawMin)) {
           minutes = 0;
-        } else if (/сорок\s*пять/i.test(rawMin)) {
-          minutes = 45;
         } else {
-          minutes = parseSpokenNumber(rawMin) || 0;
+          minutes = parseSpokenNumberTokens(rawMin) || 0;
         }
       }
 
       if (hours !== null && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
-        // Adjust if user said "в 2 часа дня" / "в 7 вечера"
-        if (hours < 12 && /\b(?:дня|вечера)\b/i.test(remainingText)) {
+        if (hours < 12 && /(?:дня|вечера)/i.test(absMatch[0])) {
           hours += 12;
         }
-
         const candidate = new Date(now);
         candidate.setHours(hours, minutes, 0, 0);
 
-        if (dayModifier === 'завтра') {
+        if (dayMod === 'завтра') {
           candidate.setDate(candidate.getDate() + 1);
-        } else if (dayModifier !== 'сегодня' && dayModifier !== 'сьогодні') {
-          // If time has already passed today by more than 1 minute, schedule for tomorrow
+        } else if (dayMod !== 'сегодня' && dayMod !== 'сьогодні') {
           if (candidate.getTime() <= now.getTime() - 60 * 1000) {
             candidate.setDate(candidate.getDate() + 1);
           }
         }
 
         targetDate = candidate;
-        remainingText = tail;
+        remainingText = remainingText.replace(absRegex, ' ').trim();
       }
     }
   }
 
-  // Case 5: Relative or absolute time at the END of the phrase (e.g. "Напомни позвонить мастеру через 2 часа" or "Напомни сдать отчёт в 12 00")
+  // If no explicit time was matched, only default to +15 minutes if reminder keyword was explicitly spoken
   if (!targetDate) {
-    const endRelativeMatch = remainingText.match(
-      /^(.*?)\s+через\s+(?:(\d+|один|одну|одна|два|две|три|четыре|чотири|пять|шесть|семь|восемь|девять|десять|пятнадцать|двадцать|тридцать|сорок|пятьдесят)\s+)?(полчаса|час(?:а|ов)?|годин(?:у|и)?|минут(?:у|ы)?|хвилин(?:у|и)?|секунд(?:у|ы)?)$/i
-    );
-    if (endRelativeMatch) {
-      const taskPart = endRelativeMatch[1].trim();
-      const numToken = endRelativeMatch[2];
-      const unitToken = endRelativeMatch[3].toLowerCase();
-
-      if (unitToken === 'полчаса') {
-        targetDate = new Date(now.getTime() + 30 * 60 * 1000);
-      } else {
-        const amount = numToken ? parseSpokenNumber(numToken) || 1 : 1;
-        let deltaMs = 0;
-        if (unitToken.startsWith('час') || unitToken.startsWith('годин')) {
-          deltaMs = amount * 60 * 60 * 1000;
-        } else if (unitToken.startsWith('мин') || unitToken.startsWith('хвил')) {
-          deltaMs = amount * 60 * 1000;
-        } else if (unitToken.startsWith('сек')) {
-          deltaMs = amount * 1000;
-        }
-        if (deltaMs > 0) {
-          targetDate = new Date(now.getTime() + deltaMs);
-        }
-      }
-      if (targetDate && taskPart) {
-        remainingText = taskPart;
-      }
+    if (!hasReminderKeyword && !forceAssumeReminder) {
+      return null;
     }
+    targetDate = new Date(now.getTime() + 15 * 60 * 1000);
   }
 
-  if (!targetDate) {
-    const endAbsoluteMatch = remainingText.match(
-      /^(.*?)\s+(?:(сегодня|завтра)\s+)?(?:в|на)\s+(\d{1,2})(?:[:.\s-](\d{2}))?(?:\s*(?:час(?:а|ов)?|утра|вечера|дня))?$/i
-    );
-    if (endAbsoluteMatch) {
-      const taskPart = endAbsoluteMatch[1].trim();
-      const dayMod = (endAbsoluteMatch[2] || '').toLowerCase();
-      const hh = parseInt(endAbsoluteMatch[3], 10);
-      const mm = endAbsoluteMatch[4] ? parseInt(endAbsoluteMatch[4], 10) : 0;
-
-      if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) {
-        const candidate = new Date(now);
-        candidate.setHours(hh, mm, 0, 0);
-        if (dayMod === 'завтра' || candidate.getTime() <= now.getTime() - 60 * 1000) {
-          candidate.setDate(candidate.getDate() + 1);
-        }
-        targetDate = candidate;
-        if (taskPart) {
-          remainingText = taskPart;
-        }
-      }
-    }
-  }
-
-  // If user just said "Напомни мне проверить насос" without explicit time, default to +1 hour
-  if (!targetDate) {
-    targetDate = new Date(now.getTime() + 60 * 60 * 1000);
-  }
-
-  // Clean up remainingText (remove leading "о том что", "что нужно", "про то что", etc.)
+  // Clean up remainingText
   const cleanedTitle = remainingText
-    .replace(/^(?:мне\s+|мені\s+)?(?:о\s+том\s+что(?:бы)?|что\s+нужно|что\s+надо|чтобы|что|про\s+то\s+что|про)\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .replace(
+      /^(?:мне\s+|мені\s+)?(?:о\s+том\s+что(?:бы)?|что\s+нужно|что\s+надо|чтобы|что|про\s+то\s+что|про)\s+/i,
+      ''
+    )
+    .replace(/^[.,!?;:\-\s]+|[.,!?;:\-\s]+$/g, '')
     .trim();
+
+  // Compute human-friendly relative description for default title if user didn't specify a custom subject
+  const diffMin = Math.max(1, Math.round((targetDate.getTime() - now.getTime()) / 60000));
+  const defaultTitle =
+    diffMin < 60
+      ? `Напоминание (через ${diffMin} мин.)`
+      : `Напоминание на ${formatTimeHHMM(targetDate)}`;
 
   const finalTitle =
     cleanedTitle.length > 0
       ? cleanedTitle.charAt(0).toUpperCase() + cleanedTitle.slice(1)
-      : 'Голосовое напоминание';
+      : defaultTitle;
 
   const taskDateIso = formatDateIso(targetDate);
   const todayIso = formatDateIso(now);
@@ -281,5 +312,74 @@ export function parseVoiceReminderCommand(rawText: string): ParsedVoiceReminder 
     taskDateIso,
     timeLabel,
     title: finalTitle,
+    rawTargetDate: targetDate,
   };
+}
+
+/**
+ * Генерирует ссылку для добавления напоминания в системный Календарь телефона (Android / iOS),
+ * который прозвонит даже если браузер и сайт полностью закрыты.
+ */
+export function buildGoogleCalendarReminderUrl(title: string, targetDate: Date): string {
+  const start = new Date(targetDate.getTime());
+  const end = new Date(targetDate.getTime() + 15 * 60 * 1000);
+
+  const toCalUtc = (d: Date) =>
+    d
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\.\d{3}/, '');
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `🔔 WORKFLOW: ${title}`,
+    details: 'Голосовое напоминание из диспетчерской системы WORKFLOW ЖКХ',
+    dates: `${toCalUtc(start)}/${toCalUtc(end)}`,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/**
+ * Скачивает .ics файл будильника/события для встроенного календаря iPhone / Android
+ */
+export function downloadIcsReminderFile(title: string, targetDate: Date): void {
+  const start = new Date(targetDate.getTime());
+  const end = new Date(targetDate.getTime() + 15 * 60 * 1000);
+
+  const toCalUtc = (d: Date) =>
+    d
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\.\d{3}/, '');
+
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//WORKFLOW ЖКХ//Voice Reminder//RU',
+    'BEGIN:VEVENT',
+    `UID:wf-rem-${Date.now()}@workflow.app`,
+    `DTSTAMP:${toCalUtc(new Date())}`,
+    `DTSTART:${toCalUtc(start)}`,
+    `DTEND:${toCalUtc(end)}`,
+    `SUMMARY:🔔 ${title}`,
+    'DESCRIPTION:Звуковое напоминание WORKFLOW ЖКХ',
+    'BEGIN:VALARM',
+    'TRIGGER:-PT0M',
+    'ACTION:DISPLAY',
+    `DESCRIPTION:🔔 ${title}`,
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `reminder-${formatTimeHHMM(targetDate).replace(':', '-')}.ics`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }

@@ -142,9 +142,9 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-start sm:items-center justify-center px-3 py-3 sm:p-4 overflow-y-auto overflow-x-hidden">
       <div
-        className="rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border transition-all text-xs my-8 max-h-[92vh] overflow-y-auto"
+        className="rounded-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-2xl p-3.5 sm:p-6 shadow-2xl border transition-all text-xs my-auto max-h-[92vh] overflow-y-auto overflow-x-hidden box-border"
         style={{
           backgroundColor: theme.keyColors.cardBg,
           borderColor: theme.keyColors.cardBorder,

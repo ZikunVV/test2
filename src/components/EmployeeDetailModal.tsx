@@ -29,14 +29,14 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-70 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-70 bg-black/60 backdrop-blur-xs flex items-start sm:items-center justify-center px-3 py-3 sm:p-4 animate-in fade-in duration-150 overflow-y-auto overflow-x-hidden"
       onClick={(e) => {
         e.stopPropagation();
         onClose();
       }}
     >
       <div
-        className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 border border-purple-200 shadow-2xl space-y-4 text-xs animate-in zoom-in-95 duration-150"
+        className="bg-white rounded-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-md p-3.5 sm:p-6 border border-purple-200 shadow-2xl space-y-3.5 sm:space-y-4 text-xs animate-in zoom-in-95 duration-150 my-auto max-h-[90vh] overflow-y-auto overflow-x-hidden box-border"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

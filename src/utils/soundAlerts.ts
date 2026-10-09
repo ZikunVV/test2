@@ -330,15 +330,95 @@ export function triggerDeviceVibration(isUrgent: boolean = false): void {
 }
 
 /**
- * Отправка системного браузерного уведомления (если разрешено)
+ * Отправка системного браузерного уведомления (работает и через Service Worker на телефоне в фоне)
  */
 export function sendBrowserNotification(title: string, body: string): void {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
   try {
     if (Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-      });
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then((reg) => {
+          if (reg && reg.showNotification) {
+            reg
+              .showNotification(title, {
+                body,
+                icon: '/pwa-192x192.png',
+                badge: '/pwa-192x192.png',
+                vibrate: [250, 100, 250, 100, 350],
+                requireInteraction: true,
+                tag: `wf-alert-${Date.now()}`,
+              } as NotificationOptions)
+              .catch(() => {
+                new Notification(title, { body });
+              });
+          } else {
+            new Notification(title, { body });
+          }
+        });
+      } else {
+        new Notification(title, { body });
+      }
     }
   } catch (e) {}
 }
+
+let backgroundKeepAliveOsc: OscillatorNode | null = null;
+let backgroundKeepAliveGain: GainNode | null = null;
+let wakeLockSentinel: any = null;
+
+/**
+ * Включает бесшумный фоновый аудио-канал и WakeLock, чтобы браузер не «усыплял» вкладку,
+ * когда пользователь свернул её в фоновый режим или открыл отдельную дежурную вкладку.
+ */
+export function setBackgroundKeepAliveActive(active: boolean): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (active) {
+      const ctx = getAudioContext();
+      if (ctx && !backgroundKeepAliveOsc) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1, ctx.currentTime); // 1 Гц (неслышимая частота)
+        gain.gain.setValueAtTime(0.00001, ctx.currentTime); // практически нулевая амплитуда
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        backgroundKeepAliveOsc = osc;
+        backgroundKeepAliveGain = gain;
+      }
+      if ('wakeLock' in navigator && !wakeLockSentinel) {
+        (navigator as any).wakeLock
+          .request('screen')
+          .then((sentinel: any) => {
+            wakeLockSentinel = sentinel;
+            sentinel.addEventListener('release', () => {
+              wakeLockSentinel = null;
+            });
+          })
+          .catch(() => {});
+      }
+    } else {
+      if (backgroundKeepAliveOsc) {
+        try {
+          backgroundKeepAliveOsc.stop();
+          backgroundKeepAliveOsc.disconnect();
+        } catch (e) {}
+        backgroundKeepAliveOsc = null;
+      }
+      if (backgroundKeepAliveGain) {
+        try {
+          backgroundKeepAliveGain.disconnect();
+        } catch (e) {}
+        backgroundKeepAliveGain = null;
+      }
+      if (wakeLockSentinel) {
+        try {
+          wakeLockSentinel.release();
+        } catch (e) {}
+        wakeLockSentinel = null;
+      }
+    }
+  } catch (e) {}
+}
+

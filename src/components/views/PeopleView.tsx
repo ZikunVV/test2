@@ -312,8 +312,8 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
 
       {/* CREATE / EDIT PERSON MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-purple-200 shadow-2xl space-y-4 text-xs">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-start sm:items-center justify-center px-3 py-3 sm:p-4 overflow-y-auto overflow-x-hidden">
+          <div className="bg-white rounded-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-md p-3.5 sm:p-6 border border-purple-200 shadow-2xl space-y-3.5 sm:space-y-4 text-xs my-auto max-h-[90vh] overflow-y-auto overflow-x-hidden box-border">
             <div className="flex items-center justify-between border-b border-purple-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">
                 {editingPerson ? 'Редактировать сотрудника' : 'Добавить сотрудника'}
@@ -341,8 +341,8 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="min-w-0">
                   <label className="font-bold text-slate-700 block mb-1">
                     Где работает
                   </label>
@@ -354,7 +354,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                     className="w-full px-3 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="font-bold text-slate-700 block mb-1">
                     Кем работает
                   </label>
@@ -476,12 +476,12 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
       {/* DELETE PERSON CONFIRMATION MODAL */}
       {personToDelete && (
         <div
-          className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-start sm:items-center justify-center px-3 py-3 sm:p-4 overflow-y-auto overflow-x-hidden"
           onClick={() => setPersonToDelete(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl max-w-sm w-full p-5 sm:p-6 border border-rose-200 shadow-2xl space-y-4 text-xs animate-in fade-in zoom-in-95"
+            className="bg-white rounded-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-sm p-3.5 sm:p-6 border border-rose-200 shadow-2xl space-y-3.5 sm:space-y-4 text-xs animate-in fade-in zoom-in-95 my-auto overflow-x-hidden box-border"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">

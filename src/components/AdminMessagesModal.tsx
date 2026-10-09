@@ -73,11 +73,11 @@ export const AdminMessagesModal: React.FC<AdminMessagesModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-start sm:items-center justify-center px-3 py-3 sm:p-4 overflow-y-auto overflow-x-hidden"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl max-w-2xl w-full p-6 border border-purple-200 shadow-2xl space-y-5 text-xs my-8 max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-2xl p-3.5 sm:p-6 border border-purple-200 shadow-2xl space-y-3.5 sm:space-y-5 text-xs my-auto max-h-[90vh] overflow-y-auto overflow-x-hidden box-border"
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: theme.keyColors.cardBg,

@@ -1028,8 +1028,8 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
 
       {/* CREATE / EDIT TASK MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-purple-200 shadow-2xl space-y-4 text-xs">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-start sm:items-center justify-center px-3 py-3 sm:p-4 overflow-y-auto overflow-x-hidden">
+          <div className="bg-white rounded-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-md p-3.5 sm:p-6 border border-purple-200 shadow-2xl space-y-3.5 sm:space-y-4 text-xs my-auto max-h-[90vh] overflow-y-auto overflow-x-hidden box-border">
             <div className="flex items-center justify-between border-b border-purple-100 pb-3">
               <div>
                 <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider block">
@@ -1245,8 +1245,8 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
 
       {/* CREATE / EDIT PERSONAL PERSON MODAL */}
       {isPersonModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-purple-200 shadow-2xl space-y-4 text-xs">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-start sm:items-center justify-center px-3 py-3 sm:p-4 overflow-y-auto overflow-x-hidden">
+          <div className="bg-white rounded-2xl w-full max-w-[calc(100vw-24px)] sm:max-w-md p-3.5 sm:p-6 border border-purple-200 shadow-2xl space-y-3.5 sm:space-y-4 text-xs my-auto max-h-[90vh] overflow-y-auto overflow-x-hidden box-border">
             <div className="flex items-center justify-between border-b border-purple-100 pb-3">
               <div>
                 <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider block">
@@ -1306,8 +1306,8 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="min-w-0">
                   <label className="font-bold text-slate-700 block mb-1">
                     Организация
                   </label>
@@ -1319,7 +1319,7 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                     className="w-full px-3 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="font-bold text-slate-700 block mb-1">
                     Кем работает / Должность
                   </label>

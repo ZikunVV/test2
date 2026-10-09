@@ -65,6 +65,7 @@ import {
   speakAlertText,
   triggerDeviceVibration,
   sendBrowserNotification,
+  setBackgroundKeepAliveActive,
 } from './utils/soundAlerts';
 import {
   DatabaseBackupModal,
@@ -79,6 +80,7 @@ import {
   AlertTriangle,
   Bell,
   X,
+  Radio,
 } from 'lucide-react';
 
 function loadStorage<T>(key: string, fallback: T): T {
@@ -866,6 +868,39 @@ export default function App() {
   }, [personalTasks]);
 
   // Фоновый таймер звуковых напоминаний («Напомни мне через два часа», «Напомни в 12:00»)
+  const [isBgWatcherMode, setIsBgWatcherMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('bg_watcher') === '1';
+    }
+    return false;
+  });
+
+  // Автоматическое поддержание фонового аудио-канала, если есть ожидающие напоминания или открыта дежурная вкладка
+  useEffect(() => {
+    const hasPendingReminders = personalTasks.some(
+      (t) => t.status !== 'completed' && !t.reminder_fired && Boolean(t.reminder_at_iso)
+    );
+    if (isBgWatcherMode || hasPendingReminders) {
+      setBackgroundKeepAliveActive(true);
+    }
+  }, [isBgWatcherMode, personalTasks]);
+
+  // Синхронизация задач между вкладками (чтобы дежурная фоновая вкладка мгновенно видела новые напоминания)
+  useEffect(() => {
+    const handleStorageSync = (e: StorageEvent) => {
+      if (e.key === 'app_personal_tasks' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setPersonalTasks(parsed);
+          }
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageSync);
+    return () => window.removeEventListener('storage', handleStorageSync);
+  }, []);
+
   useEffect(() => {
     if (!currentUser) return;
 
@@ -921,7 +956,8 @@ export default function App() {
       }
     };
 
-    const intervalId = setInterval(checkDueReminders, 5000);
+    checkDueReminders();
+    const intervalId = setInterval(checkDueReminders, 3000);
     return () => clearInterval(intervalId);
   }, [currentUser, soundSettings]);
 
@@ -2100,7 +2136,7 @@ export default function App() {
             />
 
             {/* Content Body */}
-            <main className="p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
+            <main className="p-3 sm:p-6 md:p-8 max-w-7xl w-full mx-auto space-y-4 sm:space-y-6 overflow-x-hidden">
               {/* ROUTING BETWEEN VIEWS */}
 
               {/* VIEW: HOUSES (ДОМА В УПРАВЛЕНИИ) */}
@@ -2634,33 +2670,33 @@ export default function App() {
         onDeleteMessage={handleDeleteAdminMessage}
       />
 
-      {/* Visual Signal-Alert Banner (Всплывающий сигнал-оповещение сверху экрана) */}
+      {/* Visual Signal-Alert Banner (Всплывающий сигнал-оповещение сверху экрана — компактный на телефоне по ширине заявок) */}
       {activeAlertToast && (
-        <div className="fixed top-4 right-4 left-4 sm:left-auto sm:w-96 z-50 animate-in fade-in slide-in-from-top-4 duration-200">
+        <div className="fixed top-3 left-3 right-3 sm:left-auto sm:right-4 sm:w-96 max-w-[calc(100vw-24px)] z-50 animate-in fade-in slide-in-from-top-4 duration-200">
           <div
-            className={`rounded-2xl p-4 shadow-2xl border-2 flex items-start gap-3 ${
+            className={`w-full max-w-full rounded-2xl p-3 sm:p-4 shadow-2xl border-2 flex items-start gap-2.5 sm:gap-3 overflow-hidden box-border ${
               activeAlertToast.type === 'urgent_ticket'
                 ? 'bg-rose-600 text-white border-rose-300'
                 : 'bg-white text-slate-900 border-purple-400'
             }`}
           >
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${
                 activeAlertToast.type === 'urgent_ticket'
                   ? 'bg-white/20 text-white animate-bounce'
                   : 'bg-purple-100 text-purple-800'
               }`}
             >
               {activeAlertToast.type === 'urgent_ticket' ? (
-                <AlertTriangle className="w-5 h-5" />
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
               ) : (
-                <Bell className="w-5 h-5" />
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
               )}
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 overflow-hidden">
               <div className="flex items-center justify-between gap-2">
                 <span
-                  className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                  className={`text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md truncate ${
                     activeAlertToast.type === 'urgent_ticket'
                       ? 'bg-white/25 text-white'
                       : 'bg-purple-100 text-purple-900'
@@ -2671,7 +2707,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setActiveAlertToast(null)}
-                  className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                  className={`p-1 rounded-lg transition-colors cursor-pointer shrink-0 ${
                     activeAlertToast.type === 'urgent_ticket'
                       ? 'hover:bg-white/20 text-white'
                       : 'hover:bg-slate-100 text-slate-400 hover:text-slate-700'
@@ -2680,11 +2716,11 @@ export default function App() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="text-sm font-black mt-1 leading-snug">
+              <div className="text-xs sm:text-sm font-black mt-1 leading-snug break-words">
                 {activeAlertToast.title}
               </div>
               <div
-                className={`text-xs mt-0.5 line-clamp-2 ${
+                className={`text-[11px] sm:text-xs mt-0.5 line-clamp-2 break-words ${
                   activeAlertToast.type === 'urgent_ticket'
                     ? 'text-rose-100'
                     : 'text-slate-600'
@@ -2692,20 +2728,20 @@ export default function App() {
               >
                 {activeAlertToast.description}
               </div>
-              <div className="mt-2.5 flex items-center gap-2">
+              <div className="mt-2 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setActiveSidebarNav('sounds');
                     setActiveAlertToast(null);
                   }}
-                  className={`text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer ${
+                  className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer ${
                     activeAlertToast.type === 'urgent_ticket'
                       ? 'bg-white text-rose-700 hover:bg-rose-50'
                       : 'bg-purple-100 text-purple-900 hover:bg-purple-200'
                   }`}
                 >
-                  <Volume2 className="w-3 h-3" />
+                  <Volume2 className="w-3 h-3 shrink-0" />
                   <span>Настроить звуки</span>
                 </button>
               </div>
@@ -2716,6 +2752,35 @@ export default function App() {
 
       {/* PWA Offline Indicator */}
       <OfflineIndicator />
+
+      {/* Полоска дежурной фоновой вкладки (?bg_watcher=1) */}
+      {isBgWatcherMode && (
+        <div className="fixed bottom-3 left-3 right-3 sm:left-auto sm:right-4 sm:w-96 z-40 rounded-2xl bg-purple-900 text-white p-3 shadow-2xl border border-purple-400 flex items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+              <Radio className="w-4 h-4 text-emerald-300 animate-pulse" />
+            </div>
+            <div className="min-w-0">
+              <div className="font-extrabold text-[11px] sm:text-xs text-emerald-300 truncate">
+                Фоновый дежурный режим активен
+              </div>
+              <div className="text-[10px] text-purple-100 leading-tight">
+                Оставьте эту вкладку открытой в фоне — звуковые напоминания и сигналы сработают вовремя.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setBackgroundKeepAliveActive(true);
+              playSoundVariant(soundSettings.taskSoundVariant, soundSettings.volume);
+            }}
+            className="px-2.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-[10px] shrink-0 cursor-pointer"
+          >
+            Проверить звук
+          </button>
+        </div>
+      )}
 
     </div>
   );

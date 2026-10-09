@@ -8,6 +8,7 @@ import {
   playSoundVariant,
   speakAlertText,
   triggerDeviceVibration,
+  setBackgroundKeepAliveActive,
 } from '../../utils/soundAlerts';
 import {
   Volume2,
@@ -27,6 +28,8 @@ import {
   RotateCcw,
   FolderOpen,
   Sparkles,
+  Radio,
+  ExternalLink,
 } from 'lucide-react';
 
 interface SoundSettingsViewProps {
@@ -446,6 +449,29 @@ export const SoundSettingsView: React.FC<SoundSettingsViewProps> = ({
             <CheckSquare className="w-3.5 h-3.5 text-emerald-700" />
             <span>Тест: Список дел</span>
           </button>
+        </div>
+
+        {/* Блок фоновой работы сигналов (отдельная дежурная вкладка) */}
+        <div className="p-3.5 sm:p-4 rounded-xl bg-purple-50/80 border border-purple-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="text-xs sm:text-sm font-black text-purple-950 flex items-center gap-2">
+              <Radio className="w-4 h-4 text-purple-700 shrink-0" />
+              <span>Работа сигналов в фоновом режиме (если вкладка свёрнута)</span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-600 leading-relaxed">
+              Чтобы звуковые напоминания гарантированно срабатывали, вы можете открыть отдельную <strong>фоновую вкладку-дежурный</strong> (с поддержкой фонового аудио-канала) или добавлять напоминания в системный Календарь/Будильник телефона прямо из окна «Голосовой набор».
+            </p>
+          </div>
+          <a
+            href="?bg_watcher=1"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setBackgroundKeepAliveActive(true)}
+            className="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shrink-0 shadow-xs transition-all"
+          >
+            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+            <span>Открыть фоновую вкладку</span>
+          </a>
         </div>
       </div>
 
