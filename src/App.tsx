@@ -374,6 +374,7 @@ export default function App() {
   const canDeletePeople = hasPermission('delete_employee') || hasPermission('internal');
   const canViewPersonalTasks = hasPermission('my_tasks_view');
   const canUseVoiceControl = hasPermission('voice_control');
+  const canUseVoiceReminder = isAdmin || hasPermission('voice_reminder');
 
   // Planned ticket modal prefill state
   const [newTicketPrefilledDate, setNewTicketPrefilledDate] = useState<
@@ -1744,6 +1745,7 @@ export default function App() {
             'notifications',
             'messages',
             'voice_control',
+            'voice_reminder',
             'admin',
           ];
         } else if (role === 'editor' && u.role === 'viewer') {
@@ -1817,6 +1819,8 @@ export default function App() {
             'audit',
             'notifications',
             'messages',
+            'voice_control',
+            'voice_reminder',
             'admin',
           ]
         : newUser.role === 'editor'
@@ -2223,6 +2227,7 @@ export default function App() {
                   showFlatFallback={showFlatFallback}
                   currentUser={canViewPersonalTasks ? currentUser : undefined}
                   canUseVoiceControl={canUseVoiceControl}
+                  canUseVoiceReminder={canUseVoiceReminder}
                   onOpenWriteToAdmin={() => setIsAdminMessagesOpen(true)}
                   tasks={personalTasks}
                   personalPeople={personalPeople}
@@ -2626,6 +2631,7 @@ export default function App() {
         showFlatFallback={showFlatFallback}
         currentUser={currentUser}
         canUseVoiceControl={canUseVoiceControl}
+        canUseVoiceReminder={canUseVoiceReminder}
         canCreateTicket={canCreateTicket}
         canViewPersonalTasks={canViewPersonalTasks}
         onNavigate={(navId) => handleSelectNav(navId)}

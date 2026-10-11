@@ -37,6 +37,7 @@ interface PersonalTasksViewProps {
   showFlatFallback: boolean;
   currentUser?: UserItem;
   canUseVoiceControl?: boolean;
+  canUseVoiceReminder?: boolean;
   onOpenWriteToAdmin?: () => void;
   tasks: PersonalTask[];
   personalPeople: PersonalPerson[];
@@ -55,6 +56,7 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   showFlatFallback,
   currentUser,
   canUseVoiceControl = false,
+  canUseVoiceReminder = false,
   onOpenWriteToAdmin,
   tasks,
   personalPeople,
@@ -238,7 +240,7 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
 
         if (field === 'title') {
           const parsedRem = parseVoiceReminderCommand(cleaned);
-          if (parsedRem) {
+          if (parsedRem && canUseVoiceReminder) {
             setTaskTitle(`🔔 ${parsedRem.title}`);
             setTaskDate(parsedRem.taskDateIso);
             const dt = new Date(parsedRem.reminderAtIso);

@@ -49,6 +49,7 @@ interface VoiceControlModalProps {
   showFlatFallback: boolean;
   currentUser?: UserItem;
   canUseVoiceControl: boolean;
+  canUseVoiceReminder: boolean;
   canCreateTicket: boolean;
   canViewPersonalTasks: boolean;
   onNavigate: (navId: string) => void;
@@ -66,6 +67,7 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
   showFlatFallback,
   currentUser,
   canUseVoiceControl,
+  canUseVoiceReminder,
   canCreateTicket,
   canViewPersonalTasks,
   onNavigate,
@@ -132,6 +134,14 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
     // 0. Voice Sound Reminder Command ("Напомни мне через два часа...", "Напомни в 12 00...", "Напомни через 15 минут...")
     const parsedReminder = parseVoiceReminderCommand(text);
     if (parsedReminder) {
+      if (!canUseVoiceReminder) {
+        setMode('reminder');
+        setFeedbackMsg({
+          type: 'error',
+          text: 'Функция «Напоминание» в голосовом наборе доступна только для Администратора, остальным сотрудникам — по разрешению Администратора в разделе «Права».',
+        });
+        return;
+      }
       if (!canViewPersonalTasks || !currentUser) {
         setFeedbackMsg({
           type: 'error',
@@ -436,6 +446,15 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
   const startListening = (targetMode: 'smart' | 'note' | 'reminder' = mode) => {
     setFeedbackMsg(null);
     stopListening();
+
+    if (targetMode === 'reminder' && !canUseVoiceReminder) {
+      setFeedbackMsg({
+        type: 'error',
+        text: 'Звуковое напоминание в голосовом наборе доступно только Администратору, остальным — по разрешению Администратора в разделе «Права».',
+      });
+      return;
+    }
+
     unlockMobileAudio();
 
     const SpeechRecognitionAPI =
@@ -470,6 +489,13 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
         if (targetMode === 'smart') {
           executeVoiceCommand(cleaned);
         } else if (targetMode === 'reminder') {
+          if (!canUseVoiceReminder) {
+            setFeedbackMsg({
+              type: 'error',
+              text: 'Звуковое напоминание доступно только Администратору, остальным — по разрешению Администратора.',
+            });
+            return;
+          }
           const parsed = parseVoiceReminderCommand(cleaned, true);
           if (parsed && currentUser && canViewPersonalTasks) {
             const finalTitle = noteTitle.trim() ? noteTitle.trim() : parsed.title;
@@ -501,8 +527,8 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
             setNoteTitle((prev) => (prev.trim() ? `${prev.trim()} ${cleaned}` : cleaned));
           }
         } else {
-          // Even in 'note' mode, if the user explicitly says "Напомни мне через 2 часа...", parse the time automatically!
-          const maybeReminder = parseVoiceReminderCommand(cleaned);
+          // Even in 'note' mode, if the user explicitly says "Напомни мне через 2 часа...", parse the time automatically if permitted!
+          const maybeReminder = canUseVoiceReminder ? parseVoiceReminderCommand(cleaned) : null;
           if (maybeReminder) {
             setNoteTitle(maybeReminder.title);
             setNoteDate(maybeReminder.taskDateIso);
@@ -559,7 +585,7 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
     let reminderLabel: string | undefined;
     let finalDate = noteDate.trim();
 
-    if (reminderTime.trim()) {
+    if (reminderTime.trim() && canUseVoiceReminder) {
       const now = new Date();
       const [hhStr, mmStr] = reminderTime.trim().split(':');
       const hh = parseInt(hhStr || '0', 10);
@@ -609,6 +635,13 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
   };
 
   const handleQuickPresetReminder = (minutesFromNow: number, labelText: string) => {
+    if (!canUseVoiceReminder) {
+      setFeedbackMsg({
+        type: 'error',
+        text: 'Звуковое напоминание доступно только Администратору, остальным — по разрешению Администратора в разделе «Права».',
+      });
+      return;
+    }
     if (!currentUser || !canViewPersonalTasks) return;
     unlockMobileAudio();
     const target = new Date(Date.now() + minutesFromNow * 60 * 1000);
@@ -807,7 +840,11 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
                 : 'text-slate-600 hover:text-purple-950'
             }`}
           >
-            <BellRing className="w-3.5 h-3.5 shrink-0" />
+            {canUseVoiceReminder ? (
+              <BellRing className="w-3.5 h-3.5 shrink-0" />
+            ) : (
+              <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+            )}
             <span className="truncate">Напоминание</span>
           </button>
           <button
@@ -827,7 +864,8 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
           </button>
         </div>
 
-        {/* Big Microphone Button for Mobile Convenience */}
+        {/* Big Microphone Button for Mobile Convenience (hidden when in locked reminder tab) */}
+        {!(mode === 'reminder' && !canUseVoiceReminder) && (
         <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-b from-purple-50/90 to-white border border-purple-200/90 flex flex-col items-center text-center space-y-2">
           <button
             type="button"
@@ -856,7 +894,9 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
             </div>
             <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 leading-snug break-words">
               {mode === 'smart'
-                ? 'Скажите раздел («Карта», «Дома»), «Напомни мне через два часа...» или «Напомни в 12 00...»'
+                ? canUseVoiceReminder
+                  ? 'Скажите раздел («Карта», «Дома»), «Напомни мне через два часа...» или «Напомни в 12 00...»'
+                  : 'Скажите раздел («Карта», «Дома», «Плановые работы»), «Подать заявку» или «Поиск...»'
                 : mode === 'reminder'
                 ? 'Скажите: «Напомни мне через два часа позвонить мастеру» или «Напомни в 12 00 проверить подвал»'
                 : 'Продиктуйте текст вашей заметки — он запишется в поле ниже'}
@@ -869,6 +909,7 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
             </div>
           )}
         </div>
+        )}
 
         {/* Feedback / Confirmation Banner (Compact on mobile, fits exact card width) */}
         {feedbackMsg && (
@@ -990,13 +1031,57 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
 
             <div className="p-2.5 rounded-xl bg-purple-50/70 border border-purple-200/80 space-y-1 text-[10px] sm:text-[11px] text-slate-600 leading-snug">
               <div className="font-extrabold text-purple-950">Примеры голосовых команд:</div>
-              <div>• <strong>«Напомни мне через два часа»</strong> — звуковой сигнал</div>
-              <div>• <strong>«Напомни в 12 00»</strong> — звуковое напоминание на 12:00</div>
+              {canUseVoiceReminder && (
+                <>
+                  <div>• <strong>«Напомни мне через два часа»</strong> — звуковой сигнал</div>
+                  <div>• <strong>«Напомни в 12 00»</strong> — звуковое напоминание на 12:00</div>
+                </>
+              )}
               <div>• <strong>«Подать заявку»</strong> — окно новой заявки</div>
               <div>• <strong>«Поиск Шевченко»</strong> — поиск по адресу</div>
             </div>
           </div>
         ) : mode === 'reminder' ? (
+          !canUseVoiceReminder ? (
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 space-y-2.5">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-extrabold text-xs text-slate-900">
+                    Напоминание доступно только Администратору (остальным — по разрешению)
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                    Функция голосового звукового напоминания и будильника по умолчанию открыта только для Администратора. Чтобы подключить «Голосовой набор: Напоминание» для вашей учётной записи, обратитесь к Администратору (включается в разделе «Администрирование → Права»).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-end gap-1.5 pt-2 border-t border-amber-200/70">
+                <button
+                  type="button"
+                  onClick={() => setMode('smart')}
+                  className="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 font-bold text-[11px] cursor-pointer"
+                >
+                  К навигации
+                </button>
+                {onOpenWriteToAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenWriteToAdmin();
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-black text-[11px] flex items-center gap-1 shadow-sm cursor-pointer"
+                  >
+                    <Send className="w-3 h-3 shrink-0" />
+                    <span>Написать админу</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
           <div className="space-y-2.5">
             <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/90 space-y-1.5 text-[10px] sm:text-[11px] text-amber-950">
                 <div className="font-extrabold flex items-center justify-between gap-1.5 text-amber-900">
@@ -1096,6 +1181,7 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
               </div>
             </div>
           </div>
+          )
         ) : (
           <form onSubmit={handleSaveQuickNote} className="space-y-2.5">
             <div>
@@ -1112,7 +1198,7 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className={`grid grid-cols-1 ${canUseVoiceReminder ? 'sm:grid-cols-2' : ''} gap-2`}>
               <div className="min-w-0">
                 <label className="font-bold text-[11px] text-slate-700 block mb-1">
                   Дата
@@ -1124,17 +1210,19 @@ export const VoiceControlModal: React.FC<VoiceControlModalProps> = ({
                   className="w-full max-w-full px-2.5 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white"
                 />
               </div>
-              <div className="min-w-0">
-                <label className="font-bold text-[11px] text-slate-700 block mb-1">
-                  Время сигнала 🔔
-                </label>
-                <input
-                  type="time"
-                  value={reminderTime}
-                  onChange={(e) => setReminderTime(e.target.value)}
-                  className="w-full max-w-full px-2.5 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white"
-                />
-              </div>
+              {canUseVoiceReminder && (
+                <div className="min-w-0">
+                  <label className="font-bold text-[11px] text-slate-700 block mb-1">
+                    Время сигнала 🔔
+                  </label>
+                  <input
+                    type="time"
+                    value={reminderTime}
+                    onChange={(e) => setReminderTime(e.target.value)}
+                    className="w-full max-w-full px-2.5 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white"
+                  />
+                </div>
+              )}
             </div>
 
             <div>

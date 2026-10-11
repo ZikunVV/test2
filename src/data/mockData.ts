@@ -77,6 +77,7 @@ export const INITIAL_USERS: UserItem[] = [
       'notifications',
       'messages',
       'voice_control',
+      'voice_reminder',
       'admin',
     ],
   },
