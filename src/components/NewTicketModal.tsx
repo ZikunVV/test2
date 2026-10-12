@@ -19,8 +19,19 @@ import {
   Briefcase,
   MapPin,
   Info,
+  History,
+  AlertCircle,
 } from 'lucide-react';
-import { normalizeStreetName } from '../utils/streets';
+import {
+  normalizeStreetName,
+  findTicketsForAddress,
+  findTicketsForFullAddress,
+  isSameFullAddressTicket,
+  extractAddressParts,
+  getStandardLocationKey,
+  cleanStreetPrefix,
+  normalizeHouseNumber,
+} from '../utils/streets';
 
 interface NewTicketModalProps {
   isOpen: boolean;
@@ -31,9 +42,11 @@ interface NewTicketModalProps {
   houses: House[];
   streets?: StreetItem[];
   people?: PersonalPerson[];
+  tickets?: Ticket[];
   prefilledDate?: string;
   isPlannedDefault?: boolean;
   onCreateTicket: (ticket: Omit<Ticket, 'id' | 'number'>) => void;
+  onAddStreet?: (streetName: string) => void;
   canInspectWorker?: boolean;
 }
 
@@ -46,33 +59,26 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   houses,
   streets = [],
   people = [],
+  tickets = [],
   prefilledDate,
   isPlannedDefault = false,
   onCreateTicket,
+  onAddStreet,
   canInspectWorker = true,
 }) => {
-  // Sorted houses in alphabetical order (by street, house number, building)
-  const sortedHouses = React.useMemo(() => {
-    return [...houses].sort((a, b) => {
-      const streetCmp = (a.street || '').localeCompare(b.street || '', 'ru', { numeric: true, sensitivity: 'base' });
-      if (streetCmp !== 0) return streetCmp;
-      const numCmp = (a.house_number || '').localeCompare(b.house_number || '', 'ru', { numeric: true, sensitivity: 'base' });
-      if (numCmp !== 0) return numCmp;
-      return (a.building || '').localeCompare(b.building || '', 'ru', { numeric: true, sensitivity: 'base' });
-    });
-  }, [houses]);
-
-  // Address selection
-  const [selectedHouseId, setSelectedHouseId] = useState<string>(houses[0]?.id || '');
-  const [street, setStreet] = useState<string>(houses[0]?.street || '');
-  const [houseNumber, setHouseNumber] = useState<string>(houses[0]?.house_number || '');
-  const [building, setBuilding] = useState<string>(houses[0]?.building || '');
+  // Address selection (manual entry with street dropdown suggestions from first letters)
+  const [street, setStreet] = useState<string>('');
+  const [houseNumber, setHouseNumber] = useState<string>('');
+  const [building, setBuilding] = useState<string>('');
+  const [isStreetSuggestionsOpen, setIsStreetSuggestionsOpen] = useState(false);
+  const [locallyAddedStreets, setLocallyAddedStreets] = useState<string[]>([]);
 
   // Specific location & apartment validation
   const [locationType, setLocationType] = useState<
     'apartment' | 'entrance' | 'basement' | 'roof' | 'yard' | 'technical'
   >('apartment');
   const [apartmentNumber, setApartmentNumber] = useState('');
+  const [entranceNumber, setEntranceNumber] = useState('');
   const [locationValue, setLocationValue] = useState('');
 
   // Dates: Default to today or prefilled
@@ -130,6 +136,110 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     return normalizeStreetName(street, streets);
   }, [street, streets]);
 
+  // All unique streets from streets directory, houses, tickets, and user-added streets
+  // "при написании новой улицы добавь её в подсказки улицы, что бы при следующем вводе улицы по первым буквам выскакивало полное название улицы"
+  const allKnownStreetItems = React.useMemo(() => {
+    const map = new Map<
+      string,
+      { name: string; oldNames: string }
+    >();
+
+    // 1. Directory streets
+    streets.forEach((s) => {
+      const clean = (s.current_name || '').trim();
+      if (!clean) return;
+      const key = clean.toLocaleLowerCase('ru-RU');
+      map.set(key, {
+        name: clean,
+        oldNames: s.old_names || '',
+      });
+    });
+
+    // 2. Houses streets
+    houses.forEach((h) => {
+      const clean = (h.street || '').trim();
+      if (!clean) return;
+      const key = clean.toLocaleLowerCase('ru-RU');
+      if (!map.has(key)) {
+        map.set(key, {
+          name: clean,
+          oldNames: '',
+        });
+      }
+    });
+
+    // 3. Tickets streets
+    tickets.forEach((t) => {
+      let st = (t.street || '').trim();
+      if (!st && t.address) {
+        const parts = extractAddressParts(t);
+        st = parts.street;
+      }
+      if (!st) return;
+      const key = st.toLocaleLowerCase('ru-RU');
+      if (!map.has(key)) {
+        map.set(key, {
+          name: st,
+          oldNames: '',
+        });
+      }
+    });
+
+    // 4. Locally added streets in this session
+    locallyAddedStreets.forEach((st) => {
+      const clean = st.trim();
+      if (!clean) return;
+      const key = clean.toLocaleLowerCase('ru-RU');
+      if (!map.has(key)) {
+        map.set(key, {
+          name: clean,
+          oldNames: '',
+        });
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'ru', { sensitivity: 'base' })
+    );
+  }, [streets, houses, tickets, locallyAddedStreets]);
+
+  // Autocomplete street suggestions starting from first typed letters (case-insensitive)
+  const matchingStreetSuggestions = React.useMemo(() => {
+    const raw = street.trim();
+    const cleanedQuery = raw
+      .replace(/^(?:ул\.|улица|вул\.|вулиця|пр-т|проспект|просп\.|пер\.|переулок|провулок)\s+/i, '')
+      .trim()
+      .toLocaleLowerCase('ru-RU');
+
+    if (!cleanedQuery) {
+      return allKnownStreetItems.slice(0, 10);
+    }
+
+    const startsWithList: typeof allKnownStreetItems = [];
+    const containsList: typeof allKnownStreetItems = [];
+
+    allKnownStreetItems.forEach((item) => {
+      const lowerName = item.name
+        .replace(/^(?:ул\.|улица|вул\.|вулиця|пр-т|проспект|просп\.|пер\.|переулок|провулок)\s+/i, '')
+        .trim()
+        .toLocaleLowerCase('ru-RU');
+      const lowerFullName = item.name.toLocaleLowerCase('ru-RU');
+      const lowerOld = (item.oldNames || '').toLocaleLowerCase('ru-RU');
+
+      if (lowerName.startsWith(cleanedQuery) || lowerFullName.startsWith(cleanedQuery)) {
+        startsWithList.push(item);
+      } else if (
+        lowerName.includes(cleanedQuery) ||
+        lowerFullName.includes(cleanedQuery) ||
+        lowerOld.includes(cleanedQuery)
+      ) {
+        containsList.push(item);
+      }
+    });
+
+    return [...startsWithList, ...containsList];
+  }, [street, allKnownStreetItems]);
+
   // Collapsible detailed sections (v48.20 rule: can be collapsed by default if empty)
   const [showWorkDetails, setShowWorkDetails] = useState(false);
   const [workDescription, setWorkDescription] = useState('');
@@ -154,17 +264,82 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     }
   };
 
-  // Sync house selection
+  // Matched house from management registry to know total entrances if configured
+  const matchedHouse = React.useMemo(() => {
+    if (!street.trim() || !houseNumber.trim()) return null;
+    const normSt = cleanStreetPrefix(
+      normalizeStreetName(street, streets).officialName || street
+    ).trim().toLowerCase();
+    const normH = normalizeHouseNumber(houseNumber);
+    const normB = normalizeHouseNumber(building);
+    return houses.find((h) => {
+      const hSt = cleanStreetPrefix(
+        normalizeStreetName(h.street, streets).officialName || h.street
+      ).trim().toLowerCase();
+      const hNum = normalizeHouseNumber(h.house_number);
+      const hBld = normalizeHouseNumber(h.building || '');
+      return hSt === normSt && hNum === normH && hBld === normB;
+    }) || null;
+  }, [street, houseNumber, building, houses, streets]);
+
+  const maxEntrancesCount = Math.max(matchedHouse?.entrances_count || 0, 10);
+
+  // Standard location key for 3-indicator exact match
+  // "полное совпадение это когда ещё и номер квартиры или место уточнения то есть введено минимум обязательно три показателя ( улица, номер дома, место уточнения )"
+  const targetLocationKey = React.useMemo(() => {
+    return getStandardLocationKey({
+      locationType,
+      apartmentNumber,
+      entranceNumber,
+      locationValue,
+    });
+  }, [locationType, apartmentNumber, entranceNumber, locationValue]);
+
+  // All tickets for the house (street + house number + building)
+  // "когда вводишь название улицы потом пишешь номер дома, сразу после этого появляется надпись (По этому адресу уже есть заявки: 3(нажмите для ознакомления) Ознакомиться)"
+  const matchingHouseTickets = React.useMemo(() => {
+    if (!street.trim() || !houseNumber.trim()) return [];
+    return findTicketsForAddress(
+      tickets,
+      {
+        street,
+        houseNumber,
+        building,
+      },
+      streets
+    );
+  }, [tickets, street, houseNumber, building, streets]);
+
+  // Exact 3-indicator full match tickets (street + house number + location specification)
+  // "а полное совпадение это когда ещё и номер квартиры или место уточнения то есть введено минимум обязательно три показателя ( улица, номер дома, место уточнения )"
+  const matchingFullAddressTickets = React.useMemo(() => {
+    if (!street.trim() || !houseNumber.trim() || !targetLocationKey) return [];
+    return findTicketsForFullAddress(
+      tickets,
+      {
+        street,
+        houseNumber,
+        building,
+        locationKey: targetLocationKey,
+      },
+      streets
+    );
+  }, [tickets, street, houseNumber, building, targetLocationKey, streets]);
+
+  // Active tickets list for review modal
+  const matchingPreviousTickets = React.useMemo(() => {
+    if (matchingFullAddressTickets.length > 0) return matchingFullAddressTickets;
+    return matchingHouseTickets;
+  }, [matchingFullAddressTickets, matchingHouseTickets]);
+
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'full'>('all');
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
+
+  // If user edits any of the 3 address indicators, reset reviewed flag
   useEffect(() => {
-    if (selectedHouseId) {
-      const h = houses.find((item) => item.id === selectedHouseId);
-      if (h) {
-        setStreet(h.street);
-        setHouseNumber(h.house_number);
-        setBuilding(h.building || '');
-      }
-    }
-  }, [selectedHouseId, houses]);
+    setHasReviewed(false);
+  }, [street, houseNumber, building, targetLocationKey]);
 
   useEffect(() => {
     if (prefilledDate) {
@@ -206,34 +381,55 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     setCustomWorkerInput('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    if (!street.trim() || !houseNumber.trim()) {
-      setErrorMessage('Ошибка: Поля «Улица» и «Номер дома» обязательны для заполнения!');
-      return;
-    }
-
-    // v48.20 strict validation:
-    // If Location Type is 'apartment', apartment number is strictly required!
-    if (locationType === 'apartment' && !apartmentNumber.trim()) {
-      setErrorMessage(
-        'Ошибка: При уточнении «Квартира» поле «№ квартиры» обязательно для заполнения!'
-      );
-      return;
-    }
-
-    if (!goal.trim()) {
-      setErrorMessage('Укажите суть / неисправность обращения.');
-      return;
-    }
-
+  const executeCreateTicket = () => {
     const normalized = normalizeStreetName(street, streets);
     const finalStreet = normalized.officialName || street.trim();
+    if (finalStreet) {
+      setLocallyAddedStreets((prev) =>
+        prev.includes(finalStreet) ? prev : [...prev, finalStreet]
+      );
+      if (onAddStreet) {
+        onAddStreet(finalStreet);
+      }
+    }
     const cleanHouseNum = houseNumber.trim();
     const cleanBuilding = building.trim();
-    const fullAddress = `ул. ${finalStreet}, д. ${cleanHouseNum}${cleanBuilding ? ' корп. ' + cleanBuilding : ''}`;
+
+    let locLabel = '';
+    if (locationType === 'apartment') {
+      locLabel = `кв. ${apartmentNumber.trim()}`;
+    } else {
+      const typeName =
+        locationType === 'entrance'
+          ? 'подъезд'
+          : locationType === 'basement'
+          ? 'подвал'
+          : locationType === 'roof'
+          ? 'кровля'
+          : locationType === 'yard'
+          ? 'двор'
+          : 'техэтаж';
+      const entLabel = entranceNumber.trim()
+        ? entranceNumber === 'all'
+          ? 'все подъезды'
+          : `подъезд ${entranceNumber.trim()}`
+        : '';
+      const extraLabel = locationValue.trim();
+
+      if (locationType === 'entrance') {
+        locLabel = entLabel || 'подъезд';
+        if (extraLabel) locLabel += ` (${extraLabel})`;
+      } else {
+        const parts = [typeName];
+        if (entLabel) parts.push(`(${entLabel})`);
+        if (extraLabel) parts.push(`- ${extraLabel}`);
+        locLabel = parts.join(' ');
+      }
+    }
+
+    const fullAddress = `ул. ${finalStreet}, д. ${cleanHouseNum}${
+      cleanBuilding ? ' корп. ' + cleanBuilding : ''
+    }, ${locLabel}`;
 
     onCreateTicket({
       date: requestDate || todayStr,
@@ -246,17 +442,25 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
       apartment:
         locationType === 'apartment'
           ? apartmentNumber.trim()
-          : locationType === 'entrance'
-          ? `Подъезд ${locationValue || '1'}`
-          : locationType === 'basement'
-          ? 'Подвал'
-          : locationType === 'roof'
-          ? 'Кровля'
-          : locationType === 'yard'
-          ? 'Двор'
-          : 'Техэтаж',
+          : locationType === 'entrance' && entranceNumber.trim()
+          ? entranceNumber === 'all'
+            ? 'Все подъезды'
+            : `Подъезд ${entranceNumber.trim()}`
+          : undefined,
       location_type: locationType,
-      location_value: locationValue.trim(),
+      location_value:
+        locationType === 'apartment'
+          ? apartmentNumber.trim()
+          : [
+              entranceNumber.trim()
+                ? entranceNumber === 'all'
+                  ? 'Все подъезды'
+                  : `Подъезд ${entranceNumber.trim()}`
+                : '',
+              locationValue.trim(),
+            ]
+              .filter(Boolean)
+              .join(', ') || undefined,
       execution_date: executionDate || undefined,
       phone: mainPhone.trim() || undefined,
       additional_phones: additionalPhones.filter((p) => p.trim().length > 0),
@@ -281,6 +485,44 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     });
 
     onClose();
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    if (!street.trim() || !houseNumber.trim()) {
+      setErrorMessage('Ошибка: Поля «Улица» и «Номер дома» обязательны для заполнения!');
+      return;
+    }
+
+    // Three mandatory indicators validation:
+    if (locationType === 'apartment' && !apartmentNumber.trim()) {
+      setErrorMessage(
+        'Ошибка: При уточнении «Квартира» поле «№ квартиры» обязательно для заполнения!'
+      );
+      return;
+    }
+
+    if (locationType !== 'apartment' && !entranceNumber.trim()) {
+      setErrorMessage(
+        'Ошибка: Выберите номер подъезда для уточнения места объекта!'
+      );
+      return;
+    }
+
+    if (!goal.trim()) {
+      setErrorMessage('Укажите суть / неисправность обращения.');
+      return;
+    }
+
+    // If there were previous tickets for this address and user hasn't reviewed them yet:
+    if (matchingPreviousTickets.length > 0 && !hasReviewed) {
+      setShowReviewModal(true);
+      return;
+    }
+
+    executeCreateTicket();
   };
 
   return (
@@ -342,59 +584,81 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               </div>
             </div>
 
-            {/* Quick prefill from registry if houses exist */}
-            {houses.length > 0 && (
-              <div>
-                <label className="font-semibold block mb-1 text-slate-500 text-[11px]">
-                  Быстрый выбор из реестра домов:
-                </label>
-                <select
-                  value={selectedHouseId}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    setSelectedHouseId(id);
-                    const h = houses.find((item) => item.id === id);
-                    if (h) {
-                      setStreet(h.street);
-                      setHouseNumber(h.house_number);
-                      setBuilding(h.building || '');
-                    }
-                  }}
-                  className="w-full px-3 py-1.5 rounded-xl border border-purple-200 bg-white font-medium text-xs focus:ring-2 focus:ring-purple-400"
-                >
-                  <option value="">-- Заполнить адрес вручную или выбрать из реестра --</option>
-                  {sortedHouses.map((h) => (
-                    <option key={h.id} value={h.id}>
-                      ул. {h.street}, д. {h.house_number}
-                      {h.building ? ` корп. ${h.building}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             {/* Separate manual fields for Street, House Number and Building */}
             <div className="grid grid-cols-1 sm:grid-cols-6 gap-3">
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-3 relative">
                 <label className="font-semibold block mb-1 text-slate-700">
                   Улица <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  list="new-ticket-street-suggestions"
-                  value={street}
-                  onChange={(e) => setStreet(e.target.value)}
-                  placeholder="Введите улицу (напр. Доценка)"
-                  className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium"
-                  required
-                />
-                <datalist id="new-ticket-street-suggestions">
-                  {streets.map((s) => (
-                    <option key={s.id} value={s.current_name}>
-                      {s.current_name} {s.old_names ? `(ранее: ${s.old_names})` : ''}
-                    </option>
-                  ))}
-                </datalist>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={street}
+                    onFocus={() => setIsStreetSuggestionsOpen(true)}
+                    onBlur={() => {
+                      setTimeout(() => setIsStreetSuggestionsOpen(false), 220);
+                    }}
+                    onChange={(e) => {
+                      setStreet(e.target.value);
+                      setIsStreetSuggestionsOpen(true);
+                    }}
+                    placeholder="Введите улицу (напр. Доценка, Шевченко)"
+                    className="w-full px-3 py-2 pr-7 rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium"
+                    required
+                    autoComplete="off"
+                  />
+                  {street && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStreet('');
+                        setIsStreetSuggestionsOpen(false);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5 rounded cursor-pointer"
+                      title="Очистить улицу"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Выпадающие подсказки улицы с ввода первых букв */}
+                {isStreetSuggestionsOpen && matchingStreetSuggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl border border-purple-200 shadow-xl max-h-56 overflow-y-auto divide-y divide-purple-50 animate-in fade-in duration-100">
+                    <div className="px-2.5 py-1.5 bg-purple-50/90 text-[10px] font-extrabold text-purple-800 uppercase tracking-wider flex items-center justify-between sticky top-0 backdrop-blur-xs">
+                      <span>Подсказки улиц ({matchingStreetSuggestions.length})</span>
+                      <span className="text-[9px] text-purple-600 font-semibold">Нажмите для выбора</span>
+                    </div>
+                    {matchingStreetSuggestions.map((item) => (
+                      <button
+                        key={item.name}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setStreet(item.name);
+                          setIsStreetSuggestionsOpen(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-xs hover:bg-purple-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-extrabold text-slate-900 truncate">
+                            {item.name}
+                          </div>
+                          {item.oldNames && (
+                            <div className="text-[10px] text-slate-400 truncate">
+                              Прежнее назв.: {item.oldNames}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-bold shrink-0">
+                          Выбрать
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {streetNormCheck.isNormalized && (
                   <div className="mt-1 text-[11px] text-purple-800 bg-purple-100/70 px-2.5 py-1 rounded-lg border border-purple-200 flex items-center gap-1 font-medium animate-in fade-in">
                     <span>Прежнее название «{streetNormCheck.matchedOldName}» будет автоматически сохранено как актуальное «{streetNormCheck.officialName}».</span>
@@ -430,59 +694,200 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               </div>
             </div>
 
-            {/* Location Type and Apartment */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="font-semibold block mb-1 text-slate-700">
-                  Место уточнения <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={locationType}
-                  onChange={(e) =>
-                    setLocationType(e.target.value as any)
-                  }
-                  className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-medium focus:ring-2 focus:ring-purple-400"
+            {/* Появление надписи сразу после ввода улицы и номера дома */}
+            {/* "когда вводишь название улицы потом пишешь номер дома, сразу после этого появляется надпись (По этому адресу уже есть заявки: 3(нажмите для ознакомления) Ознакомиться)" */}
+            {matchingHouseTickets.length > 0 && (
+              <div className="p-2.5 sm:p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 flex items-center justify-between gap-2.5 animate-in fade-in">
+                <div className="flex items-center gap-2 min-w-0">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <div className="text-xs">
+                    <span className="font-bold">
+                      По этому адресу уже есть заявки: {matchingHouseTickets.length}
+                      {matchingFullAddressTickets.length > 0 && (
+                        <span className="text-amber-800 font-semibold ml-1">
+                          (из них с полным совпадением по кв./месту: {matchingFullAddressTickets.length})
+                        </span>
+                      )}
+                    </span>
+                    <span className="hidden sm:inline text-amber-800 ml-1">
+                      (нажмите для ознакомления)
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (matchingFullAddressTickets.length > 0) {
+                      setReviewFilter('full');
+                    } else {
+                      setReviewFilter('all');
+                    }
+                    setShowReviewModal(true);
+                  }}
+                  className="px-2.5 sm:px-3 py-1 bg-amber-200/90 hover:bg-amber-300 text-amber-950 font-bold rounded-lg text-xs transition-colors shrink-0 shadow-2xs flex items-center gap-1 cursor-pointer"
                 >
-                  <option value="apartment">Квартира</option>
-                  <option value="entrance">Подъезд</option>
-                  <option value="basement">Подвал</option>
-                  <option value="roof">Кровля</option>
-                  <option value="yard">Двор</option>
-                  <option value="technical">Техэтаж</option>
-                </select>
+                  <History className="w-3.5 h-3.5" />
+                  <span>Ознакомиться</span>
+                </button>
               </div>
+            )}
 
-              <div>
-                <label className="font-semibold block mb-1 text-slate-700">
-                  № квартиры{' '}
-                  {locationType === 'apartment' ? (
-                    <span className="text-rose-600 font-black">
-                      (Обязательно *)
-                    </span>
-                  ) : (
-                    <span className="text-slate-400 font-normal">
-                      (не обязательно)
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  value={apartmentNumber}
-                  onChange={(e) => setApartmentNumber(e.target.value)}
-                  placeholder={
-                    locationType === 'apartment'
-                      ? 'Введите номер квартиры'
-                      : 'Дополнительное уточнение'
-                  }
-                  required={locationType === 'apartment'}
-                  className={`w-full px-3 py-2 rounded-xl border font-medium bg-white focus:outline-none focus:ring-2 ${
-                    locationType === 'apartment' && !apartmentNumber.trim()
-                      ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                      : 'border-purple-200 focus:ring-purple-400'
-                  }`}
-                />
+            {/* Location Type & Specification (Apartment / Entrance / Technical / etc.) */}
+            {/* "введи поле выбора номера подъезда, при выборе Место уточнения если это не квартира" */}
+            {locationType === 'apartment' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700">
+                    Место уточнения <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={locationType}
+                    onChange={(e) => {
+                      const next = e.target.value as any;
+                      setLocationType(next);
+                      if (next === 'apartment') {
+                        setEntranceNumber('');
+                      } else {
+                        setApartmentNumber('');
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-medium focus:ring-2 focus:ring-purple-400"
+                  >
+                    <option value="apartment">Квартира</option>
+                    <option value="entrance">Подъезд</option>
+                    <option value="basement">Подвал</option>
+                    <option value="roof">Кровля / Крыша</option>
+                    <option value="yard">Двор / Территория</option>
+                    <option value="technical">Техэтаж / Чердак</option>
+                    <option value="other">Иное общедомовое имущество</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700">
+                    № квартиры <span className="text-rose-600 font-black">(Обязательно *)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={apartmentNumber}
+                    onChange={(e) => setApartmentNumber(e.target.value)}
+                    placeholder="Введите номер квартиры (напр. 42)"
+                    required
+                    className={`w-full px-3 py-2 rounded-xl border font-medium bg-white focus:outline-none focus:ring-2 ${
+                      !apartmentNumber.trim()
+                        ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
+                        : 'border-purple-200 focus:ring-purple-400'
+                    }`}
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-semibold block mb-1 text-slate-700">
+                      Место уточнения <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={locationType}
+                      onChange={(e) => {
+                        const next = e.target.value as any;
+                        setLocationType(next);
+                        if (next === 'apartment') {
+                          setEntranceNumber('');
+                        } else {
+                          setApartmentNumber('');
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-medium focus:ring-2 focus:ring-purple-400"
+                    >
+                      <option value="apartment">Квартира</option>
+                      <option value="entrance">Подъезд</option>
+                      <option value="basement">Подвал</option>
+                      <option value="roof">Кровля / Крыша</option>
+                      <option value="yard">Двор / Территория</option>
+                      <option value="technical">Техэтаж / Чердак</option>
+                      <option value="other">Иное общедомовое имущество</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold block mb-1 text-slate-700">
+                      Номер подъезда <span className="text-rose-500">*</span>
+                      {matchedHouse?.entrances_count ? (
+                        <span className="text-purple-600 font-normal ml-1">
+                          (в доме: {matchedHouse.entrances_count} под.)
+                        </span>
+                      ) : null}
+                    </label>
+                    <select
+                      value={entranceNumber}
+                      onChange={(e) => setEntranceNumber(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-xl border font-medium bg-white focus:outline-none focus:ring-2 text-xs ${
+                        !entranceNumber.trim()
+                          ? 'border-rose-300 focus:ring-rose-400'
+                          : 'border-purple-200 focus:ring-purple-400'
+                      }`}
+                      required
+                    >
+                      <option value="">— Выберите номер подъезда —</option>
+                      {Array.from({ length: maxEntrancesCount }, (_, i) => i + 1).map((num) => (
+                        <option key={num} value={String(num)}>
+                          Подъезд № {num}
+                        </option>
+                      ))}
+                      <option value="all">Все подъезды / общий</option>
+                    </select>
+
+                    {/* Quick entrance number selection pills */}
+                    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                      <span className="text-[10px] text-slate-400">Быстрый выбор:</span>
+                      {Array.from(
+                        { length: Math.min(matchedHouse?.entrances_count || 6, 8) },
+                        (_, i) => i + 1
+                      ).map((num) => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => setEntranceNumber(String(num))}
+                          className={`text-[11px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                            entranceNumber === String(num)
+                              ? 'bg-purple-700 text-white shadow-2xs'
+                              : 'bg-purple-100 text-purple-900 hover:bg-purple-200'
+                          }`}
+                        >
+                          №{num}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setEntranceNumber('all')}
+                        className={`text-[11px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                          entranceNumber === 'all'
+                            ? 'bg-purple-700 text-white shadow-2xs'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        Все
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700 text-[11px]">
+                    Дополнительное уточнение места (не обязательно)
+                  </label>
+                  <input
+                    type="text"
+                    value={locationValue}
+                    onChange={(e) => setLocationValue(e.target.value)}
+                    placeholder="напр. стояк отопления, левое крыло, тамбур..."
+                    className="w-full px-3 py-1.5 rounded-xl border border-purple-200 bg-white font-medium text-xs focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* SECTION 2: Topic & Core Problem */}
@@ -991,6 +1396,228 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                   className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold transition-all shadow-xs"
                 >
                   Закрыть
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* PREVIOUS TICKETS REVIEW MODAL */}
+        {showReviewModal && (
+          <div
+            className="fixed inset-0 z-70 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150"
+            onClick={() => setShowReviewModal(false)}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-2xl w-full p-4 sm:p-6 border border-amber-200 shadow-2xl space-y-4 text-xs animate-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between border-b border-amber-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black shrink-0">
+                    <History className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">
+                      История обращений по точному адресу и месту уточнения
+                    </span>
+                    <h3 className="text-base font-extrabold text-slate-900 leading-snug">
+                      ул. {street}, д. {houseNumber}{building ? ` корп. ${building}` : ''}
+                      {locationType === 'apartment' && apartmentNumber ? `, кв. ${apartmentNumber}` : ''}
+                      {locationType !== 'apartment' && entranceNumber ? `, подъезд ${entranceNumber}` : ''}
+                      {locationValue ? ` (${locationValue})` : ''}
+                    </h3>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-2 shrink-0 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>
+                    Найдено заявок по адресу: <strong>{matchingHouseTickets.length}</strong>
+                    {matchingFullAddressTickets.length > 0 && (
+                      <span className="ml-1 text-amber-900 font-bold">
+                        (из них с полным совпадением кв./места: {matchingFullAddressTickets.length})
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/* Tabs for switching between all house tickets and full match tickets */}
+              {matchingFullAddressTickets.length > 0 && (
+                <div className="flex items-center gap-2 border-b border-amber-100 pb-2">
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter('all')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      reviewFilter === 'all'
+                        ? 'bg-amber-600 text-white shadow-2xs'
+                        : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
+                    }`}
+                  >
+                    Все по дому ({matchingHouseTickets.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReviewFilter('full')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      reviewFilter === 'full'
+                        ? 'bg-amber-600 text-white shadow-2xs'
+                        : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
+                    }`}
+                  >
+                    <span>⭐ Полное совпадение: кв./место</span>
+                    <span className="px-1.5 py-0.2 rounded-full bg-white text-amber-900 font-extrabold text-[10px]">
+                      {matchingFullAddressTickets.length}
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              <div className="overflow-y-auto pr-1 space-y-2.5 flex-1 min-h-0 max-h-[50vh]">
+                {(reviewFilter === 'full' && matchingFullAddressTickets.length > 0
+                  ? matchingFullAddressTickets
+                  : matchingHouseTickets
+                ).map((t: Ticket) => {
+                  const isFullMatch = isSameFullAddressTicket(
+                    t,
+                    street,
+                    houseNumber,
+                    building,
+                    targetLocationKey,
+                    streets
+                  );
+
+                  const statusBadgeClass =
+                    t.status === 'completed'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : t.status === 'in_progress'
+                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                      : 'bg-rose-100 text-rose-800 border-rose-300';
+
+                  const statusText =
+                    t.status === 'completed'
+                      ? 'Выполнена'
+                      : t.status === 'in_progress'
+                      ? 'В работе'
+                      : 'В ожидании';
+
+                  return (
+                    <div
+                      key={t.id}
+                      className={`p-3 rounded-xl border transition-all ${
+                        isFullMatch
+                          ? 'border-amber-400 bg-amber-50/70 shadow-xs ring-2 ring-amber-300'
+                          : 'border-slate-200 bg-white hover:border-purple-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-slate-900 text-xs">
+                            № {t.number}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusBadgeClass}`}
+                          >
+                            {statusText}
+                          </span>
+                          {t.planned && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
+                              Плановая
+                            </span>
+                          )}
+                          {isFullMatch ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-600 text-white shadow-2xs flex items-center gap-1">
+                              <span>⭐ Полное совпадение адреса!</span>
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                              {t.apartment ? `кв. ${t.apartment}` : t.location_value || 'Другое место в доме'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-mono">
+                          {t.date} {t.createdTime || ''}
+                        </div>
+                      </div>
+
+                      <div className="font-bold text-slate-800 text-xs mb-1">
+                        {t.title}
+                      </div>
+
+                      {t.description && t.description !== t.title && (
+                        <div className="text-slate-600 text-[11px] mb-1.5 line-clamp-2">
+                          {t.description}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-slate-500 pt-1.5 border-t border-slate-100">
+                        <div>
+                          <span className="text-slate-400">Место:</span>{' '}
+                          <span className="font-semibold text-slate-700">
+                            {t.apartment ? `кв. ${t.apartment}` : t.location_value || 'Общедомовая'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Исполнитель:</span>{' '}
+                          <span className="font-semibold text-slate-700">
+                            {t.assignee || 'Не назначен'}
+                          </span>
+                        </div>
+                        {(t.residentName || t.given_by) && (
+                          <div className="sm:col-span-2">
+                            <span className="text-slate-400">Заявитель:</span>{' '}
+                            <span className="font-semibold text-slate-700">
+                              {t.residentName || t.given_by}
+                            </span>
+                            {t.phone && (
+                              <span className="font-mono text-purple-700 ml-1 font-bold">
+                                ({t.phone})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {t.worker_report && (
+                          <div className="sm:col-span-2 text-emerald-800 bg-emerald-50/70 p-1.5 rounded-lg border border-emerald-100 mt-1">
+                            <span className="font-bold">Отчёт:</span> {t.worker_report}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-3 border-t border-amber-100 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(false)}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold transition-colors text-xs"
+                >
+                  ← Вернуться к заявке
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHasReviewed(true);
+                    setShowReviewModal(false);
+                    executeCreateTicket();
+                  }}
+                  className="w-full sm:w-auto px-5 py-2 rounded-xl text-white font-bold transition-all shadow-md hover:opacity-95 text-xs flex items-center justify-center gap-1.5"
+                  style={{
+                    background: showFlatFallback ? '#7652B5' : gradient.cssGradient,
+                  }}
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Ознакомился, создать заявку</span>
                 </button>
               </div>
             </div>

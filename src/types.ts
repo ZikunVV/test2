@@ -61,7 +61,7 @@ export interface Ticket {
   house_number?: string;
   building?: string;
   apartment?: string;
-  location_type?: 'apartment' | 'entrance' | 'basement' | 'roof' | 'yard' | 'technical';
+  location_type?: 'apartment' | 'entrance' | 'basement' | 'roof' | 'yard' | 'technical' | 'other';
   location_value?: string;
   execution_date?: string;
   phone?: string;
@@ -229,7 +229,10 @@ export interface UserItem {
 }
 
 export interface StreetItem {
-  id: number;
+  id: number | string;
   current_name: string;
   old_names: string;
+  description?: string;
 }
+
+export type StreetDirectoryEntry = StreetItem;

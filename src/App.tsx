@@ -1187,6 +1187,34 @@ export default function App() {
     }
   };
 
+  const handleAddStreet = (streetName: string) => {
+    const raw = streetName.trim();
+    if (!raw) return;
+    const clean = raw
+      .replace(/^(?:ул\.|улица|вул\.|вулиця|пр-т|проспект|просп\.|пер\.|переулок|провулок)\s+/i, '')
+      .trim();
+    if (!clean) return;
+    const lower = clean.toLocaleLowerCase('ru-RU');
+
+    setStreets((prev) => {
+      const exists = prev.some((s) => {
+        const sClean = s.current_name
+          .replace(/^(?:ул\.|улица|вул\.|вулиця|пр-т|проспект|просп\.|пер\.|переулок|провулок)\s+/i, '')
+          .trim()
+          .toLocaleLowerCase('ru-RU');
+        return sClean === lower;
+      });
+      if (exists) return prev;
+
+      const newStreetItem: StreetItem = {
+        id: `st-${Date.now()}`,
+        current_name: clean,
+        old_names: '',
+      };
+      return [...prev, newStreetItem];
+    });
+  };
+
   const handleCreateTicket = (
     newTicketData: Omit<Ticket, 'id' | 'number'>
   ) => {
@@ -1194,6 +1222,11 @@ export default function App() {
       alert('У вас нет прав доступа для создания заявок.');
       return;
     }
+
+    if (newTicketData.street) {
+      handleAddStreet(newTicketData.street);
+    }
+
     const today = new Date();
     const formattedDate = `${String(today.getDate()).padStart(2, '0')}.${String(
       today.getMonth() + 1
@@ -1473,6 +1506,9 @@ export default function App() {
     if (!canAddHouses) {
       alert('У вас нет прав доступа для добавления новых домов.');
       return;
+    }
+    if (newHouse.street) {
+      handleAddStreet(newHouse.street);
     }
     const houseWithOrg: House = {
       ...newHouse,
@@ -2166,6 +2202,7 @@ export default function App() {
                   onOpenTicket={(t) => setSelectedTicketForDetail(t)}
                   onUpdateHouse={handleUpdateHouse}
                   onCreateHouse={handleCreateHouse}
+                  onAddStreet={handleAddStreet}
                   onBackToHome={() => setActiveSidebarNav('home')}
                   isAdmin={canEditHouses}
                   canAddHouse={canAddHouses}
@@ -2572,9 +2609,11 @@ export default function App() {
         houses={currentOrgHouses}
         streets={streets}
         people={personalPeople}
+        tickets={tickets}
         prefilledDate={newTicketPrefilledDate}
         isPlannedDefault={isNewTicketPlanned}
         onCreateTicket={handleCreateTicket}
+        onAddStreet={handleAddStreet}
         canInspectWorker={canViewEmployeeCard}
       />
 
@@ -2589,6 +2628,9 @@ export default function App() {
         canEdit={canEditTickets}
         canSendMessenger={canSendMessenger}
         canDelete={canDeleteTicket}
+        tickets={tickets}
+        streets={streets}
+        onSelectTicket={(t) => setSelectedTicketForDetail(t)}
         onOpenEdit={(t) => handleOpenEditTicket(t)}
         onUpdateStatus={handleUpdateStatus}
         onSubmitReport={handleSubmitReport}

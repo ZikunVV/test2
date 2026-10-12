@@ -22,7 +22,15 @@ import {
   ShieldAlert,
   ArrowRight,
   Edit,
+  History,
 } from 'lucide-react';
+import { StreetItem } from '../types';
+import {
+  findTicketsForFullAddress,
+  findTicketsForAddress,
+  extractAddressParts,
+  getTicketLocationKey,
+} from '../utils/streets';
 
 interface TicketDetailModalProps {
   ticket: Ticket | null;
@@ -34,6 +42,9 @@ interface TicketDetailModalProps {
   canEdit?: boolean;
   canSendMessenger?: boolean;
   canDelete?: boolean;
+  tickets?: Ticket[];
+  streets?: StreetItem[];
+  onSelectTicket?: (ticket: Ticket) => void;
   onOpenEdit?: (ticket: Ticket) => void;
   onUpdateStatus: (
     ticketId: string,
@@ -74,6 +85,9 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   canEdit = isAdmin,
   canSendMessenger = isAdmin,
   canDelete = isAdmin,
+  tickets = [],
+  streets = [],
+  onSelectTicket,
   onOpenEdit,
   onUpdateStatus,
   onSubmitReport,
@@ -83,8 +97,49 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
 }) => {
   if (!ticket) return null;
 
-  // Tabs: Details, Worker Report, Works/Acts, Admin Withdraw
-  const [activeTab, setActiveTab] = useState<'info' | 'report' | 'works' | 'withdraw'>('info');
+  // Tabs: Details, Worker Report, Works/Acts, Address History (Ознакомиться), Admin Withdraw
+  const [activeTab, setActiveTab] = useState<'info' | 'report' | 'works' | 'address_history' | 'withdraw'>('info');
+  const [addressFilter, setAddressFilter] = useState<'all' | 'apartment'>('all');
+
+  // Location specification key (3rd mandatory indicator)
+  const ticketLocationKey = React.useMemo(() => {
+    if (!ticket) return null;
+    return getTicketLocationKey(ticket);
+  }, [ticket]);
+
+  // Match other tickets for the EXACT same address AND location specification (all 3 indicators)
+  // "полное совпадение это когда ещё и номер квартиры или место уточнения то есть введено минимум обязательно три показателя ( улица, номер дома, место уточнения )"
+  const otherAddressTickets = React.useMemo(() => {
+    if (!ticket || !tickets || tickets.length === 0 || !ticketLocationKey) return [];
+    const parts = extractAddressParts(ticket);
+    if (!parts.street || !parts.houseNumber) return [];
+
+    return findTicketsForFullAddress(
+      tickets,
+      {
+        street: parts.street,
+        houseNumber: parts.houseNumber,
+        building: parts.building,
+        locationKey: ticketLocationKey,
+        excludeTicketId: ticket.id,
+      },
+      streets
+    );
+  }, [ticket, tickets, ticketLocationKey, streets]);
+
+  // If active tab was address_history and there are no matching tickets, reset to info
+  useEffect(() => {
+    if (activeTab === 'address_history' && otherAddressTickets.length === 0) {
+      setActiveTab('info');
+    }
+  }, [activeTab, otherAddressTickets.length]);
+
+  const sameApartmentTickets = React.useMemo(() => {
+    if (!ticket.apartment) return [];
+    return otherAddressTickets.filter(
+      (t) => t.apartment && t.apartment.trim().toLowerCase() === ticket.apartment!.trim().toLowerCase()
+    );
+  }, [otherAddressTickets, ticket.apartment]);
 
   // Worker Report state
   const [reportText, setReportText] = useState(ticket.worker_report || '');
@@ -297,7 +352,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
           )}
           <button
             onClick={() => setActiveTab('works')}
-            className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 shrink-0 ${
               activeTab === 'works'
                 ? 'bg-purple-100 text-purple-900 border border-purple-200'
                 : 'text-slate-600 hover:text-purple-900'
@@ -306,6 +361,21 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             <Wrench className="w-3.5 h-3.5" />
             <span>Акты и работы ({ticket.works?.length || 0})</span>
           </button>
+
+          {/* "только при полном совпадении адреса (улица, номер дома, корпус) показывать в самой заявке Ознакомится" */}
+          {otherAddressTickets.length > 0 && (
+            <button
+              onClick={() => setActiveTab('address_history')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                activeTab === 'address_history'
+                  ? 'bg-purple-100 text-purple-900 border border-purple-200'
+                  : 'text-slate-600 hover:text-purple-900'
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Ознакомиться ({otherAddressTickets.length})</span>
+            </button>
+          )}
 
           {canDelete && (
             <button
@@ -761,6 +831,178 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   Сохранить акт
                 </button>
               </form>
+            )}
+          </div>
+        )}
+
+        {/* TAB: TICKETS FOR THIS ADDRESS */}
+        {activeTab === 'address_history' && (
+          <div className="mt-4 space-y-3">
+            <div className="p-3 rounded-xl bg-purple-50/70 border border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-purple-700 tracking-wider block">
+                  Адрес текущей заявки
+                </span>
+                <div className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5 mt-0.5">
+                  <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  <span>{ticket.address}</span>
+                  {ticket.apartment && (
+                    <span className="text-purple-700 font-bold ml-1">
+                      (кв. {ticket.apartment})
+                    </span>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {otherAddressTickets.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 border border-dashed border-purple-200 rounded-xl bg-purple-50/20 space-y-2">
+                <Building className="w-8 h-8 mx-auto text-purple-300" />
+                <p className="font-bold text-slate-700 text-xs">
+                  Других заявок по этому адресу и месту уточнения не найдено
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Эта заявка — единственное зарегистрированное обращение по данному объекту в журнале.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1">
+                {otherAddressTickets.map((t) => {
+                  const isSameApt =
+                    ticket.apartment &&
+                    t.apartment &&
+                    t.apartment.trim().toLowerCase() === ticket.apartment.trim().toLowerCase();
+
+                  const statusConfigItem = (() => {
+                    switch (t.status) {
+                      case 'in_waiting':
+                        return { text: 'В ожидании', cls: 'bg-rose-100 text-rose-800 border-rose-200' };
+                      case 'in_progress':
+                        return { text: 'В работе', cls: 'bg-amber-100 text-amber-800 border-amber-200' };
+                      case 'completed':
+                        return { text: 'Выполнена', cls: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+                    }
+                  })();
+
+                  return (
+                    <div
+                      key={t.id}
+                      className={`p-3.5 rounded-xl border transition-all text-xs ${
+                        isSameApt
+                          ? 'border-purple-300 bg-purple-50/40 shadow-xs'
+                          : 'border-slate-200 bg-white hover:border-purple-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-extrabold text-slate-900 text-xs">
+                            № {t.number}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusConfigItem.cls}`}
+                          >
+                            {statusConfigItem.text}
+                          </span>
+                          {t.planned && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
+                              Плановая
+                            </span>
+                          )}
+                          {isSameApt && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                              Та же квартира №{t.apartment}!
+                            </span>
+                          )}
+                          {t.withdrawn_by && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-800">
+                              Снята
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-mono">
+                          {t.date} {t.createdTime || ''}
+                        </div>
+                      </div>
+
+                      <h4 className="font-bold text-slate-900 mb-1 text-xs">
+                        {t.title}
+                      </h4>
+
+                      {t.description && t.description !== t.title && (
+                        <p className="text-slate-600 text-[11px] mb-2 leading-relaxed">
+                          {t.description}
+                        </p>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[11px] text-slate-600 bg-slate-50/80 p-2 rounded-lg border border-slate-100 mb-2">
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Место / Квартира</span>
+                          <span className="font-semibold text-slate-800">
+                            {t.apartment ? `кв. ${t.apartment}` : t.location_value || 'Общедомовая'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Заявитель</span>
+                          <span className="font-semibold text-slate-800">
+                            {t.residentName || t.given_by || '—'}
+                            {t.phone ? ` (${t.phone})` : ''}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Исполнитель</span>
+                          <span className="font-semibold text-slate-800">
+                            {t.assignee || 'Не назначен'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {t.worker_report && (
+                        <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] mb-2">
+                          <span className="font-bold block text-[10px] uppercase tracking-wider text-emerald-800">
+                            Отчёт сотрудника:
+                          </span>
+                          <span>{t.worker_report}</span>
+                        </div>
+                      )}
+
+                      {t.works && t.works.length > 0 && (
+                        <div className="p-2 rounded-lg bg-purple-50/60 border border-purple-100 text-purple-950 text-[11px] mb-2">
+                          <span className="font-bold block text-[10px] uppercase tracking-wider text-purple-800">
+                            Акты работ ({t.works.length}):
+                          </span>
+                          <div className="space-y-1 mt-0.5">
+                            {t.works.map((w, wIdx) => (
+                              <div key={wIdx} className="text-[11px]">
+                                • <span className="font-semibold">{w.description}</span>
+                                {w.materials && w.materials !== '—' && (
+                                  <span className="text-slate-500"> (мат: {w.materials})</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {onSelectTicket && (
+                        <div className="flex justify-end pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onSelectTicket(t);
+                              setActiveTab('info');
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold border border-purple-200 transition-colors flex items-center gap-1 text-[11px] cursor-pointer"
+                          >
+                            <span>Открыть эту заявку</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}

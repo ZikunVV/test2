@@ -304,7 +304,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   ];
 
   const [newStreetName, setNewStreetName] = useState('');
-  const [renameStreetId, setRenameStreetId] = useState<number | null>(null);
+  const [renameStreetId, setRenameStreetId] = useState<number | string | null>(null);
   const [renameNewName, setRenameNewName] = useState('');
   const [autoReplaceInObjects, setAutoReplaceInObjects] = useState(true);
 

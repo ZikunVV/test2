@@ -28,6 +28,7 @@ interface HousesViewProps {
   onOpenTicket: (ticket: Ticket) => void;
   onUpdateHouse: (house: House) => void;
   onCreateHouse: (house: House) => void;
+  onAddStreet?: (streetName: string) => void;
   onBackToHome: () => void;
   isAdmin?: boolean;
   canAddHouse?: boolean;
@@ -47,6 +48,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
   onOpenTicket,
   onUpdateHouse,
   onCreateHouse,
+  onAddStreet,
   onBackToHome,
   isAdmin = true,
   canAddHouse = isAdmin,
@@ -57,6 +59,8 @@ export const HousesView: React.FC<HousesViewProps> = ({
   const [houseNumQuery, setHouseNumQuery] = useState('');
   const [buildingQuery, setBuildingQuery] = useState('');
   const [isStreetSuggestionsOpen, setIsStreetSuggestionsOpen] = useState(false);
+  const [isNewStreetSuggestionsOpen, setIsNewStreetSuggestionsOpen] = useState(false);
+  const [isEditStreetSuggestionsOpen, setIsEditStreetSuggestionsOpen] = useState(false);
 
   // Mode: 'recent' (last 20 viewed houses) vs 'all' (all houses)
   const [viewMode, setViewMode] = useState<'recent' | 'all'>('recent');
@@ -288,6 +292,81 @@ export const HousesView: React.FC<HousesViewProps> = ({
     return [...startsWithList, ...containsList];
   }, [streetQuery, allStreetDirectoryItems]);
 
+  // Autocomplete street suggestions for "Добавить дом" starting from first typed letters (case-insensitive)
+  // "тоже при добавить дом Улица (Подсказки улиц с первых букв и автосохранение новых улиц)"
+  const matchingNewStreetSuggestions = React.useMemo(() => {
+    const raw = newStreet.trim();
+    const cleanedQuery = raw
+      .replace(/^(?:ул\.|улица|вул\.|вулиця|пр-т|проспект|просп\.|пер\.|переулок|провулок)\s+/i, '')
+      .trim()
+      .toLocaleLowerCase('ru-RU');
+
+    if (!cleanedQuery) {
+      return allStreetDirectoryItems.slice(0, 10);
+    }
+
+    const startsWithList: typeof allStreetDirectoryItems = [];
+    const containsList: typeof allStreetDirectoryItems = [];
+
+    allStreetDirectoryItems.forEach((item) => {
+      const lowerName = item.name
+        .replace(/^(?:ул\.|улица|вул\.|вулиця|пр-т|проспект|просп\.|пер\.|переулок|провулок)\s+/i, '')
+        .trim()
+        .toLocaleLowerCase('ru-RU');
+      const lowerFullName = item.name.toLocaleLowerCase('ru-RU');
+      const lowerOld = (item.oldNames || '').toLocaleLowerCase('ru-RU');
+
+      if (lowerName.startsWith(cleanedQuery) || lowerFullName.startsWith(cleanedQuery)) {
+        startsWithList.push(item);
+      } else if (
+        lowerName.includes(cleanedQuery) ||
+        lowerFullName.includes(cleanedQuery) ||
+        lowerOld.includes(cleanedQuery)
+      ) {
+        containsList.push(item);
+      }
+    });
+
+    return [...startsWithList, ...containsList];
+  }, [newStreet, allStreetDirectoryItems]);
+
+  // Autocomplete street suggestions for editing a house
+  const matchingEditStreetSuggestions = React.useMemo(() => {
+    const raw = editingHouse?.street ? editingHouse.street.trim() : '';
+    const cleanedQuery = raw
+      .replace(/^(?:ул\.|улица|вул\.|вулиця|пр-т|проспект|просп\.|пер\.|переулок|провулок)\s+/i, '')
+      .trim()
+      .toLocaleLowerCase('ru-RU');
+
+    if (!cleanedQuery) {
+      return allStreetDirectoryItems.slice(0, 10);
+    }
+
+    const startsWithList: typeof allStreetDirectoryItems = [];
+    const containsList: typeof allStreetDirectoryItems = [];
+
+    allStreetDirectoryItems.forEach((item) => {
+      const lowerName = item.name
+        .replace(/^(?:ул\.|улица|вул\.|вулиця|пр-т|проспект|просп\.|пер\.|переулок|провулок)\s+/i, '')
+        .trim()
+        .toLocaleLowerCase('ru-RU');
+      const lowerFullName = item.name.toLocaleLowerCase('ru-RU');
+      const lowerOld = (item.oldNames || '').toLocaleLowerCase('ru-RU');
+
+      if (lowerName.startsWith(cleanedQuery) || lowerFullName.startsWith(cleanedQuery)) {
+        startsWithList.push(item);
+      } else if (
+        lowerName.includes(cleanedQuery) ||
+        lowerFullName.includes(cleanedQuery) ||
+        lowerOld.includes(cleanedQuery)
+      ) {
+        containsList.push(item);
+      }
+    });
+
+    return [...startsWithList, ...containsList];
+  }, [editingHouse?.street, allStreetDirectoryItems]);
+
   // Filtered houses by search inputs (when any search query is entered, search across ALL houses regardless of recent/all tab, and completely case-insensitively)
   const hasActiveSearchFilter = Boolean(
     streetQuery.trim() || houseNumQuery.trim() || buildingQuery.trim()
@@ -413,6 +492,9 @@ export const HousesView: React.FC<HousesViewProps> = ({
       entrances: finalEntrances,
     };
 
+    if (onAddStreet) {
+      onAddStreet(finalStreet);
+    }
     onUpdateHouse(savedHouse);
     setActiveHouseDetail(savedHouse);
     setIsEditModalOpen(false);
@@ -491,6 +573,9 @@ export const HousesView: React.FC<HousesViewProps> = ({
       return;
     }
 
+    if (onAddStreet) {
+      onAddStreet(finalStreet);
+    }
     onCreateHouse(newHouse);
     recordHouseView(newHouse.id);
     setSelectedHouseId(newHouse.id);
@@ -540,6 +625,9 @@ export const HousesView: React.FC<HousesViewProps> = ({
         latitude: duplicateConflict.existingHouse.latitude,
         longitude: duplicateConflict.existingHouse.longitude,
       };
+      if (onAddStreet) {
+        onAddStreet(updated.street);
+      }
       onUpdateHouse(updated);
       setSelectedHouseId(updated.id);
       setActiveHouseDetail(updated);
@@ -1169,26 +1257,78 @@ export const HousesView: React.FC<HousesViewProps> = ({
 
             <form onSubmit={handleCreateNewHouse} className="space-y-3.5">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                <div className="min-w-0">
+                <div className="min-w-0 relative">
                   <label className="font-bold text-slate-700 block mb-1">
                     Улица *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    list="create-house-street-suggestions"
-                    value={newStreet}
-                    onChange={(e) => setNewStreet(e.target.value)}
-                    placeholder="Например: Доценка"
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-purple-200 font-medium"
-                  />
-                  <datalist id="create-house-street-suggestions">
-                    {streets.map((s) => (
-                      <option key={s.id} value={s.current_name}>
-                        {s.current_name} {s.old_names ? `(ранее: ${s.old_names})` : ''}
-                      </option>
-                    ))}
-                  </datalist>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      value={newStreet}
+                      onFocus={() => setIsNewStreetSuggestionsOpen(true)}
+                      onBlur={() => {
+                        setTimeout(() => setIsNewStreetSuggestionsOpen(false), 220);
+                      }}
+                      onChange={(e) => {
+                        setNewStreet(e.target.value);
+                        setIsNewStreetSuggestionsOpen(true);
+                      }}
+                      placeholder="Например: Доценка, Шевченко"
+                      autoComplete="off"
+                      className="w-full px-2.5 py-1.5 pr-7 rounded-lg border border-purple-200 font-medium focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    />
+                    {newStreet && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewStreet('');
+                          setIsNewStreetSuggestionsOpen(false);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5 rounded cursor-pointer"
+                        title="Очистить улицу"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Выпадающие подсказки улицы с первых букв */}
+                  {isNewStreetSuggestionsOpen && matchingNewStreetSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl border border-purple-200 shadow-xl max-h-52 overflow-y-auto divide-y divide-purple-50 animate-in fade-in duration-100">
+                      <div className="px-2.5 py-1 bg-purple-50/90 text-[10px] font-extrabold text-purple-800 uppercase tracking-wider flex items-center justify-between sticky top-0 backdrop-blur-xs">
+                        <span>Подсказки улиц ({matchingNewStreetSuggestions.length})</span>
+                        <span className="text-[9px] text-purple-600 font-semibold">Нажмите для выбора</span>
+                      </div>
+                      {matchingNewStreetSuggestions.map((item) => (
+                        <button
+                          key={item.name}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setNewStreet(item.name);
+                            setIsNewStreetSuggestionsOpen(false);
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs hover:bg-purple-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                        >
+                          <div className="min-w-0">
+                            <div className="font-extrabold text-slate-900 truncate">
+                              ул. {item.name}
+                            </div>
+                            {item.oldNames && (
+                              <div className="text-[10px] text-slate-400 truncate">
+                                Прежнее назв.: {item.oldNames}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-bold shrink-0">
+                            Выбрать
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {(() => {
                     const norm = normalizeStreetName(newStreet, streets);
                     if (norm.isNormalized) {
@@ -1516,27 +1656,78 @@ export const HousesView: React.FC<HousesViewProps> = ({
 
             <form onSubmit={handleSaveEdit} className="space-y-3.5">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                <div className="min-w-0">
+                <div className="min-w-0 relative">
                   <label className="font-bold text-slate-700 block mb-1">
                     Улица *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    list="edit-house-street-suggestions"
-                    value={editingHouse.street}
-                    onChange={(e) =>
-                      setEditingHouse({ ...editingHouse, street: e.target.value })
-                    }
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-purple-200 font-medium"
-                  />
-                  <datalist id="edit-house-street-suggestions">
-                    {streets.map((s) => (
-                      <option key={s.id} value={s.current_name}>
-                        {s.current_name} {s.old_names ? `(ранее: ${s.old_names})` : ''}
-                      </option>
-                    ))}
-                  </datalist>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      value={editingHouse.street}
+                      onFocus={() => setIsEditStreetSuggestionsOpen(true)}
+                      onBlur={() => {
+                        setTimeout(() => setIsEditStreetSuggestionsOpen(false), 220);
+                      }}
+                      onChange={(e) => {
+                        setEditingHouse({ ...editingHouse, street: e.target.value });
+                        setIsEditStreetSuggestionsOpen(true);
+                      }}
+                      placeholder="Например: Доценка, Шевченко"
+                      autoComplete="off"
+                      className="w-full px-2.5 py-1.5 pr-7 rounded-lg border border-purple-200 font-medium focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    />
+                    {editingHouse.street && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingHouse({ ...editingHouse, street: '' });
+                          setIsEditStreetSuggestionsOpen(false);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5 rounded cursor-pointer"
+                        title="Очистить улицу"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Выпадающие подсказки улицы с первых букв */}
+                  {isEditStreetSuggestionsOpen && matchingEditStreetSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl border border-purple-200 shadow-xl max-h-52 overflow-y-auto divide-y divide-purple-50 animate-in fade-in duration-100">
+                      <div className="px-2.5 py-1 bg-purple-50/90 text-[10px] font-extrabold text-purple-800 uppercase tracking-wider flex items-center justify-between sticky top-0 backdrop-blur-xs">
+                        <span>Подсказки улиц ({matchingEditStreetSuggestions.length})</span>
+                        <span className="text-[9px] text-purple-600 font-semibold">Нажмите для выбора</span>
+                      </div>
+                      {matchingEditStreetSuggestions.map((item) => (
+                        <button
+                          key={item.name}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setEditingHouse({ ...editingHouse, street: item.name });
+                            setIsEditStreetSuggestionsOpen(false);
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs hover:bg-purple-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                        >
+                          <div className="min-w-0">
+                            <div className="font-extrabold text-slate-900 truncate">
+                              ул. {item.name}
+                            </div>
+                            {item.oldNames && (
+                              <div className="text-[10px] text-slate-400 truncate">
+                                Прежнее назв.: {item.oldNames}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-bold shrink-0">
+                            Выбрать
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {(() => {
                     const norm = normalizeStreetName(editingHouse.street, streets);
                     if (norm.isNormalized) {
