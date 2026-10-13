@@ -814,43 +814,39 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                   <div>
                     <label className="font-semibold block mb-1 text-slate-700">
                       Номер подъезда <span className="text-rose-500">*</span>
-                      {matchedHouse?.entrances_count ? (
-                        <span className="text-purple-600 font-normal ml-1">
-                          (в доме: {matchedHouse.entrances_count} под.)
-                        </span>
-                      ) : null}
                     </label>
-                    <select
-                      value={entranceNumber}
-                      onChange={(e) => setEntranceNumber(e.target.value)}
-                      className={`w-full px-3 py-2 rounded-xl border font-medium bg-white focus:outline-none focus:ring-2 text-xs ${
+                    <input
+                      type="text"
+                      value={entranceNumber === 'all' ? 'Все' : entranceNumber}
+                      onChange={(e) => {
+                        const val = e.target.value.trim();
+                        if (val.toLowerCase() === 'все') {
+                          setEntranceNumber('all');
+                        } else {
+                          setEntranceNumber(val);
+                        }
+                      }}
+                      placeholder="Выберите быстрым выбором или введите"
+                      className={`w-full px-3 py-2 rounded-xl border font-bold bg-white focus:outline-none focus:ring-2 text-xs ${
                         !entranceNumber.trim()
                           ? 'border-rose-300 focus:ring-rose-400'
                           : 'border-purple-200 focus:ring-purple-400'
                       }`}
                       required
-                    >
-                      <option value="">— Выберите номер подъезда —</option>
-                      {Array.from({ length: maxEntrancesCount }, (_, i) => i + 1).map((num) => (
-                        <option key={num} value={String(num)}>
-                          Подъезд № {num}
-                        </option>
-                      ))}
-                      <option value="all">Все подъезды / общий</option>
-                    </select>
+                    />
 
                     {/* Quick entrance number selection pills */}
                     <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                       <span className="text-[10px] text-slate-400">Быстрый выбор:</span>
                       {Array.from(
-                        { length: Math.min(matchedHouse?.entrances_count || 6, 8) },
+                        { length: Math.min(matchedHouse?.entrances_count || 10, 12) },
                         (_, i) => i + 1
                       ).map((num) => (
                         <button
                           key={num}
                           type="button"
                           onClick={() => setEntranceNumber(String(num))}
-                          className={`text-[11px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                          className={`text-[11px] px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer ${
                             entranceNumber === String(num)
                               ? 'bg-purple-700 text-white shadow-2xs'
                               : 'bg-purple-100 text-purple-900 hover:bg-purple-200'
@@ -862,7 +858,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setEntranceNumber('all')}
-                        className={`text-[11px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                        className={`text-[11px] px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer ${
                           entranceNumber === 'all'
                             ? 'bg-purple-700 text-white shadow-2xs'
                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
