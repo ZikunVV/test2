@@ -69,33 +69,37 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
     }
   }, [ticket]);
 
-  // Extract worker names strictly from the "Люди" directory
-  const availableWorkers = Array.from(
-    new Set(
-      people
-        .map((p) => p.full_name?.trim())
-        .filter((name): name is string => Boolean(name && name.length > 0))
-    )
-  );
+  // Corporate employees strictly filtered: people from "Личный список дел" must NOT get into available workers
+  const corporateEmployees = React.useMemo(() => {
+    return (people || []).filter((p) => !p.owner_user_id && !p.owner_surname);
+  }, [people]);
 
-  // Dynamic professions from People directory ("Кем работает" / position)
+  // Extract worker names strictly from corporate employees
+  const availableWorkers = React.useMemo(() => {
+    return Array.from(
+      new Set(
+        corporateEmployees
+          .map((p) => p.full_name?.trim())
+          .filter((name): name is string => Boolean(name && name.length > 0))
+      )
+    );
+  }, [corporateEmployees]);
+
+  // Dynamic professions with actual workers (no empty fields)
   const dynamicProfessions = React.useMemo(() => {
-    const base = ['Сантехник', 'Электрик', 'Каменщик', 'Кровельщик'];
-    const set = new Set<string>(base);
-    people.forEach((p) => {
+    const profMap = new Map<string, string>();
+    corporateEmployees.forEach((p) => {
       const pos = p.position?.trim();
-      if (pos) {
-        const exists = Array.from(set).some(
-          (item) => item.toLowerCase() === pos.toLowerCase()
-        );
-        if (!exists) {
+      if (pos && p.full_name?.trim()) {
+        const key = pos.toLowerCase();
+        if (!profMap.has(key)) {
           const capitalized = pos.charAt(0).toUpperCase() + pos.slice(1);
-          set.add(capitalized);
+          profMap.set(key, capitalized);
         }
       }
     });
-    return Array.from(set);
-  }, [people]);
+    return Array.from(profMap.values()).sort((a, b) => a.localeCompare(b, 'ru'));
+  }, [corporateEmployees]);
 
   const handleAddCustomWorker = () => {
     const trimmed = customWorker.trim();
@@ -326,52 +330,53 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
               </p>
             )}
 
-            {/* Selection by professions: «сантехник», «электрик», «каменщик», «кровельщик» + dynamic */}
+            {/* Selection by professions: only professions with actual workers */}
             <div className="pt-2 border-t border-purple-100/80 space-y-2">
               <label className="text-[11px] text-slate-700 font-bold block">
                 Выбор по профессиям («Кем работает»):
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {dynamicProfessions.map((prof) => {
-                  const profWorkers = people.filter(
-                    (p) =>
-                      (p.position || '').trim().toLowerCase() === prof.toLowerCase() &&
-                      Boolean(p.full_name?.trim())
-                  );
-                  return (
-                    <div key={prof} className="space-y-1">
-                      <div className="text-[11px] font-semibold text-slate-600 flex items-center justify-between">
-                        <span>{prof}:</span>
-                        <span className="text-[10px] text-slate-400">
-                          {profWorkers.length > 0 ? `(${profWorkers.length})` : '(нет в штате)'}
-                        </span>
+              {dynamicProfessions.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {dynamicProfessions.map((prof) => {
+                    const profWorkers = corporateEmployees.filter(
+                      (p) =>
+                        (p.position || '').trim().toLowerCase() === prof.toLowerCase() &&
+                        Boolean(p.full_name?.trim())
+                    );
+                    return (
+                      <div key={prof} className="space-y-1">
+                        <div className="text-[11px] font-semibold text-slate-600 flex items-center justify-between">
+                          <span>{prof}:</span>
+                          <span className="text-[10px] text-slate-400">
+                            ({profWorkers.length})
+                          </span>
+                        </div>
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val && !selectedWorkers.includes(val)) {
+                              setSelectedWorkers([...selectedWorkers, val]);
+                            }
+                          }}
+                          className="w-full px-3 py-1.5 rounded-xl border border-purple-200 bg-white text-xs font-medium focus:ring-2 focus:ring-purple-400"
+                        >
+                          <option value="">-- Выбрать: {prof} --</option>
+                          {profWorkers.map((p) => (
+                            <option key={p.id} value={p.full_name.trim()}>
+                              {p.full_name.trim()} {selectedWorkers.includes(p.full_name.trim()) ? '✓ (назначен)' : ''}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                      <select
-                        value=""
-                        disabled={profWorkers.length === 0}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val && !selectedWorkers.includes(val)) {
-                            setSelectedWorkers([...selectedWorkers, val]);
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 rounded-xl border border-purple-200 bg-white text-xs font-medium focus:ring-2 focus:ring-purple-400 disabled:bg-slate-50 disabled:text-slate-400"
-                      >
-                        <option value="">
-                          {profWorkers.length === 0
-                            ? `-- ${prof} (нет в базе) --`
-                            : `-- Выбрать: ${prof} --`}
-                        </option>
-                        {profWorkers.map((p) => (
-                          <option key={p.id} value={p.full_name.trim()}>
-                            {p.full_name.trim()} {selectedWorkers.includes(p.full_name.trim()) ? '✓ (назначен)' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 italic">
+                  Поля по профессиям появятся автоматически при добавлении сотрудников с указанием их должности («Кем работает»).
+                </p>
+              )}
             </div>
 
             {/* Custom Manual Input for Assignee (ФИО) */}

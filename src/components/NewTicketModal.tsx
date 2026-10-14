@@ -21,9 +21,12 @@ import {
   Info,
   History,
   AlertCircle,
+  UserPlus,
+  Lock,
 } from 'lucide-react';
 import {
   normalizeStreetName,
+  formatStreetDisplay,
   findTicketsForAddress,
   findTicketsForFullAddress,
   isSameFullAddressTicket,
@@ -48,6 +51,8 @@ interface NewTicketModalProps {
   onCreateTicket: (ticket: Omit<Ticket, 'id' | 'number'>) => void;
   onAddStreet?: (streetName: string) => void;
   canInspectWorker?: boolean;
+  canViewEmployeePhone?: boolean;
+  onCreatePerson?: (person: PersonalPerson) => void;
 }
 
 export const NewTicketModal: React.FC<NewTicketModalProps> = ({
@@ -65,6 +70,8 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   onCreateTicket,
   onAddStreet,
   canInspectWorker = true,
+  canViewEmployeePhone = true,
+  onCreatePerson,
 }) => {
   // Address selection (manual entry with street dropdown suggestions from first letters)
   const [street, setStreet] = useState<string>('');
@@ -91,39 +98,82 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   const [mainPhone, setMainPhone] = useState('');
   const [additionalPhones, setAdditionalPhones] = useState<string[]>([]);
 
-  // Executors strictly from the "Люди" directory (no unregistered names, no forced "Главный администратор")
-  const availableWorkers = React.useMemo(() => {
-    if (!people || people.length === 0) {
-      return [];
-    }
-    const names = Array.from(
-      new Set(people.map((p) => p.full_name?.trim()).filter(Boolean))
-    );
-    return names;
+  // Corporate employees strictly filtered: people from "Личный список дел" must NOT get into available workers
+  // "в «Выбор из списка сотрудников» не должны попадать люди которые в списке «Личный список дел»"
+  const corporateEmployees = React.useMemo(() => {
+    return (people || []).filter((p) => !p.owner_user_id && !p.owner_surname);
   }, [people]);
 
-  // Dynamic professions from People directory ("Кем работает" / position)
-  const dynamicProfessions = React.useMemo(() => {
-    const base = ['Сантехник', 'Электрик', 'Каменщик', 'Кровельщик'];
-    const set = new Set<string>(base);
-    people.forEach((p) => {
+  // Available workers for general dropdown strictly from corporate employees
+  const availableWorkers = React.useMemo(() => {
+    const names = Array.from(
+      new Set(corporateEmployees.map((p) => p.full_name?.trim()).filter(Boolean))
+    );
+    return names;
+  }, [corporateEmployees]);
+
+  // Dynamic professions that actually exist among corporate employees (NO empty fields!)
+  // "в «Выбор по профессиям» убери пустые поля, они будут добавляться, добавиться новая профессия добавиться новое поле."
+  const availableProfessions = React.useMemo(() => {
+    const profMap = new Map<string, string>();
+    corporateEmployees.forEach((p) => {
       const pos = p.position?.trim();
-      if (pos) {
-        const exists = Array.from(set).some(
-          (item) => item.toLowerCase() === pos.toLowerCase()
-        );
-        if (!exists) {
+      if (pos && p.full_name?.trim()) {
+        const key = pos.toLowerCase();
+        if (!profMap.has(key)) {
           const capitalized = pos.charAt(0).toUpperCase() + pos.slice(1);
-          set.add(capitalized);
+          profMap.set(key, capitalized);
         }
       }
     });
-    return Array.from(set);
-  }, [people]);
+    return Array.from(profMap.values()).sort((a, b) => a.localeCompare(b, 'ru'));
+  }, [corporateEmployees]);
 
   // Selected workers: starts empty, no forced default
   const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
-  const [customWorkerInput, setCustomWorkerInput] = useState<string>('');
+
+  // State for quick adding a new employee into the company directory
+  // "в «Или введите ФИО исполнителя вручную» тут добавь только активную кнопку «Добавить сотрудника» (смысл такой, если сотрудника нет в списке, его добавляем в список он автоматически появляется в выборе сотрудника.)"
+  const [isAddingEmployee, setIsAddingEmployee] = useState(false);
+  const [newEmpFullName, setNewEmpFullName] = useState('');
+  const [newEmpPosition, setNewEmpPosition] = useState('');
+  const [newEmpPhone, setNewEmpPhone] = useState('');
+  const [newEmpOrg, setNewEmpOrg] = useState('');
+  const [employeeAddSuccess, setEmployeeAddSuccess] = useState<string | null>(null);
+
+  const handleSaveAndSelectEmployee = () => {
+    const cleanName = newEmpFullName.trim();
+    if (!cleanName) return;
+
+    const newPerson: PersonalPerson = {
+      id: `pp-${Date.now()}`,
+      full_name: cleanName,
+      position: newEmpPosition.trim(),
+      organization: newEmpOrg.trim() || 'ЖЭК',
+      residence_address: '',
+      phones: newEmpPhone.trim() ? [newEmpPhone.trim()] : [],
+      notes: 'Добавлен из формы создания заявки',
+    };
+
+    if (onCreatePerson) {
+      onCreatePerson(newPerson);
+    }
+
+    if (!selectedWorkers.includes(cleanName)) {
+      setSelectedWorkers([...selectedWorkers, cleanName]);
+    }
+
+    setIsAddingEmployee(false);
+    setEmployeeAddSuccess(
+      `Сотрудник «${cleanName}» успешно добавлен в справочник сотрудников и назначен на заявку!`
+    );
+    setTimeout(() => setEmployeeAddSuccess(null), 4500);
+
+    setNewEmpFullName('');
+    setNewEmpPosition('');
+    setNewEmpPhone('');
+    setNewEmpOrg('');
+  };
 
   // Request core
   const [goal, setGoal] = useState('');
@@ -372,14 +422,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     }
   };
 
-  const handleAddCustomWorker = () => {
-    const trimmed = customWorkerInput.trim();
-    if (!trimmed) return;
-    if (!selectedWorkers.includes(trimmed)) {
-      setSelectedWorkers([...selectedWorkers, trimmed]);
-    }
-    setCustomWorkerInput('');
-  };
 
   const executeCreateTicket = () => {
     const normalized = normalizeStreetName(street, streets);
@@ -427,7 +469,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
       }
     }
 
-    const fullAddress = `ул. ${finalStreet}, д. ${cleanHouseNum}${
+    const fullAddress = `${formatStreetDisplay(finalStreet, streets)}, д. ${cleanHouseNum}${
       cleanBuilding ? ' корп. ' + cleanBuilding : ''
     }, ${locLabel}`;
 
@@ -1057,81 +1099,178 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               </p>
             )}
 
-            {/* Selection fields by professions: «сантехник», «электрик», «каменщик», «кровельщик» + dynamic */}
+            {/* Selection fields by professions: only existing professions with active workers, NO empty fields */}
+            {/* "в «Выбор по профессиям» убери пустые поля, они будут добавляться, добавиться новая профессия добавиться новое поле." */}
             <div className="pt-2 border-t border-purple-100/80 space-y-2">
               <label className="text-[11px] text-slate-700 font-bold block">
                 Выбор по профессиям («Кем работает»):
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {dynamicProfessions.map((prof) => {
-                  const profWorkers = people.filter(
-                    (p) =>
-                      (p.position || '').trim().toLowerCase() === prof.toLowerCase() &&
-                      Boolean(p.full_name?.trim())
-                  );
-                  return (
-                    <div key={prof} className="space-y-1">
-                      <div className="text-[11px] font-semibold text-slate-600 flex items-center justify-between">
-                        <span>{prof}:</span>
-                        <span className="text-[10px] text-slate-400">
-                          {profWorkers.length > 0 ? `(${profWorkers.length})` : '(нет в штате)'}
-                        </span>
+              {availableProfessions.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {availableProfessions.map((prof) => {
+                    const profWorkers = corporateEmployees.filter(
+                      (p) =>
+                        (p.position || '').trim().toLowerCase() === prof.toLowerCase() &&
+                        Boolean(p.full_name?.trim())
+                    );
+                    return (
+                      <div key={prof} className="space-y-1">
+                        <div className="text-[11px] font-semibold text-slate-600 flex items-center justify-between">
+                          <span>{prof}:</span>
+                          <span className="text-[10px] text-slate-400">
+                            ({profWorkers.length})
+                          </span>
+                        </div>
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val && !selectedWorkers.includes(val)) {
+                              setSelectedWorkers([...selectedWorkers, val]);
+                            }
+                          }}
+                          className="w-full px-3 py-1.5 rounded-xl border border-purple-200 bg-white text-xs font-medium focus:ring-2 focus:ring-purple-400"
+                        >
+                          <option value="">-- Выбрать: {prof} --</option>
+                          {profWorkers.map((p) => (
+                            <option key={p.id} value={p.full_name.trim()}>
+                              {p.full_name.trim()} {selectedWorkers.includes(p.full_name.trim()) ? '✓ (назначен)' : ''}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                      <select
-                        value=""
-                        disabled={profWorkers.length === 0}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val && !selectedWorkers.includes(val)) {
-                            setSelectedWorkers([...selectedWorkers, val]);
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 rounded-xl border border-purple-200 bg-white text-xs font-medium focus:ring-2 focus:ring-purple-400 disabled:bg-slate-50 disabled:text-slate-400"
-                      >
-                        <option value="">
-                          {profWorkers.length === 0
-                            ? `-- ${prof} (нет в базе) --`
-                            : `-- Выбрать: ${prof} --`}
-                        </option>
-                        {profWorkers.map((p) => (
-                          <option key={p.id} value={p.full_name.trim()}>
-                            {p.full_name.trim()} {selectedWorkers.includes(p.full_name.trim()) ? '✓ (назначен)' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 italic">
+                  Поля по профессиям появятся автоматически при добавлении сотрудников с указанием их должности («Кем работает»).
+                </p>
+              )}
             </div>
 
-            {/* Custom Manual Input for Assignee (ФИО) */}
-            <div className="space-y-1 pt-2 border-t border-purple-100/80">
-              <label className="text-[11px] text-slate-600 font-semibold block">
-                Или введите ФИО исполнителя вручную:
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={customWorkerInput}
-                  onChange={(e) => setCustomWorkerInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddCustomWorker();
-                    }
-                  }}
-                  placeholder="Введите ФИО исполнителя вручную..."
-                  className="flex-1 px-3 py-2 rounded-xl border border-purple-200 bg-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddCustomWorker}
-                  className="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-2xs transition-colors shrink-0"
-                >
-                  + Добавить
-                </button>
-              </div>
+            {/* Quick add new employee button and form */}
+            {/* "в «Или введите ФИО исполнителя вручную» тут добавь только активную кнопку «Добавить сотрудника» (смысл такой, если сотрудника нет в списке, его добавляем в список он автоматически появляется в выборе сотрудника.)" */}
+            <div className="pt-2 border-t border-purple-100/80">
+              {!isAddingEmployee ? (
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-700 block">
+                      Нет нужного сотрудника в списке?
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      Добавьте сотрудника в справочник, и он сразу появится в выборе исполнителей и профессиях
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingEmployee(true);
+                      setEmployeeAddSuccess(null);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-2xs transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Добавить сотрудника</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3 bg-purple-50/80 rounded-xl border border-purple-200 space-y-2.5 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+                      <UserPlus className="w-4 h-4 text-purple-700" />
+                      <span>Добавление нового сотрудника в справочник</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingEmployee(false)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1 text-[11px]">
+                        ФИО сотрудника <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newEmpFullName}
+                        onChange={(e) => setNewEmpFullName(e.target.value)}
+                        placeholder="Иванов Иван Иванович"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-purple-200 bg-white font-medium focus:ring-2 focus:ring-purple-400 text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1 text-[11px]">
+                        Кем работает / Профессия
+                      </label>
+                      <input
+                        type="text"
+                        value={newEmpPosition}
+                        onChange={(e) => setNewEmpPosition(e.target.value)}
+                        placeholder="Сантехник, Электрик, Кровельщик..."
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-purple-200 bg-white font-medium focus:ring-2 focus:ring-purple-400 text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1 text-[11px]">
+                        Номер телефона
+                      </label>
+                      <input
+                        type="tel"
+                        value={newEmpPhone}
+                        onChange={(e) => setNewEmpPhone(e.target.value)}
+                        placeholder="+38 (0__) ___-__-__"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-purple-200 bg-white font-medium focus:ring-2 focus:ring-purple-400 text-xs font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1 text-[11px]">
+                        Организация / Где работает
+                      </label>
+                      <input
+                        type="text"
+                        value={newEmpOrg}
+                        onChange={(e) => setNewEmpOrg(e.target.value)}
+                        placeholder="ЖЭК / Служба"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-purple-200 bg-white font-medium focus:ring-2 focus:ring-purple-400 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-purple-200/60">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingEmployee(false)}
+                      className="px-3 py-1 rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-semibold hover:bg-slate-50 cursor-pointer"
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveAndSelectEmployee}
+                      disabled={!newEmpFullName.trim()}
+                      className="px-3.5 py-1 rounded-lg bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1 shadow-2xs cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Сохранить в справочник и назначить</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {employeeAddSuccess && (
+                <div className="mt-2 p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center gap-1.5 animate-in fade-in">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{employeeAddSuccess}</span>
+                </div>
+              )}
             </div>
 
             {/* Currently Selected workers summary - allows 2 or more workers */}
@@ -1353,16 +1492,23 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                       Контакты / Телефоны
                     </span>
                     <div className="space-y-1">
-                      {inspectedWorker.phones.map((phone, i) => (
-                        <a
-                          key={i}
-                          href={`tel:${phone}`}
-                          className="flex items-center gap-1.5 text-purple-700 font-mono font-bold text-xs hover:underline"
-                        >
-                          <Phone className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                          <span>{phone}</span>
-                        </a>
-                      ))}
+                      {canViewEmployeePhone ? (
+                        inspectedWorker.phones.map((phone, i) => (
+                          <a
+                            key={i}
+                            href={`tel:${phone}`}
+                            className="flex items-center gap-1.5 text-purple-700 font-mono font-bold text-xs hover:underline"
+                          >
+                            <Phone className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                            <span>{phone}</span>
+                          </a>
+                        ))
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px] select-none">
+                          <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>Номер скрыт (нет прав)</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1417,7 +1563,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                       История обращений по точному адресу и месту уточнения
                     </span>
                     <h3 className="text-base font-extrabold text-slate-900 leading-snug">
-                      ул. {street}, д. {houseNumber}{building ? ` корп. ${building}` : ''}
+                      {formatStreetDisplay(street, streets)}, д. {houseNumber}{building ? ` корп. ${building}` : ''}
                       {locationType === 'apartment' && apartmentNumber ? `, кв. ${apartmentNumber}` : ''}
                       {locationType !== 'apartment' && entranceNumber ? `, подъезд ${entranceNumber}` : ''}
                       {locationValue ? ` (${locationValue})` : ''}

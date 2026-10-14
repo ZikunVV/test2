@@ -14,6 +14,7 @@ import {
   Trash2,
   X,
   Check,
+  Lock,
 } from 'lucide-react';
 
 interface PeopleViewProps {
@@ -24,6 +25,7 @@ interface PeopleViewProps {
   canEdit?: boolean;
   canAdd?: boolean;
   canDelete?: boolean;
+  canViewPhone?: boolean;
   isRegistered?: boolean;
   onUpdatePerson: (person: PersonalPerson) => void;
   onCreatePerson: (person: PersonalPerson) => void;
@@ -39,6 +41,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
   canEdit = true,
   canAdd = canEdit,
   canDelete = canEdit,
+  canViewPhone = true,
   isRegistered = true,
   onUpdatePerson,
   onCreatePerson,
@@ -276,16 +279,26 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
               {/* Phones List (multiple supported v48.11) */}
               {person.phones && person.phones.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-purple-100 space-y-1">
-                  {person.phones.map((phone, i) => (
-                    <a
-                      key={i}
-                      href={`tel:${phone}`}
-                      className="flex items-center gap-1.5 text-purple-700 font-mono font-bold text-[11px] hover:underline"
+                  {canViewPhone ? (
+                    person.phones.map((phone, i) => (
+                      <a
+                        key={i}
+                        href={`tel:${phone}`}
+                        className="flex items-center gap-1.5 text-purple-700 font-mono font-bold text-[11px] hover:underline"
+                      >
+                        <Phone className="w-3 h-3 text-purple-500 shrink-0" />
+                        <span>{phone}</span>
+                      </a>
+                    ))
+                  ) : (
+                    <div
+                      className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px] select-none"
+                      title="Номер телефона скрыт (нет прав доступа)"
                     >
-                      <Phone className="w-3 h-3 text-purple-500 shrink-0" />
-                      <span>{phone}</span>
-                    </a>
-                  ))}
+                      <Lock className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span>Номер скрыт (нет прав)</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -387,36 +400,45 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                   <label className="font-bold text-slate-700">
                     Телефоны
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleAddPhoneField}
-                    className="text-purple-700 hover:underline font-bold text-[10px]"
-                  >
-                    + Добавить номер
-                  </button>
+                  {canViewPhone && (
+                    <button
+                      type="button"
+                      onClick={handleAddPhoneField}
+                      className="text-purple-700 hover:underline font-bold text-[10px]"
+                    >
+                      + Добавить номер
+                    </button>
+                  )}
                 </div>
-                <div className="space-y-1.5">
-                  {phones.map((phone, idx) => (
-                    <div key={idx} className="flex gap-1.5">
-                      <input
-                        type="text"
-                        value={phone}
-                        onChange={(e) => handlePhoneChange(idx, e.target.value)}
-                        placeholder="+38 (067) 123-45-67"
-                        className="flex-1 px-3 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-mono text-xs"
-                      />
-                      {phones.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemovePhoneField(idx)}
-                          className="px-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                {!canViewPhone ? (
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs">
+                    <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span>Номера телефонов скрыты (нет прав доступа на просмотр и изменение)</span>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {phones.map((phone, idx) => (
+                      <div key={idx} className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={phone}
+                          onChange={(e) => handlePhoneChange(idx, e.target.value)}
+                          placeholder="+38 (067) 123-45-67"
+                          className="flex-1 px-3 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-mono text-xs"
+                        />
+                        {phones.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoneField(idx)}
+                            className="px-2 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>

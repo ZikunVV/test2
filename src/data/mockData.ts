@@ -59,6 +59,7 @@ export const INITIAL_USERS: UserItem[] = [
       'houses',
       'new_house',
       'edit_house',
+      'delete_house',
       'new_request',
       'send_messenger',
       'accept_request',

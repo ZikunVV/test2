@@ -12,8 +12,10 @@ import {
   Save,
   Building,
   MapPin,
+  Trash2,
+  Lock,
 } from 'lucide-react';
-import { normalizeStreetName } from '../../utils/streets';
+import { normalizeStreetName, formatStreetDisplay } from '../../utils/streets';
 
 interface HousesViewProps {
   theme: ThemeConfig;
@@ -28,11 +30,13 @@ interface HousesViewProps {
   onOpenTicket: (ticket: Ticket) => void;
   onUpdateHouse: (house: House) => void;
   onCreateHouse: (house: House) => void;
+  onDeleteHouse?: (houseId: string) => void;
   onAddStreet?: (streetName: string) => void;
   onBackToHome: () => void;
   isAdmin?: boolean;
   canAddHouse?: boolean;
   canEditHouse?: boolean;
+  canDeleteHouse?: boolean;
 }
 
 export const HousesView: React.FC<HousesViewProps> = ({
@@ -48,11 +52,13 @@ export const HousesView: React.FC<HousesViewProps> = ({
   onOpenTicket,
   onUpdateHouse,
   onCreateHouse,
+  onDeleteHouse,
   onAddStreet,
   onBackToHome,
   isAdmin = true,
   canAddHouse = isAdmin,
   canEditHouse = isAdmin,
+  canDeleteHouse = isAdmin,
 }) => {
   // Search state
   const [streetQuery, setStreetQuery] = useState('');
@@ -600,7 +606,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
         `Дом добавлен! Старое название улицы «${normalized.matchedOldName}» автоматически заменено на актуальное «${normalized.officialName}».`
       );
     } else {
-      setToastMessage(`Дом ул. ${newHouse.street}, ${newHouse.house_number} успешно добавлен!`);
+      setToastMessage(`Дом ${formatStreetDisplay(newHouse.street, streets)}, ${newHouse.house_number} успешно добавлен!`);
     }
     setTimeout(() => setToastMessage(null), 3500);
   };
@@ -681,7 +687,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
               </button>
               <span className="text-slate-300">/</span>
               <span className="font-bold text-slate-800">
-                ул. {activeHouseDetail.street}, {activeHouseDetail.house_number}
+                {formatStreetDisplay(activeHouseDetail.street, streets)}, {activeHouseDetail.house_number}
                 {activeHouseDetail.building ? ` к. ${activeHouseDetail.building}` : ''}
               </span>
             </>
@@ -716,7 +722,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
               <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
                 <Building2 className="w-6 h-6 text-purple-700" />
                 <span>
-                  ул. {activeHouseDetail.street}, д. {activeHouseDetail.house_number}
+                  {formatStreetDisplay(activeHouseDetail.street, streets)}, д. {activeHouseDetail.house_number}
                   {activeHouseDetail.building ? ` корп. ${activeHouseDetail.building}` : ''}
                 </span>
               </h2>
@@ -1076,7 +1082,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
                     >
                       <div className="min-w-0">
                         <div className="font-extrabold text-slate-900 truncate">
-                          ул. {item.name}
+                          {formatStreetDisplay(item.name, streets)}
                         </div>
                         {item.oldNames && (
                           <div className="text-[10px] text-slate-500 truncate">
@@ -1178,7 +1184,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
                       >
                         <Building2 className="w-4 h-4 text-purple-700 shrink-0" />
                         <span>
-                          ул. {house.street}, {house.house_number}
+                          {formatStreetDisplay(house.street, streets)}, {house.house_number}
                           {house.building ? ` корп. ${house.building}` : ''}
                         </span>
                       </h3>
@@ -1313,7 +1319,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
                         >
                           <div className="min-w-0">
                             <div className="font-extrabold text-slate-900 truncate">
-                              ул. {item.name}
+                              {formatStreetDisplay(item.name, streets)}
                             </div>
                             {item.oldNames && (
                               <div className="text-[10px] text-slate-400 truncate">
@@ -1642,7 +1648,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
                   Изменение данных дома
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  ул. {editingHouse.street}, д. {editingHouse.house_number}
+                  {formatStreetDisplay(editingHouse.street, streets)}, д. {editingHouse.house_number}
                 </p>
               </div>
               <button
@@ -1712,7 +1718,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
                         >
                           <div className="min-w-0">
                             <div className="font-extrabold text-slate-900 truncate">
-                              ул. {item.name}
+                              {formatStreetDisplay(item.name, streets)}
                             </div>
                             {item.oldNames && (
                               <div className="text-[10px] text-slate-400 truncate">
@@ -2059,21 +2065,64 @@ export const HousesView: React.FC<HousesViewProps> = ({
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-purple-100">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 font-medium"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-1.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold transition-colors shadow-2xs flex items-center gap-1.5"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Сохранить</span>
-                </button>
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-purple-100">
+                {canDeleteHouse && onDeleteHouse ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const houseAddr =
+                        formatStreetDisplay(editingHouse.street, streets) +
+                        ', ' +
+                        editingHouse.house_number +
+                        (editingHouse.building ? ' корп. ' + editingHouse.building : '');
+                      if (
+                        window.confirm(
+                          `Вы действительно хотите удалить дом «${houseAddr}» из базы домов в управлении?\n\nВнимание: удаление дома нельзя отменить.`
+                        )
+                      ) {
+                        onDeleteHouse(editingHouse.id);
+                        setIsEditModalOpen(false);
+                        setEditingHouse(null);
+                        if (activeHouseDetail?.id === editingHouse.id) {
+                          setActiveHouseDetail(null);
+                          setSelectedHouseId(null);
+                        }
+                        setToastMessage(`Дом «${houseAddr}» успешно удалён из управления.`);
+                        setTimeout(() => setToastMessage(null), 3500);
+                      }
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Удалить дом из базы (только с правами доступа)"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Удалить дом из управления</span>
+                  </button>
+                ) : (
+                  <div
+                    className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium py-1"
+                    title="Удаление доступно только администраторам и сотрудникам с правом «Удалять дома»"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Удаление дома ограничено правами</span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-3.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 font-medium text-xs hover:bg-slate-50 cursor-pointer"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-1.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Сохранить</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -2091,7 +2140,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
                   Внимание: Обнаружен существующий адрес
                 </span>
                 <h3 className="text-base font-black text-slate-900 mt-0.5">
-                  Дом по адресу «ул. {duplicateConflict.existingHouse.street}, д. {duplicateConflict.existingHouse.house_number}
+                  Дом по адресу «{formatStreetDisplay(duplicateConflict.existingHouse.street, streets)}, д. {duplicateConflict.existingHouse.house_number}
                   {duplicateConflict.existingHouse.building ? ` корп. ${duplicateConflict.existingHouse.building}` : ''}» уже есть в базе
                 </h3>
                 <p className="text-slate-500 text-xs mt-1">
@@ -2127,7 +2176,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
                       <tr>
                         <td className="py-1.5 font-semibold text-slate-500 w-1/3">Адрес:</td>
                         <td className="py-1.5 font-bold text-slate-900">
-                          ул. {duplicateConflict.existingHouse.street}, {duplicateConflict.existingHouse.house_number}
+                          {formatStreetDisplay(duplicateConflict.existingHouse.street, streets)}, {duplicateConflict.existingHouse.house_number}
                           {duplicateConflict.existingHouse.building ? ` корп. ${duplicateConflict.existingHouse.building}` : ''}
                         </td>
                       </tr>
@@ -2219,7 +2268,7 @@ export const HousesView: React.FC<HousesViewProps> = ({
                       <tr>
                         <td className="py-1.5 font-semibold text-purple-800/70 w-1/3">Адрес:</td>
                         <td className="py-1.5 font-bold text-slate-900">
-                          ул. {duplicateConflict.newHouseCandidate.street}, {duplicateConflict.newHouseCandidate.house_number}
+                          {formatStreetDisplay(duplicateConflict.newHouseCandidate.street, streets)}, {duplicateConflict.newHouseCandidate.house_number}
                           {duplicateConflict.newHouseCandidate.building ? ` корп. ${duplicateConflict.newHouseCandidate.building}` : ''}
                         </td>
                       </tr>

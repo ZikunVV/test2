@@ -13,6 +13,7 @@ import {
   FileText,
   Search,
 } from 'lucide-react';
+import { formatStreetDisplay } from '../../utils/streets';
 
 interface InternalViewProps {
   theme: ThemeConfig;
@@ -38,7 +39,7 @@ export const InternalView: React.FC<InternalViewProps> = ({
   const streetsData = [
     { id: 1, current_name: 'Доценка', old_names: 'ул. Деснянская' },
     { id: 2, current_name: 'Шевченко', old_names: 'ул. Советская' },
-    { id: 3, current_name: 'Мира', old_names: 'проспект Ленина' },
+    { id: 3, current_name: 'просп. Мира', old_names: 'проспект Ленина, пр-т Ленина' },
     { id: 4, current_name: 'Героев', old_names: 'ул. Октябрьская' },
   ];
 
@@ -206,7 +207,7 @@ export const InternalView: React.FC<InternalViewProps> = ({
                   <MapPin className="w-4 h-4 text-purple-600 shrink-0" />
                   <div>
                     <span className="font-extrabold text-sm text-slate-900">
-                      ул. {st.current_name}
+                      {formatStreetDisplay(st.current_name)}
                     </span>
                     {st.old_names && (
                       <span className="text-slate-400 text-xs ml-2">

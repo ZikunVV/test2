@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ThemeConfig, GradientOption, House, StreetDirectoryEntry } from '../../types';
-import { normalizeStreetName } from '../../utils/streets';
+import { normalizeStreetName, formatStreetDisplay } from '../../utils/streets';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
@@ -15,6 +15,8 @@ import {
   Layers,
   Info,
   X,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 
 interface MapViewProps {
@@ -62,10 +64,38 @@ export const MapView: React.FC<MapViewProps> = ({
   );
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
+  // Fullscreen map mode
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   // Leaflet map refs
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [houseId: string]: L.Marker }>({});
+
+  // Invalidate Leaflet map size on fullscreen toggle and window resize
+  useEffect(() => {
+    const handleResize = () => {
+      mapInstanceRef.current?.invalidateSize();
+    };
+
+    const timer1 = setTimeout(handleResize, 100);
+    const timer2 = setTimeout(handleResize, 300);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isFullscreen]);
 
   // Sync when initialSelectedHouseId is provided (e.g. from HousesView "Показать дом на карте")
   useEffect(() => {
@@ -187,7 +217,7 @@ export const MapView: React.FC<MapViewProps> = ({
       marker.bindPopup(`
         <div style="font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; line-height: 1.4;">
           <div style="font-weight: 800; font-size: 13px; color: #18202F; margin-bottom: 2px;">
-            ул. ${h.street}, д. ${h.house_number}${
+            ${formatStreetDisplay(h.street, streets)}, д. ${h.house_number}${
         h.building ? ' корп. ' + h.building : ''
       }
           </div>
@@ -528,7 +558,7 @@ export const MapView: React.FC<MapViewProps> = ({
                     >
                       <div className="min-w-0">
                         <div className="font-extrabold text-slate-900 truncate">
-                          ул. {item.name}
+                          {formatStreetDisplay(item.name, streets)}
                         </div>
                         {item.oldNames && (
                           <div className="text-[10px] text-slate-500 truncate">
@@ -613,21 +643,111 @@ export const MapView: React.FC<MapViewProps> = ({
       {/* Main Map View & House Coordinator Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Interactive Leaflet OpenStreetMap Map */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-purple-200/80 shadow-xs p-3.5 flex flex-col justify-between h-[480px] relative overflow-hidden">
+        <div
+          className={
+            isFullscreen
+              ? 'fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md p-2 sm:p-4 flex flex-col animate-in fade-in duration-200'
+              : 'lg:col-span-2 bg-white rounded-2xl border border-purple-200/80 shadow-xs p-3.5 flex flex-col justify-between h-[500px] relative overflow-hidden'
+          }
+        >
           <div
-            ref={mapContainerRef}
-            className="w-full h-full rounded-xl overflow-hidden relative z-0"
-            style={{ minHeight: '440px' }}
-          />
+            className={
+              isFullscreen
+                ? 'w-full h-full bg-white rounded-2xl border border-purple-200 shadow-2xl relative overflow-hidden flex flex-col'
+                : 'w-full h-full relative'
+            }
+          >
+            <div
+              ref={mapContainerRef}
+              className="w-full h-full rounded-xl overflow-hidden relative z-0 flex-1"
+              style={{ minHeight: isFullscreen ? '100%' : '460px' }}
+            />
 
-          {/* Floating Map Info Pill */}
-          <div className="absolute top-6 left-6 z-10 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-purple-200 shadow-sm flex items-center gap-2 text-xs font-semibold text-purple-900">
-            <MapPin className="w-3.5 h-3.5 text-purple-700" />
-            <span>
-              {selectedHouse
-                ? `Выбран дом: ул. ${selectedHouse.street}, ${selectedHouse.house_number}`
-                : 'Кликните на маркер дома для информации'}
-            </span>
+            {/* Floating Map Info Pill - смещён в сторону от кнопок "+" и "-" (Leaflet zoom кнопки расположены в top-left: 10px, ширина 34px) */}
+            <div
+              className="absolute top-2.5 sm:top-3 left-14 sm:left-16 z-10 max-w-[calc(100%-140px)] sm:max-w-[calc(100%-230px)] bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-purple-200 shadow-md flex items-center gap-2 text-xs font-bold text-purple-950 pointer-events-auto transition-all animate-in fade-in"
+              title={
+                selectedHouse
+                  ? `${formatStreetDisplay(selectedHouse.street, streets)}, д. ${selectedHouse.house_number}${selectedHouse.building ? ` корп. ${selectedHouse.building}` : ''}`
+                  : 'Кликните на маркер дома для информации'
+              }
+            >
+              <Building2 className="w-4 h-4 text-purple-700 shrink-0" />
+              <span className="truncate">
+                {selectedHouse
+                  ? `${formatStreetDisplay(selectedHouse.street, streets)}, д. ${selectedHouse.house_number}${selectedHouse.building ? ` корп. ${selectedHouse.building}` : ''}`
+                  : 'Кликните на маркер дома'}
+              </span>
+            </div>
+
+            {/* Fullscreen Toggle & Actions Buttons (в правом верхнем углу карты) */}
+            <div className="absolute top-2.5 sm:top-3 right-3 sm:right-3.5 z-10 flex items-center gap-2">
+              {isFullscreen && selectedHouse && (
+                <button
+                  type="button"
+                  onClick={() => onOpenHouse(selectedHouse)}
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-white/95 hover:bg-purple-50 text-purple-900 border border-purple-200 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer"
+                  title="Перейти к полной карточке дома"
+                >
+                  <Building2 className="w-3.5 h-3.5 text-purple-700" />
+                  <span>Карточка объекта</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer border ${
+                  isFullscreen
+                    ? 'bg-purple-700 hover:bg-purple-800 text-white border-purple-800 shadow-lg'
+                    : 'bg-white/95 hover:bg-purple-50 text-purple-900 border-purple-200 hover:border-purple-300'
+                }`}
+                title={
+                  isFullscreen
+                    ? 'Свернуть карту в обычный вид (Esc)'
+                    : 'Развернуть карту на весь экран'
+                }
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize2 className="w-3.5 h-3.5 text-white shrink-0" />
+                    <span>Свернуть</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+                    <span className="hidden sm:inline">На весь экран</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Fullscreen compact bottom bar for selected house */}
+            {isFullscreen && selectedHouse && (
+              <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 z-10 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl border border-purple-200 shadow-xl flex items-center justify-between gap-3 animate-in slide-in-from-bottom-2">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-purple-700">
+                    {selectedHouse.managing_organization || 'В управлении'}
+                  </div>
+                  <div className="font-extrabold text-sm text-slate-900 truncate">
+                    {formatStreetDisplay(selectedHouse.street, streets)}, д. {selectedHouse.house_number}
+                    {selectedHouse.building ? ` корп. ${selectedHouse.building}` : ''}
+                  </div>
+                  <div className="text-[11px] text-slate-500 flex items-center gap-3 mt-0.5">
+                    <span>Подъездов: <strong>{selectedHouse.entrances_count}</strong></span>
+                    <span>Этажей: <strong>{selectedHouse.floors}</strong></span>
+                    <span>Квартир: <strong>{selectedHouse.apartments}</strong></span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onOpenHouse(selectedHouse)}
+                  className="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shrink-0 shadow-2xs transition-colors cursor-pointer"
+                >
+                  Карточка
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -641,7 +761,7 @@ export const MapView: React.FC<MapViewProps> = ({
                     Карточка объекта
                   </span>
                   <h3 className="text-base font-extrabold text-slate-900">
-                    ул. {selectedHouse.street}, д. {selectedHouse.house_number}
+                    {formatStreetDisplay(selectedHouse.street, streets)}, д. {selectedHouse.house_number}
                     {selectedHouse.building
                       ? ` корп. ${selectedHouse.building}`
                       : ''}
@@ -800,7 +920,7 @@ export const MapView: React.FC<MapViewProps> = ({
                     }`}
                   >
                     <span>
-                      ул. {h.street}, {h.house_number}
+                      {formatStreetDisplay(h.street, streets)}, {h.house_number}
                       {h.building ? ` к. ${h.building}` : ''}
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono">

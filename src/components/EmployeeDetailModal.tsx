@@ -1,6 +1,6 @@
 import React from 'react';
 import { PersonalPerson } from '../types';
-import { User, Briefcase, Building, MapPin, Phone, X, Check } from 'lucide-react';
+import { User, Briefcase, Building, MapPin, Phone, X, Check, Lock } from 'lucide-react';
 
 export interface InspectedWorkerInfo {
   id?: string;
@@ -18,12 +18,14 @@ interface EmployeeDetailModalProps {
   worker: InspectedWorkerInfo | null;
   onClose: () => void;
   canSendMessenger?: boolean;
+  canViewPhone?: boolean;
 }
 
 export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
   worker,
   onClose,
   canSendMessenger = true,
+  canViewPhone = true,
 }) => {
   if (!worker) return null;
 
@@ -104,7 +106,12 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
             <span className="text-[10px] text-slate-400 block font-semibold mb-1.5">
               Контактные телефоны и мессенджеры
             </span>
-            {worker.phones && worker.phones.length > 0 ? (
+            {!canViewPhone ? (
+              <div className="flex items-center gap-2 bg-slate-100/90 p-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs select-none">
+                <Lock className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>Номер телефона скрыт (нет прав доступа)</span>
+              </div>
+            ) : worker.phones && worker.phones.length > 0 ? (
               <div className="space-y-2">
                 {worker.phones.map((phone, i) => {
                   const digitsOnly = phone.replace(/[^0-9]/g, '');
@@ -149,7 +156,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
               </div>
             ) : (
               <span className="text-slate-400 text-xs italic">
-                Телефон не указан (для образца: +38 (067) 123-45-67, +38 (050) 123-45-67, +38 (063) 123-45-67)
+                Телефон не указан
               </span>
             )}
           </div>

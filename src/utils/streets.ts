@@ -3,20 +3,217 @@ import { StreetItem, House, Ticket } from '../types';
 export const DEFAULT_STREETS: StreetItem[] = [
   { id: 1, current_name: 'Доценка', old_names: 'ул. Деснянская, Деснянська' },
   { id: 2, current_name: 'Шевченко', old_names: 'ул. Советская, Радянська' },
-  { id: 3, current_name: 'Мира', old_names: 'проспект Ленина, пр-т Ленина' },
+  { id: 3, current_name: 'просп. Мира', old_names: 'проспект Ленина, пр-т Ленина, ул. Ленина' },
   { id: 4, current_name: 'Героев', old_names: 'ул. Октябрьская, Жовтнева' },
   { id: 5, current_name: 'Космонавтов', old_names: 'ул. Гагарина' },
   { id: 6, current_name: 'Европейская', old_names: 'ул. Щорса' },
+  {
+    id: 7,
+    current_name: "просп. Левка Лук'яненка",
+    old_names:
+      "ул. Рокоссовского, ул.Левка Лук'яненка, ул. Левка Лук'яненка, просп.Левка Лук'яненка, Левка Лук'яненка, Левка Лук’яненка, ул.Левка Лук’яненка, Левка Лукьяненко, Левка Лукьяненка",
+  },
 ];
+
+/**
+ * Normalizes all apostrophe variants (', ’, ʼ, `) into standard ASCII apostrophe (')
+ */
+export function normalizeApostrophes(str: string): string {
+  if (!str) return '';
+  return str.replace(/[’ʼ`]/g, "'");
+}
 
 /**
  * Strips common prefixes like "ул.", "улица", "проспект", "просп.", "пер." etc.
  */
 export function cleanStreetPrefix(str: string): string {
   if (!str) return '';
-  return str
-    .replace(/^(ул\.|улица|вул\.|вулиця|пр-т|проспект|просп\.|пер\.|переулок|провулок)\s+/i, '')
-    .trim();
+  let s = normalizeApostrophes(str).trim();
+  // Strip compound or accidental prefixes e.g. "ул. просп." or "ул. проспект"
+  s = s.replace(/^(?:ул\.|улица|вул\.|вулиця)\s*(?:проспект|просп\.|просп|пр-т|пр\.)\s*/i, '');
+  s = s.replace(/^(?:ул\.|улица|вул\.|вулиця)\s*/i, '');
+  s = s.replace(/^(?:проспект|просп\.|просп|пр-т|пр\.)\s*/i, '');
+  s = s.replace(/^(?:пер\.|переулок|провулок)\s*/i, '');
+  s = s.replace(/^(?:бульв\.|бульвар|тупик|наб\.|набережная|пл\.|площадь|шоссе|проезд)\s*/i, '');
+  s = s.replace(/\s*\(?(?:проспект|просп\.|просп|пр-т)\)?\s*$/i, '');
+  return s.trim();
+}
+
+/**
+ * Generates a canonical lowercase search key for comparing street names,
+ * stripping prefixes, normalizing apostrophes and Cyrillic nuances (e.g. Лукьяненка / Лук'яненка).
+ */
+export function canonicalStreetKey(str: string): string {
+  if (!str) return '';
+  let s = cleanStreetPrefix(str).toLowerCase().trim();
+  // Normalize Russian/Ukrainian variations of Lukianenko
+  s = s.replace(/лукьянен/g, "лук'янен");
+  return s;
+}
+
+/**
+ * Checks if a street name or raw input is a prospect/avenue (проспект).
+ * Matches Cyrillic text regardless of whether followed by space, dot, or Cyrillic letter.
+ * Also checks known Ukrainian prospects (e.g. Левка Лук'яненка, Мира, Победы).
+ */
+export function isProspectStreet(name: string): boolean {
+  if (!name) return false;
+  const raw = normalizeApostrophes(name).trim().toLowerCase();
+
+  // If written as "ул. просп." or "ул. проспект"
+  if (/^(?:ул\.|улица|вул\.|вулиця)\s*(?:проспект|просп\.|просп|пр-т|пр\.)/i.test(raw)) {
+    return true;
+  }
+
+  // Starts with or contains prospect designation
+  if (/^(?:проспект|просп\.|просп|пр-т|пр\.)/i.test(raw)) {
+    return true;
+  }
+  if (/(?:^|[\s,;."''«»(])(проспект|просп\.|просп|пр-т|пр\.)/i.test(raw)) {
+    return true;
+  }
+
+  // Specifically known historical avenue: Левка Лук'яненка (бывшая Рокоссовского)
+  if (raw.includes("лук'янен") || raw.includes('лукьянен')) {
+    return true;
+  }
+
+  return false;
+}
+
+export type StreetKind = 'street' | 'prospect' | 'lane' | 'other';
+
+/**
+ * Analyzes street string and identifies its kind (street, prospect, lane, other).
+ */
+export function detectStreetType(str: string): { type: StreetKind; cleanName: string } {
+  const trimmed = (str || '').trim();
+  if (!trimmed) return { type: 'street', cleanName: '' };
+
+  if (isProspectStreet(trimmed)) {
+    const clean = cleanStreetPrefix(trimmed);
+    return { type: 'prospect', cleanName: clean };
+  }
+
+  if (/^(?:пер\.|переулок|провулок)\s*/i.test(trimmed)) {
+    const clean = cleanStreetPrefix(trimmed);
+    return { type: 'lane', cleanName: clean };
+  }
+
+  if (/^(?:бульв\.|бульвар|тупик|наб\.|набережная|пл\.|площадь|шоссе|проезд)\s*/i.test(trimmed)) {
+    return { type: 'other', cleanName: trimmed };
+  }
+
+  const clean = cleanStreetPrefix(trimmed);
+  return { type: 'street', cleanName: clean || trimmed };
+}
+
+/**
+ * Normalizes street input when renamed or entered:
+ * Если пишется проспект, вместо сокращённого слова «ул.» пишем сокращённое название «просп.». «ул.» не пишем!
+ */
+export function formatRenamedStreet(input: string, streetType?: StreetKind | string): string {
+  const trimmed = (input || '').trim();
+  if (!trimmed) return '';
+
+  const clean = cleanStreetPrefix(trimmed);
+
+  if (streetType === 'prospect') {
+    return `просп. ${clean || trimmed}`;
+  }
+  if (streetType === 'lane') {
+    return `пер. ${clean || trimmed}`;
+  }
+  if (streetType === 'other') {
+    return trimmed;
+  }
+  if (streetType === 'street') {
+    return clean || trimmed;
+  }
+
+  // Auto-detection fallback
+  if (isProspectStreet(trimmed)) {
+    return `просп. ${clean || trimmed}`;
+  }
+
+  if (/^(?:пер\.|переулок|провулок)\s*/i.test(trimmed)) {
+    return `пер. ${clean || trimmed}`;
+  }
+
+  return clean || trimmed;
+}
+
+/**
+ * Formats street for UI display:
+ * Если это проспект: "просп. <Название>" (никогда не пишем "ул.")
+ * Если в справочнике улиц зарегистрирован как проспект: отображается как "просп. <Название>"
+ * Если это Левка Лук'яненка: всегда отображается как "просп. Левка Лук'яненка"
+ * Если другой тип (пер., бульв.): оставляет префикс
+ * Иначе: "ул. <Название>"
+ */
+export function formatStreetDisplay(
+  streetName: string,
+  streets?: { current_name: string; old_names?: string }[]
+): string {
+  if (!streetName) return '';
+  const trimmed = streetName.trim();
+  const canonical = canonicalStreetKey(trimmed);
+
+  // 0. Hardcoded rule: Левка Лук'яненка is an avenue / prospect — ALWAYS "просп. Левка Лук'яненка"
+  if (canonical === "левка лук'яненка" || canonical.includes("лук'янен")) {
+    return "просп. Левка Лук'яненка";
+  }
+
+  // 1. Check if matches any known street in the directory
+  if (streets && Array.isArray(streets) && streets.length > 0) {
+    const matched = streets.find((s) => {
+      const sKey = canonicalStreetKey(s.current_name);
+      if (sKey === canonical) return true;
+      if (s.old_names) {
+        return s.old_names
+          .split(/[,;]/)
+          .some((o) => canonicalStreetKey(o.trim()) === canonical);
+      }
+      return false;
+    });
+
+    if (matched) {
+      if (isProspectStreet(matched.current_name)) {
+        const c = cleanStreetPrefix(matched.current_name);
+        return `просп. ${c}`;
+      }
+      if (/^(?:пер\.|переулок|провулок)\s*/i.test(matched.current_name)) {
+        const c = cleanStreetPrefix(matched.current_name);
+        return `пер. ${c}`;
+      }
+      if (/^(?:бульв\.|бульвар|тупик|наб\.|набережная|пл\.|площадь|шоссе|проезд)\s*/i.test(matched.current_name)) {
+        return matched.current_name;
+      }
+      const c = cleanStreetPrefix(matched.current_name);
+      return `ул. ${c}`;
+    }
+  }
+
+  // 2. If the string itself is a prospect (even without space e.g. "просп.Левка Лук'яненка")
+  if (isProspectStreet(trimmed)) {
+    const clean = cleanStreetPrefix(trimmed);
+    return `просп. ${clean}`;
+  }
+
+  // 3. Lane (проулок/переулок)
+  if (/^(?:пер\.|переулок|провулок)\s*/i.test(trimmed)) {
+    const clean = cleanStreetPrefix(trimmed);
+    return `пер. ${clean}`;
+  }
+
+  // 4. Other types (бульвар, площадь etc.)
+  if (/^(?:бульв\.|бульвар|тупик|наб\.|набережная|пл\.|площадь|шоссе|проезд)\s*/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  // 5. Standard street: prepend "ул." with single space
+  const clean = cleanStreetPrefix(trimmed);
+  return `ул. ${clean}`;
 }
 
 /**
@@ -36,22 +233,27 @@ export function normalizeStreetName(
     return { officialName: '', isNormalized: false };
   }
 
-  const cleanedInput = cleanStreetPrefix(trimmed).toLowerCase();
+  const canonicalInput = canonicalStreetKey(trimmed);
+
+  // If input matches Lukianenko
+  if (canonicalInput === "левка лук'яненка" || canonicalInput.includes("лук'янен")) {
+    return { officialName: "просп. Левка Лук'яненка", isNormalized: false };
+  }
 
   for (const s of streets) {
-    const cleanedCurrent = cleanStreetPrefix(s.current_name).toLowerCase();
-    if (cleanedInput === cleanedCurrent) {
+    const canonicalCurrent = canonicalStreetKey(s.current_name);
+    if (canonicalInput === canonicalCurrent) {
       return { officialName: s.current_name, isNormalized: false };
     }
 
     if (s.old_names) {
       const oldList = s.old_names
         .split(/[,;]/)
-        .map((o) => cleanStreetPrefix(o.trim()).toLowerCase())
+        .map((o) => canonicalStreetKey(o.trim()))
         .filter(Boolean);
 
       for (const old of oldList) {
-        if (cleanedInput === old) {
+        if (canonicalInput === old) {
           return {
             officialName: s.current_name,
             isNormalized: true,
@@ -62,13 +264,19 @@ export function normalizeStreetName(
     }
   }
 
+  // Not in directory: если введен проспект, форматируем как "просп. <Название>" (без "ул.")
+  if (isProspectStreet(trimmed)) {
+    return { officialName: formatRenamedStreet(trimmed, 'prospect'), isNormalized: false };
+  }
+
   // Not in directory, return as entered (stripped of leading "ул.")
   const cleaned = cleanStreetPrefix(trimmed);
   return { officialName: cleaned || trimmed, isNormalized: false };
 }
 
 /**
- * Batch replaces an old street name across houses and tickets
+ * Batch replaces an old street name across houses and tickets.
+ * Если новое название — проспект, вместо «ул.» подставляется «просп.». «ул.» не пишется!
  */
 export function batchReplaceStreetInHousesAndTickets(
   targetName: string,
@@ -81,17 +289,20 @@ export function batchReplaceStreetInHousesAndTickets(
   housesChanged: number;
   ticketsChanged: number;
 } {
-  const cleanedTarget = cleanStreetPrefix(targetName).toLowerCase();
-  const cleanedNew = cleanStreetPrefix(newOfficialName);
+  const canonicalTarget = canonicalStreetKey(targetName);
+  const isNewProspect = isProspectStreet(newOfficialName);
+  const formattedNewStreet = isNewProspect
+    ? formatRenamedStreet(newOfficialName, 'prospect')
+    : cleanStreetPrefix(newOfficialName);
 
   let housesChanged = 0;
   const updatedHouses = houses.map((house) => {
-    const cleanedHouseStreet = cleanStreetPrefix(house.street).toLowerCase();
-    if (cleanedHouseStreet === cleanedTarget) {
+    const canonicalHouseStreet = canonicalStreetKey(house.street);
+    if (canonicalHouseStreet === canonicalTarget) {
       housesChanged++;
       return {
         ...house,
-        street: cleanedNew,
+        street: formattedNewStreet,
       };
     }
     return house;
@@ -104,25 +315,38 @@ export function batchReplaceStreetInHousesAndTickets(
     let newAddress = ticket.address;
 
     if (ticket.street) {
-      const cleanedTicketStreet = cleanStreetPrefix(ticket.street).toLowerCase();
-      if (cleanedTicketStreet === cleanedTarget) {
-        newStreet = cleanedNew;
+      const canonicalTicketStreet = canonicalStreetKey(ticket.street);
+      if (canonicalTicketStreet === canonicalTarget) {
+        newStreet = formattedNewStreet;
         changed = true;
       }
     }
 
     // Also check full address string
     if (ticket.address) {
-      const regex = new RegExp(`\\b${targetName}\\b`, 'gi');
-      if (regex.test(ticket.address)) {
-        newAddress = ticket.address.replace(regex, cleanedNew);
+      const escapedTarget = targetName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedCleanTarget = cleanStreetPrefix(targetName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+      // 1. Поиск с префиксом "ул. <старая_улица>" или "проспект <старая_улица>"
+      const fullStreetRegex = new RegExp(
+        `(?:ул\\.|улица|вул\\.|вулиця|пр-т|проспект|просп\\.)\\s*(?:${escapedTarget}|${escapedCleanTarget})\\b`,
+        'gi'
+      );
+
+      // 2. Поиск только названия без префикса
+      const bareStreetRegex = new RegExp(
+        `\\b(?:${escapedTarget}|${escapedCleanTarget})\\b`,
+        'gi'
+      );
+
+      if (fullStreetRegex.test(ticket.address)) {
+        // Если новое имя — проспект, вместо «ул.» подставляется «просп. ...», «ул.» не пишется
+        const replacement = isNewProspect ? formattedNewStreet : `ул. ${formattedNewStreet}`;
+        newAddress = ticket.address.replace(fullStreetRegex, replacement);
         changed = true;
-      } else {
-        const cleanedRegex = new RegExp(`\\b${cleanedTarget}\\b`, 'gi');
-        if (cleanedRegex.test(ticket.address)) {
-          newAddress = ticket.address.replace(cleanedRegex, cleanedNew);
-          changed = true;
-        }
+      } else if (bareStreetRegex.test(ticket.address)) {
+        newAddress = ticket.address.replace(bareStreetRegex, formattedNewStreet);
+        changed = true;
       }
     }
 
@@ -130,7 +354,7 @@ export function batchReplaceStreetInHousesAndTickets(
       ticketsChanged++;
       return {
         ...ticket,
-        street: newStreet || cleanedNew,
+        street: newStreet || formattedNewStreet,
         address: newAddress,
       };
     }

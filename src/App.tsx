@@ -31,6 +31,9 @@ import {
 import {
   DEFAULT_STREETS,
   batchReplaceStreetInHousesAndTickets,
+  formatRenamedStreet,
+  formatStreetDisplay,
+  canonicalStreetKey,
 } from './utils/streets';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -120,13 +123,30 @@ export default function App() {
       localStorage.setItem('app_db_cleared_for_real_data_v2', 'true');
       return [];
     }
-    return loadStorage('app_tickets', INITIAL_TICKETS);
+    const loaded = loadStorage('app_tickets', INITIAL_TICKETS);
+    return loaded.map((t) => {
+      if (t.street && canonicalStreetKey(t.street) === "левка лук'яненка") {
+        const nextAddr = t.address
+          ? t.address.replace(/(?:ул\.|улица)\s*Левка Лук['’ʼ`]яненка/gi, "просп. Левка Лук'яненка")
+          : t.address;
+        return { ...t, street: "просп. Левка Лук'яненка", address: nextAddr };
+      }
+      return t;
+    });
   });
   const [houses, setHouses] = useState<House[]>(() => {
+    let list: House[] = [];
     if (localStorage.getItem('app_db_cleared_for_real_data_v2') !== 'true') {
-      return [];
+      list = [];
+    } else {
+      list = loadStorage<House[]>('app_houses', INITIAL_HOUSES);
     }
-    return loadStorage<House[]>('app_houses', INITIAL_HOUSES);
+    return list.map((h) => {
+      if (canonicalStreetKey(h.street) === "левка лук'яненка") {
+        return { ...h, street: "просп. Левка Лук'яненка" };
+      }
+      return h;
+    });
   });
   const [personalTasks, setPersonalTasks] = useState<PersonalTask[]>(() => {
     if (localStorage.getItem('app_db_cleared_for_real_data_v2') !== 'true') {
@@ -170,9 +190,30 @@ export default function App() {
   }, [users]);
 
   // Streets Directory state
-  const [streets, setStreets] = useState<StreetItem[]>(() =>
-    loadStorage('app_streets', DEFAULT_STREETS)
-  );
+  const [streets, setStreets] = useState<StreetItem[]>(() => {
+    const loaded = loadStorage<StreetItem[]>('app_streets', DEFAULT_STREETS);
+    const hasLuk = loaded.some((s) => canonicalStreetKey(s.current_name) === "левка лук'яненка");
+    if (!hasLuk) {
+      return [
+        ...loaded,
+        {
+          id: 7,
+          current_name: "просп. Левка Лук'яненка",
+          old_names:
+            "ул. Рокоссовского, ул.Левка Лук'яненка, ул. Левка Лук'яненка, просп.Левка Лук'яненка, Левка Лук'яненка",
+        },
+      ];
+    }
+    return loaded.map((s) => {
+      if (canonicalStreetKey(s.current_name) === "левка лук'яненка") {
+        return {
+          ...s,
+          current_name: "просп. Левка Лук'яненка",
+        };
+      }
+      return s;
+    });
+  });
 
   useEffect(() => {
     try {
@@ -359,6 +400,7 @@ export default function App() {
 
   const canAddHouses = hasPermission('new_house');
   const canEditHouses = hasPermission('edit_house') || hasPermission('new_house');
+  const canDeleteHouse = isAdmin || hasPermission('delete_house');
   const canEditCoordinates = hasPermission('edit_house') || (currentUser.role === 'editor' && hasPermission('map'));
 
   const canViewPeople = hasPermission('people_view') || hasPermission('internal') || hasPermission('add_employee');
@@ -369,6 +411,8 @@ export default function App() {
       (hasPermission('people_view') ||
         hasPermission('internal') ||
         hasPermission('add_employee')));
+  const canViewEmployeePhone =
+    isAdmin || hasPermission('view_employee_phone');
   const canAddPeople = hasPermission('add_employee') || hasPermission('internal');
   const canEditPeople = hasPermission('internal');
   const canDeletePeople = hasPermission('delete_employee') || hasPermission('internal');
@@ -1208,7 +1252,7 @@ export default function App() {
 
       const newStreetItem: StreetItem = {
         id: `st-${Date.now()}`,
-        current_name: clean,
+        current_name: formatRenamedStreet(clean),
         old_names: '',
       };
       return [...prev, newStreetItem];
@@ -1494,7 +1538,7 @@ export default function App() {
         entity: 'Дом',
         entity_id: updatedHouse.id,
         user_name: currentUser.full_name,
-        details: `Обновлены данные дома ул. ${updatedHouse.street}, ${updatedHouse.house_number}${updatedHouse.building ? ' к. ' + updatedHouse.building : ''}`,
+        details: `Обновлены данные дома ${formatStreetDisplay(updatedHouse.street)}, ${updatedHouse.house_number}${updatedHouse.building ? ' к. ' + updatedHouse.building : ''}`,
         created_at: new Date().toLocaleString('ru-RU'),
         can_undo: false,
       },
@@ -1528,7 +1572,37 @@ export default function App() {
         entity: 'Дом',
         entity_id: houseWithOrg.id,
         user_name: currentUser.full_name,
-        details: `Добавлен дом ул. ${houseWithOrg.street}, ${houseWithOrg.house_number}${houseWithOrg.building ? ' к. ' + houseWithOrg.building : ''}`,
+        details: `Добавлен дом ${formatStreetDisplay(houseWithOrg.street)}, ${houseWithOrg.house_number}${houseWithOrg.building ? ' к. ' + houseWithOrg.building : ''}`,
+        created_at: new Date().toLocaleString('ru-RU'),
+        can_undo: false,
+      },
+      ...prev,
+    ]);
+  };
+
+  const handleDeleteHouse = (houseId: string) => {
+    if (!canDeleteHouse) {
+      alert('У вас нет прав доступа для удаления домов.');
+      return;
+    }
+    const targetHouse = houses.find((h) => h.id === houseId);
+    setHouses((prev) => {
+      const next = prev.filter((h) => h.id !== houseId);
+      try {
+        localStorage.setItem('app_houses', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    setAuditLogs((prev) => [
+      {
+        id: Date.now(),
+        action: 'Удаление дома',
+        entity: 'Дом',
+        entity_id: houseId,
+        user_name: currentUser.full_name,
+        details: targetHouse
+          ? `Удалён дом ${formatStreetDisplay(targetHouse.street, streets)}, ${targetHouse.house_number}${targetHouse.building ? ' к. ' + targetHouse.building : ''}`
+          : `Удалён дом #${houseId}`,
         created_at: new Date().toLocaleString('ru-RU'),
         can_undo: false,
       },
@@ -1732,11 +1806,24 @@ export default function App() {
   };
 
   const handleCreatePersonalPerson = (newPerson: PersonalPerson) => {
-    if (!canAddPeople) {
+    if (!canAddPeople && !canCreateTicket) {
       alert('У вас нет прав доступа для добавления сотрудников.');
       return;
     }
     setPersonalPeople((prev) => [newPerson, ...prev]);
+    setAuditLogs((prev) => [
+      {
+        id: Date.now(),
+        action: 'Добавлен сотрудник',
+        entity: 'Сотрудник',
+        entity_id: newPerson.id,
+        user_name: currentUser.full_name,
+        details: `Добавлен сотрудник: ${newPerson.full_name}${newPerson.position ? ` (${newPerson.position})` : ''}`,
+        created_at: new Date().toLocaleString('ru-RU'),
+        can_undo: false,
+      },
+      ...prev,
+    ]);
   };
 
   const handleDeletePersonalPerson = (id: string) => {
@@ -2202,11 +2289,13 @@ export default function App() {
                   onOpenTicket={(t) => setSelectedTicketForDetail(t)}
                   onUpdateHouse={handleUpdateHouse}
                   onCreateHouse={handleCreateHouse}
+                  onDeleteHouse={handleDeleteHouse}
                   onAddStreet={handleAddStreet}
                   onBackToHome={() => setActiveSidebarNav('home')}
                   isAdmin={canEditHouses}
                   canAddHouse={canAddHouses}
                   canEditHouse={canEditHouses}
+                  canDeleteHouse={canDeleteHouse}
                 />
               )}
 
@@ -2288,6 +2377,7 @@ export default function App() {
                   canEdit={canEditPeople}
                   canAdd={canAddPeople}
                   canDelete={canDeletePeople}
+                  canViewPhone={canViewEmployeePhone}
                   isRegistered={Boolean(currentUser && currentUser.approved && canViewPeople)}
                   onUpdatePerson={handleUpdatePersonalPerson}
                   onCreatePerson={handleCreatePersonalPerson}
@@ -2615,6 +2705,8 @@ export default function App() {
         onCreateTicket={handleCreateTicket}
         onAddStreet={handleAddStreet}
         canInspectWorker={canViewEmployeeCard}
+        canViewEmployeePhone={canViewEmployeePhone}
+        onCreatePerson={handleCreatePersonalPerson}
       />
 
       {/* Ticket Details / Edit Form Modal (Opens on Double Click) */}
@@ -2707,6 +2799,7 @@ export default function App() {
           worker={inspectedWorker}
           onClose={() => setInspectedWorker(null)}
           canSendMessenger={canSendMessenger}
+          canViewPhone={canViewEmployeePhone}
         />
       )}
 
