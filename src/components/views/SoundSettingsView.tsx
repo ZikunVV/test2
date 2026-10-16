@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ThemeConfig, GradientOption, UserItem } from '../../types';
 import {
   SOUND_VARIANTS,
   SoundVariantId,
   UserSoundSettings,
   DEFAULT_SOUND_SETTINGS,
+  CustomSoundItem,
   playSoundVariant,
+  playCustomAudio,
+  registerCustomSoundInMemory,
   speakAlertText,
   triggerDeviceVibration,
   setBackgroundKeepAliveActive,
@@ -30,6 +33,9 @@ import {
   Sparkles,
   Radio,
   ExternalLink,
+  Upload,
+  Music,
+  Trash2,
 } from 'lucide-react';
 
 interface SoundSettingsViewProps {
@@ -63,12 +69,104 @@ export const SoundSettingsView: React.FC<SoundSettingsViewProps> = ({
     return 'unsupported';
   });
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadFeedback, setUploadFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate size (max 8MB for sound effect / melody)
+    if (file.size > 8 * 1024 * 1024) {
+      setUploadFeedback({
+        type: 'error',
+        text: 'Файл слишком большой (максимум 8 МБ). Пожалуйста, выберите более короткий аудиофайл.',
+      });
+      setTimeout(() => setUploadFeedback(null), 4000);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (!dataUrl) return;
+
+      const soundId = `custom_${Date.now()}`;
+      const cleanName = file.name.replace(/\.[^/.]+$/, '').trim() || 'Пользовательский звук';
+      const sizeKb = `${(file.size / 1024).toFixed(0)} КБ`;
+
+      const newCustom: CustomSoundItem = {
+        id: soundId,
+        name: cleanName,
+        dataUrl,
+        sizeLabel: sizeKb,
+        createdAt: new Date().toLocaleDateString('ru-RU'),
+      };
+
+      registerCustomSoundInMemory(soundId, dataUrl);
+      playCustomAudio(dataUrl, soundSettings.volume);
+
+      const nextCustoms = [newCustom, ...(soundSettings.customSounds || [])];
+      const nextEnabled = soundSettings.enabledVariants.includes(soundId)
+        ? soundSettings.enabledVariants
+        : [...soundSettings.enabledVariants, soundId];
+
+      onUpdateSoundSettings({
+        ...soundSettings,
+        customSounds: nextCustoms,
+        enabledVariants: nextEnabled,
+      });
+
+      setUploadFeedback({
+        type: 'success',
+        text: `Звук «${cleanName}» успешно загружен и добавлен в список! Теперь вы можете назначить его на любое событие.`,
+      });
+      setTimeout(() => setUploadFeedback(null), 4500);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+
+    reader.onerror = () => {
+      setUploadFeedback({
+        type: 'error',
+        text: 'Не удалось прочитать выбранный файл. Попробуйте другой аудиофайл.',
+      });
+      setTimeout(() => setUploadFeedback(null), 4000);
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const handleDeleteCustomSound = (id: string, name: string) => {
+    const nextCustoms = (soundSettings.customSounds || []).filter((cs) => cs.id !== id);
+    const nextEnabled = soundSettings.enabledVariants.filter((vId) => vId !== id);
+
+    onUpdateSoundSettings({
+      ...soundSettings,
+      customSounds: nextCustoms,
+      enabledVariants: nextEnabled,
+      normalSoundVariant: soundSettings.normalSoundVariant === id ? 'crystal_chime' : soundSettings.normalSoundVariant,
+      urgentSoundVariant: soundSettings.urgentSoundVariant === id ? 'emergency_siren' : soundSettings.urgentSoundVariant,
+      statusSoundVariant: soundSettings.statusSoundVariant === id ? 'walkie_talkie' : soundSettings.statusSoundVariant,
+      messageSoundVariant: soundSettings.messageSoundVariant === id ? 'digital_pulse' : soundSettings.messageSoundVariant,
+      taskSoundVariant: soundSettings.taskSoundVariant === id ? 'warm_marimba' : soundSettings.taskSoundVariant,
+    });
+
+    setUploadFeedback({
+      type: 'success',
+      text: `Звук «${name}» удалён.`,
+    });
+    setTimeout(() => setUploadFeedback(null), 3000);
+  };
+
   const handlePlayPreview = (variantId: SoundVariantId) => {
     setPlayingVariantId(variantId);
     playSoundVariant(variantId, soundSettings.volume);
     setTimeout(() => {
       setPlayingVariantId((prev) => (prev === variantId ? null : prev));
-    }, 900);
+    }, 1200);
   };
 
   const handleToggleEventCheckbox = (key: keyof UserSoundSettings) => {
@@ -745,6 +843,273 @@ export const SoundSettingsView: React.FC<SoundSettingsViewProps> = ({
             );
           })}
         </div>
+      </div>
+
+      {/* SECTION 3: CUSTOM AUDIO & MUSIC UPLOAD */}
+      <div className="p-4 sm:p-6 rounded-2xl bg-white border border-purple-200/80 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-purple-100 pb-4">
+          <div>
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Music className="w-5 h-5 text-purple-700" />
+              <span>3. Своя музыка и звуки (загрузка файлов для звуковых эффектов)</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Вы можете добавить свои любимые аудиофайлы или рингтоны (.mp3, .wav, .ogg, .m4a) и назначить их на любые оповещения в программе:
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.webm"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Загрузить свой звук / музыку</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Upload feedback message */}
+        {uploadFeedback && (
+          <div
+            className={`p-3.5 rounded-xl border text-xs font-bold flex items-center gap-2.5 animate-in fade-in duration-200 ${
+              uploadFeedback.type === 'success'
+                ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                : 'bg-rose-50 text-rose-900 border-rose-200'
+            }`}
+          >
+            {uploadFeedback.type === 'success' ? (
+              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
+            <span>{uploadFeedback.text}</span>
+          </div>
+        )}
+
+        {/* List of uploaded custom sounds */}
+        {(!soundSettings.customSounds || soundSettings.customSounds.length === 0) ? (
+          <div className="p-8 rounded-2xl border-2 border-dashed border-purple-200 bg-purple-50/30 text-center space-y-2">
+            <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center mx-auto">
+              <Music className="w-6 h-6" />
+            </div>
+            <div className="text-sm font-bold text-purple-950">
+              Пока нет загруженных аудиофайлов
+            </div>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Нажмите кнопку «Загрузить свой звук / музыку», чтобы выбрать любой аудиофайл с вашего компьютера или телефона. После загрузки вы сможете прослушать его и назначить на оповещения.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+            {soundSettings.customSounds.map((cs) => {
+              const isConnected = soundSettings.enabledVariants.includes(cs.id);
+              const isPlaying = playingVariantId === cs.id;
+
+              const isForNormal = soundSettings.normalSoundVariant === cs.id;
+              const isForUrgent = soundSettings.urgentSoundVariant === cs.id;
+              const isForStatus = soundSettings.statusSoundVariant === cs.id;
+              const isForMessage = soundSettings.messageSoundVariant === cs.id;
+              const isForTask = soundSettings.taskSoundVariant === cs.id;
+
+              return (
+                <div
+                  key={cs.id}
+                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                    isConnected
+                      ? 'bg-purple-50/50 border-purple-300 shadow-xs'
+                      : 'bg-white border-slate-200 hover:border-purple-200'
+                  }`}
+                >
+                  <div className="space-y-2">
+                    {/* Header: Checkbox + Name + Actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <label
+                        onClick={() => handleToggleVariantCheckbox(cs.id)}
+                        className="flex items-start gap-3 cursor-pointer select-none flex-1 min-w-0"
+                      >
+                        <div
+                          className={`w-5 h-5 rounded-md flex items-center justify-center border-2 transition-all shrink-0 mt-0.5 ${
+                            isConnected
+                              ? 'bg-purple-700 border-purple-700 text-white'
+                              : 'bg-white border-slate-300 text-transparent'
+                          }`}
+                        >
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-black text-slate-900 truncate">
+                            {cs.name}
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-0.5">
+                            <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-900 font-mono font-bold">
+                              {cs.sizeLabel || 'Аудиофайл'}
+                            </span>
+                            <span>Добавлен: {cs.createdAt}</span>
+                          </div>
+                        </div>
+                      </label>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handlePlayPreview(cs.id)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 border transition-all cursor-pointer ${
+                            isPlaying
+                              ? 'bg-purple-700 text-white border-purple-700 scale-95'
+                              : 'bg-white hover:bg-purple-100 text-purple-900 border-purple-200 shadow-2xs'
+                          }`}
+                        >
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>{isPlaying ? 'Звучит...' : 'Прослушать'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCustomSound(cs.id, cs.name)}
+                          className="p-1.5 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-600 transition-colors cursor-pointer"
+                          title="Удалить этот звук"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Assign to category buttons */}
+                  <div className="pt-2 border-t border-purple-100/70 space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">
+                      Назначить эту музыку для:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleAssignCategoryVariant('normalSoundVariant', cs.id)
+                        }
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                          isForNormal
+                            ? 'bg-purple-700 text-white border-purple-700 shadow-2xs'
+                            : 'bg-white hover:bg-purple-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        <div
+                          className={`w-3.5 h-3.5 rounded-xs flex items-center justify-center border ${
+                            isForNormal
+                              ? 'bg-white text-purple-700 border-white'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {isForNormal && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        </div>
+                        <span>Новые заявки</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleAssignCategoryVariant('urgentSoundVariant', cs.id)
+                        }
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                          isForUrgent
+                            ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
+                            : 'bg-white hover:bg-rose-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        <div
+                          className={`w-3.5 h-3.5 rounded-xs flex items-center justify-center border ${
+                            isForUrgent
+                              ? 'bg-white text-rose-700 border-white'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {isForUrgent && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        </div>
+                        <span>Срочные</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleAssignCategoryVariant('statusSoundVariant', cs.id)
+                        }
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                          isForStatus
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                            : 'bg-white hover:bg-indigo-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        <div
+                          className={`w-3.5 h-3.5 rounded-xs flex items-center justify-center border ${
+                            isForStatus
+                              ? 'bg-white text-indigo-700 border-white'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {isForStatus && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        </div>
+                        <span>Смена статуса</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleAssignCategoryVariant('messageSoundVariant', cs.id)
+                        }
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                          isForMessage
+                            ? 'bg-sky-600 text-white border-sky-600 shadow-2xs'
+                            : 'bg-white hover:bg-sky-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        <div
+                          className={`w-3.5 h-3.5 rounded-xs flex items-center justify-center border ${
+                            isForMessage
+                              ? 'bg-white text-sky-700 border-white'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {isForMessage && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        </div>
+                        <span>Сообщения</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleAssignCategoryVariant('taskSoundVariant', cs.id)
+                        }
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                          isForTask
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                            : 'bg-white hover:bg-emerald-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        <div
+                          className={`w-3.5 h-3.5 rounded-xs flex items-center justify-center border ${
+                            isForTask
+                              ? 'bg-white text-emerald-700 border-white'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {isForTask && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        </div>
+                        <span>Список дел</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

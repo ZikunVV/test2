@@ -14,6 +14,8 @@ interface HeaderProps {
   onOpenVoiceControl?: () => void;
   unreadCount: number;
   isAdmin?: boolean;
+  canAccessDatabase?: boolean;
+  canAccessProject?: boolean;
   onOpenBackupModal?: () => void;
   onDownloadProject?: () => void;
   isDownloadingProject?: boolean;
@@ -30,6 +32,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenVoiceControl,
   unreadCount,
   isAdmin = false,
+  canAccessDatabase = isAdmin,
+  canAccessProject = isAdmin,
   onOpenBackupModal,
   onDownloadProject,
   isDownloadingProject = false,
@@ -104,11 +108,11 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </button>
 
-        {/* Database Backup & Export/Import button (Visible ONLY to Chief Administrator) */}
-        {isAdmin && onOpenBackupModal && (
+        {/* Database Backup & Export/Import button (Visible ONLY to users with permissions) */}
+        {canAccessDatabase && onOpenBackupModal && (
           <button
             onClick={onOpenBackupModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-bold transition-all hover:bg-purple-50 text-purple-900 border-purple-200 shadow-2xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-bold transition-all hover:bg-purple-50 text-purple-900 border-purple-200 shadow-2xs cursor-pointer"
             style={{
               borderColor: theme.keyColors.cardBorder,
             }}
@@ -119,8 +123,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Project Archive Download Button ("проэкт") (Visible ONLY to Chief Administrator) */}
-        {isAdmin && onDownloadProject && (
+        {/* Project Archive Download Button ("проэкт") (Visible ONLY to users with permissions) */}
+        {canAccessProject && onDownloadProject && (
           <button
             onClick={onDownloadProject}
             disabled={isDownloadingProject}

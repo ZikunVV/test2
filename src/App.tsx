@@ -48,6 +48,7 @@ import { EmployeeDetailModal, InspectedWorkerInfo } from './components/EmployeeD
 import { AdminMessagesModal, AdminMessageItem } from './components/AdminMessagesModal';
 import { AuthScreen } from './components/AuthScreen';
 import { OfflineIndicator } from './components/PWAInstallButton';
+import { getUserSurname } from './utils/userUtils';
 
 // Views for sections from app.py & PROJECT_HISTORY.md
 import { HousesView } from './components/views/HousesView';
@@ -85,6 +86,8 @@ import {
   Bell,
   X,
   Radio,
+  LayoutGrid,
+  StretchHorizontal,
 } from 'lucide-react';
 
 function loadStorage<T>(key: string, fallback: T): T {
@@ -111,6 +114,23 @@ export default function App() {
 
   // Selected ticket for single-click color change
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+
+  // Layout mode for Home tickets: 'compact' (grid) vs 'expanded' (full width row by row)
+  const [homeCardLayout, setHomeCardLayout] = useState<'compact' | 'expanded'>(() => {
+    try {
+      const saved = localStorage.getItem('app_home_card_layout') || localStorage.getItem('app_card_layout_mode');
+      if (saved === 'compact' || saved === 'expanded') return saved;
+    } catch (e) {}
+    return 'expanded';
+  });
+
+  const handleSetHomeCardLayout = (mode: 'compact' | 'expanded') => {
+    setHomeCardLayout(mode);
+    try {
+      localStorage.setItem('app_home_card_layout', mode);
+      localStorage.setItem('app_card_layout_mode', mode);
+    } catch (e) {}
+  };
 
   // Persistent Data States (Cleared for real production/testing data)
   const [tickets, setTickets] = useState<Ticket[]>(() => {
@@ -192,18 +212,6 @@ export default function App() {
   // Streets Directory state
   const [streets, setStreets] = useState<StreetItem[]>(() => {
     const loaded = loadStorage<StreetItem[]>('app_streets', DEFAULT_STREETS);
-    const hasLuk = loaded.some((s) => canonicalStreetKey(s.current_name) === "левка лук'яненка");
-    if (!hasLuk) {
-      return [
-        ...loaded,
-        {
-          id: 7,
-          current_name: "просп. Левка Лук'яненка",
-          old_names:
-            "ул. Рокоссовского, ул.Левка Лук'яненка, ул. Левка Лук'яненка, просп.Левка Лук'яненка, Левка Лук'яненка",
-        },
-      ];
-    }
     return loaded.map((s) => {
       if (canonicalStreetKey(s.current_name) === "левка лук'яненка") {
         return {
@@ -413,12 +421,14 @@ export default function App() {
         hasPermission('add_employee')));
   const canViewEmployeePhone =
     isAdmin || hasPermission('view_employee_phone');
-  const canAddPeople = hasPermission('add_employee') || hasPermission('internal');
-  const canEditPeople = hasPermission('internal');
-  const canDeletePeople = hasPermission('delete_employee') || hasPermission('internal');
+  const canAddPeople = isAdmin || hasPermission('add_employee') || hasPermission('internal');
+  const canEditPeople = isAdmin || hasPermission('internal');
+  const canDeletePeople = isAdmin || hasPermission('delete_employee') || hasPermission('internal');
   const canViewPersonalTasks = hasPermission('my_tasks_view');
   const canUseVoiceControl = hasPermission('voice_control');
   const canUseVoiceReminder = isAdmin || hasPermission('voice_reminder');
+  const canAccessDatabase = isAdmin || hasPermission('database_backup');
+  const canAccessProject = isAdmin || hasPermission('project_download');
 
   // Planned ticket modal prefill state
   const [newTicketPrefilledDate, setNewTicketPrefilledDate] = useState<
@@ -1652,14 +1662,6 @@ export default function App() {
     const org = organizations.find((o) => o.id === orgId);
     if (!org) return;
 
-    if (
-      !confirm(
-        `Вы действительно хотите удалить организацию «${org.name}»? База домов и заявок будет сохранена, но доступ к ней будет закрыт.`
-      )
-    ) {
-      return;
-    }
-
     setOrganizations((prev) => {
       const next = prev.filter((o) => o.id !== orgId);
       try {
@@ -1736,11 +1738,16 @@ export default function App() {
       );
       return;
     }
-    setPersonalTasks((prev) => [newTask, ...prev]);
+    const taskWithOwner: PersonalTask = {
+      ...newTask,
+      owner_user_id: currentUser.id,
+      owner_surname: newTask.owner_surname || getUserSurname(currentUser),
+    };
+    setPersonalTasks((prev) => [taskWithOwner, ...prev]);
     triggerAlertSignal(
       'personal_task',
       'Личный список дел',
-      `Добавлена запись: ${newTask.title}`
+      `Добавлена запись: ${taskWithOwner.title}`
     );
   };
 
@@ -1776,12 +1783,14 @@ export default function App() {
       (p) => p.owner_user_id === currentUser.id
     ).length;
     if (userPeopleCount >= maxLimit) {
-      alert(
-        `Достигнут установленный администратором лимит личных контактов (${maxLimit} шт.). Удалите неактуальные записи или обратитесь к Администратору.`
-      );
       return;
     }
-    setPersonalPeople((prev) => [newPerson, ...prev]);
+    const personWithOwner: PersonalPerson = {
+      ...newPerson,
+      owner_user_id: currentUser.id,
+      owner_surname: newPerson.owner_surname || getUserSurname(currentUser),
+    };
+    setPersonalPeople((prev) => [personWithOwner, ...prev]);
   };
 
   const handleDeleteAccountPerson = (id: string) => {
@@ -1828,10 +1837,31 @@ export default function App() {
 
   const handleDeletePersonalPerson = (id: string) => {
     if (!canDeletePeople) {
-      alert('У вас нет прав доступа для удаления сотрудников.');
       return;
     }
-    setPersonalPeople((prev) => prev.filter((p) => p.id !== id));
+    const target = personalPeople.find((p) => p.id === id);
+    setPersonalPeople((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      try {
+        localStorage.setItem('app_personal_people', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    if (target) {
+      setAuditLogs((prev) => [
+        {
+          id: Date.now(),
+          action: 'Удалён сотрудник',
+          entity: 'Сотрудник',
+          entity_id: id,
+          user_name: currentUser?.full_name || 'Администратор',
+          details: `Удалён сотрудник: ${target.full_name}${target.position ? ` (${target.position})` : ''}`,
+          created_at: new Date().toLocaleString('ru-RU'),
+          can_undo: false,
+        },
+        ...prev,
+      ]);
+    }
   };
 
   // Admin handlers
@@ -2001,8 +2031,26 @@ export default function App() {
   const handleDeleteUser = (userId: number) => {
     const target = users.find((u) => u.id === userId);
     if (!target || target.username === 'admin') return;
-    if (!confirm(`Удалить учётную запись «${target.full_name}»?`)) return;
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    setUsers((prev) => {
+      const next = prev.filter((u) => u.id !== userId);
+      try {
+        localStorage.setItem('app_users', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    setAuditLogs((prev) => [
+      {
+        id: Date.now(),
+        action: 'Удалён сотрудник/пользователь',
+        entity: 'Пользователь',
+        entity_id: String(userId),
+        user_name: currentUser?.full_name || 'Администратор',
+        details: `Удалена учётная запись сотрудника: ${target.full_name} (@${target.username})`,
+        created_at: new Date().toLocaleString('ru-RU'),
+        can_undo: false,
+      },
+      ...prev,
+    ]);
     if (currentUserId === userId) {
       handleSwitchUser(1);
     }
@@ -2261,8 +2309,10 @@ export default function App() {
               onOpenVoiceControl={() => setIsVoiceControlOpen(true)}
               unreadCount={unreadNotificationsCount}
               isAdmin={isAdmin}
-              onOpenBackupModal={isAdmin ? () => setIsBackupModalOpen(true) : undefined}
-              onDownloadProject={isAdmin ? handleDownloadProject : undefined}
+              canAccessDatabase={canAccessDatabase}
+              canAccessProject={canAccessProject}
+              onOpenBackupModal={canAccessDatabase ? () => setIsBackupModalOpen(true) : undefined}
+              onDownloadProject={canAccessProject ? handleDownloadProject : undefined}
               isDownloadingProject={isDownloadingProject}
               currentUser={currentUser}
             />
@@ -2440,7 +2490,8 @@ export default function App() {
                   onUpdateUserPersonalLimit={handleUpdateUserPersonalLimit}
                   onUndoAuditAction={handleUndoAuditAction}
                   onBackToHome={() => setActiveSidebarNav('home')}
-                  onOpenBackupModal={() => setIsBackupModalOpen(true)}
+                  canAccessDatabase={canAccessDatabase}
+                  onOpenBackupModal={canAccessDatabase ? () => setIsBackupModalOpen(true) : undefined}
                 />
               )}
 
@@ -2567,25 +2618,50 @@ export default function App() {
                         </span>
                       </div>
 
-                      {/* Поисковая строка по журналу заявок на Главной */}
-                      <div className="relative w-full sm:w-80 md:w-96">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-purple-500" />
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder="Поиск: номер заявки, адрес, работа, мастер..."
-                          className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white shadow-2xs text-slate-800 font-medium placeholder:text-slate-400 transition-all"
-                        />
-                        {searchQuery && (
-                          <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 p-1"
-                            title="Очистить поиск"
-                          >
-                            ✕
-                          </button>
-                        )}
+                      {/* Поисковая строка по журналу заявок на Главной + кнопка переключения вида в правом углу */}
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="relative w-full sm:w-80 md:w-96">
+                          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-purple-500" />
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Поиск: номер заявки, адрес, работа, мастер..."
+                            className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white shadow-2xs text-slate-800 font-medium placeholder:text-slate-400 transition-all"
+                          />
+                          {searchQuery && (
+                            <button
+                              onClick={() => setSearchQuery('')}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 p-1"
+                              title="Очистить поиск"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Кнопка переключения вида в правом углу без надписей */}
+                        <button
+                          type="button"
+                          onClick={() => handleSetHomeCardLayout(homeCardLayout === 'compact' ? 'expanded' : 'compact')}
+                          className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 ${
+                            homeCardLayout === 'expanded'
+                              ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
+                              : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+                          }`}
+                          title={
+                            homeCardLayout === 'compact'
+                              ? 'Растянутый на весь экран'
+                              : 'Компактный'
+                          }
+                          aria-label="Переключить размещение карточек"
+                        >
+                          {homeCardLayout === 'compact' ? (
+                            <LayoutGrid className="w-4 h-4" />
+                          ) : (
+                            <StretchHorizontal className="w-4 h-4" />
+                          )}
+                        </button>
                       </div>
                     </div>
 
@@ -2631,8 +2707,8 @@ export default function App() {
                       </div>
                     )}
 
-                    {/* Ticket Cards List - all tickets go in order row by row */}
-                    <div className="space-y-3">
+                    {/* Ticket Cards List - compact grid or expanded full width */}
+                    <div className={homeCardLayout === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5' : 'space-y-3'}>
                       {filteredTickets.map((ticket) => (
                         <TicketCard
                           key={ticket.id}
@@ -2775,8 +2851,8 @@ export default function App() {
         onOpenWriteToAdmin={() => setIsAdminMessagesOpen(true)}
       />
 
-      {/* Database Backup & Export / Import Modal (Only for Chief Administrator) */}
-      {isAdmin && (
+      {/* Database Backup & Export / Import Modal (Accessible with database_backup permission) */}
+      {canAccessDatabase && (
         <DatabaseBackupModal
           isOpen={isBackupModalOpen}
           onClose={() => setIsBackupModalOpen(false)}

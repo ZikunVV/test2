@@ -14,6 +14,8 @@ import {
   MapPin,
   Trash2,
   Lock,
+  LayoutGrid,
+  StretchHorizontal,
 } from 'lucide-react';
 import { normalizeStreetName, formatStreetDisplay } from '../../utils/streets';
 
@@ -67,9 +69,27 @@ export const HousesView: React.FC<HousesViewProps> = ({
   const [isStreetSuggestionsOpen, setIsStreetSuggestionsOpen] = useState(false);
   const [isNewStreetSuggestionsOpen, setIsNewStreetSuggestionsOpen] = useState(false);
   const [isEditStreetSuggestionsOpen, setIsEditStreetSuggestionsOpen] = useState(false);
+  const [houseToDelete, setHouseToDelete] = useState<House | null>(null);
 
   // Mode: 'recent' (last 20 viewed houses) vs 'all' (all houses)
   const [viewMode, setViewMode] = useState<'recent' | 'all'>('recent');
+
+  // Layout mode for Houses cards: 'compact' (grid) vs 'expanded' (full width row by row)
+  const [houseCardLayout, setHouseCardLayout] = useState<'compact' | 'expanded'>(() => {
+    try {
+      const saved = localStorage.getItem('app_house_card_layout') || localStorage.getItem('app_card_layout_mode');
+      if (saved === 'compact' || saved === 'expanded') return saved;
+    } catch (e) {}
+    return 'expanded';
+  });
+
+  const handleSetHouseCardLayout = (mode: 'compact' | 'expanded') => {
+    setHouseCardLayout(mode);
+    try {
+      localStorage.setItem('app_house_card_layout', mode);
+      localStorage.setItem('app_card_layout_mode', mode);
+    } catch (e) {}
+  };
 
   // Track recently viewed house IDs in localStorage (up to 20 houses)
   const [viewedHouseIds, setViewedHouseIds] = useState<string[]>(() => {
@@ -77,13 +97,12 @@ export const HousesView: React.FC<HousesViewProps> = ({
       const saved = localStorage.getItem('app_recently_viewed_houses');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       }
     } catch (e) {}
-    // Default seed: first 20 houses from list
-    return houses.slice(0, 20).map((h) => h.id);
+    return [];
   });
 
   const recordHouseView = (houseId: string) => {
@@ -215,16 +234,10 @@ export const HousesView: React.FC<HousesViewProps> = ({
       const recentList: House[] = [];
       viewedHouseIds.forEach((id) => {
         const h = houseMap.get(id);
-        if (h) recentList.push(h);
+        if (h && recentList.length < 20) {
+          recentList.push(h);
+        }
       });
-      // If viewed list has fewer than 20, fill up with remaining houses up to 20
-      if (recentList.length < 20) {
-        houses.forEach((h) => {
-          if (!recentList.some((rh) => rh.id === h.id) && recentList.length < 20) {
-            recentList.push(h);
-          }
-        });
-      }
       return recentList;
     }
     return sortedAllHouses;
@@ -413,7 +426,6 @@ export const HousesView: React.FC<HousesViewProps> = ({
 
   const handleHouseClick = (house: House) => {
     setSelectedHouseId((prev) => (prev === house.id ? null : house.id));
-    recordHouseView(house.id);
   };
 
   const handleHouseDoubleClick = (house: House) => {
@@ -583,7 +595,6 @@ export const HousesView: React.FC<HousesViewProps> = ({
       onAddStreet(finalStreet);
     }
     onCreateHouse(newHouse);
-    recordHouseView(newHouse.id);
     setSelectedHouseId(newHouse.id);
     setIsNewHouseModalOpen(false);
 
@@ -996,31 +1007,56 @@ export const HousesView: React.FC<HousesViewProps> = ({
               </h2>
             </div>
 
-            {/* View Mode Toggle: Last 20 viewed vs All */}
-            <div className="flex items-center gap-1.5 p-1 bg-purple-50/70 border border-purple-200 rounded-xl text-xs font-bold">
+            {/* View Mode Toggle: Last 20 viewed vs All + Layout Switcher */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 p-1 bg-purple-50/70 border border-purple-200 rounded-xl text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('recent')}
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                    viewMode === 'recent'
+                      ? 'bg-purple-700 text-white shadow-xs'
+                      : 'text-purple-800 hover:bg-purple-100/60'
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Последние 20 просмотренных</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('all')}
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                    viewMode === 'all'
+                      ? 'bg-purple-700 text-white shadow-xs'
+                      : 'text-purple-800 hover:bg-purple-100/60'
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>Все дома ({houses.length})</span>
+                </button>
+              </div>
+
+              {/* Single button toggle in right corner without labels */}
               <button
                 type="button"
-                onClick={() => setViewMode('recent')}
-                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                  viewMode === 'recent'
-                    ? 'bg-purple-700 text-white shadow-xs'
-                    : 'text-purple-800 hover:bg-purple-100/60'
+                onClick={() => handleSetHouseCardLayout(houseCardLayout === 'compact' ? 'expanded' : 'compact')}
+                className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 ${
+                  houseCardLayout === 'expanded'
+                    ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
+                    : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
                 }`}
+                title={
+                  houseCardLayout === 'compact'
+                    ? 'Растянутый на весь экран'
+                    : 'Компактный'
+                }
+                aria-label="Переключить размещение карточек"
               >
-                <Clock className="w-3.5 h-3.5" />
-                <span>Последние 20 просмотренных ({Math.min(20, baseHouses.length)})</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('all')}
-                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                  viewMode === 'all'
-                    ? 'bg-purple-700 text-white shadow-xs'
-                    : 'text-purple-800 hover:bg-purple-100/60'
-                }`}
-              >
-                <Building2 className="w-3.5 h-3.5" />
-                <span>Все дома ({houses.length})</span>
+                {houseCardLayout === 'compact' ? (
+                  <LayoutGrid className="w-4 h-4" />
+                ) : (
+                  <StretchHorizontal className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
@@ -1124,11 +1160,22 @@ export const HousesView: React.FC<HousesViewProps> = ({
             </div>
           </div>
 
-          {/* Sequential List of Houses: "все описания дома идут по очереди" */}
-          <div className="space-y-3">
+          {/* Sequential List of Houses: compact grid vs expanded full width */}
+          <div className={houseCardLayout === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5' : 'space-y-3'}>
             {filteredHouses.length === 0 ? (
-              <div className="p-8 rounded-2xl border border-purple-100 bg-white text-center text-xs text-slate-500">
-                Дома по заданным критериям не найдены.
+              <div className="p-8 rounded-2xl border border-purple-100 bg-white text-center text-xs text-slate-500 space-y-1.5">
+                {viewMode === 'recent' && !streetQuery.trim() && !houseNumQuery.trim() && !buildingQuery.trim() ? (
+                  <>
+                    <div className="font-bold text-slate-700 text-sm">
+                      В списке последних просмотренных пока нет домов
+                    </div>
+                    <p className="text-slate-500">
+                      Откройте вкладку <span className="font-bold text-purple-700">«Все дома»</span> и нажмите дважды (двойной клик) на нужный дом, чтобы открыть его карточку и добавить в историю просмотров.
+                    </p>
+                  </>
+                ) : (
+                  <span>Дома по заданным критериям не найдены.</span>
+                )}
               </div>
             ) : (
               filteredHouses.map((house) => {

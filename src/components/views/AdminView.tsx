@@ -70,6 +70,7 @@ interface AdminViewProps {
   onUndoAuditAction: (logId: number) => void;
   onBackToHome: () => void;
   onOpenBackupModal?: () => void;
+  canAccessDatabase?: boolean;
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({
@@ -99,6 +100,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onUndoAuditAction,
   onBackToHome,
   onOpenBackupModal,
+  canAccessDatabase = true,
 }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'organizations' | 'streets' | 'audit'>('users');
   const [undoSuccessMsg, setUndoSuccessMsg] = useState<string | null>(null);
@@ -309,6 +311,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
     { key: 'delete_employee', label: 'Сотрудники: Удалить сотрудника', group: 'Разрешения на действия с домами и сотрудниками' },
     { key: 'voice_control', label: 'Голосовой набор: Пользование голосовым набором заметок и навигацией по сайту', group: 'Разрешения на действия с домами и сотрудниками' },
     { key: 'voice_reminder', label: 'Голосовой набор: Напоминание (звуковое напоминание и будильник в голосовом наборе)', group: 'Разрешения на действия с домами и сотрудниками' },
+    { key: 'database_backup', label: 'База данных: Доступ к кнопке «База данных» (резервная копия, экспорт/импорт и очистка)', group: 'Разрешения на действия с домами и сотрудниками' },
+    { key: 'project_download', label: 'Проект: Доступ к кнопке «проэкт» (скачивание архива проекта)', group: 'Разрешения на действия с домами и сотрудниками' },
   ];
 
   const [newStreetName, setNewStreetName] = useState('');
@@ -326,6 +330,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [editingStreetName, setEditingStreetName] = useState('');
   const [editingStreetOldNames, setEditingStreetOldNames] = useState('');
   const [editingStreetAutoUpdate, setEditingStreetAutoUpdate] = useState(true);
+
+  // In-app deletion confirmation states (replacing window.confirm which is blocked in iframes)
+  const [streetToDelete, setStreetToDelete] = useState<StreetItem | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserItem | null>(null);
+  const [orgToDelete, setOrgToDelete] = useState<Organization | null>(null);
 
   const handleUndo = (logId: number) => {
     onUndoAuditAction(logId);
@@ -398,20 +407,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
     setTimeout(() => setUndoSuccessMsg(null), 4000);
   };
 
-  const handleDeleteStreet = (streetId: number | string, streetCurrentName: string) => {
-    const display = formatStreetDisplay(streetCurrentName, streets);
-    if (
-      window.confirm(
-        `Вы действительно хотите удалить «${display}» из справочника улиц?\n\n(Топоним будет удалён из списка улиц и автоподсказок. Сами существующие дома затронуты не будут).`
-      )
-    ) {
-      const updated = streets.filter((s) => s.id !== streetId);
-      onUpdateStreets(updated);
-      if (editingStreetId === streetId) setEditingStreetId(null);
-      if (renameStreetId === streetId) setRenameStreetId(null);
-      setUndoSuccessMsg(`Улица «${display}» успешно удалена из справочника.`);
-      setTimeout(() => setUndoSuccessMsg(null), 3500);
-    }
+  const handleDeleteStreet = (st: StreetItem) => {
+    setStreetToDelete(st);
   };
 
   const handleRenameStreet = (e: React.FormEvent) => {
@@ -487,11 +484,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {onOpenBackupModal && (
+            {canAccessDatabase && onOpenBackupModal && (
               <button
                 type="button"
                 onClick={onOpenBackupModal}
-                className="px-3.5 py-1.5 rounded-xl border border-purple-300 bg-purple-50 text-purple-900 font-bold hover:bg-purple-100 transition-colors flex items-center gap-1.5 text-xs shadow-2xs"
+                className="px-3.5 py-1.5 rounded-xl border border-purple-300 bg-purple-50 text-purple-900 font-bold hover:bg-purple-100 transition-colors flex items-center gap-1.5 text-xs shadow-2xs cursor-pointer"
                 title="Резервная копия и восстановление базы данных"
               >
                 <Database className="w-3.5 h-3.5 text-purple-700" />
@@ -748,11 +745,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       {user.username !== 'admin' && onDeleteUser && (
                         <button
                           type="button"
-                          onClick={() => onDeleteUser(user.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                          title="Удалить пользователя"
+                          onClick={() => setUserToDelete(user)}
+                          className="px-2 py-1 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-600 font-semibold text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Удалить сотрудника / пользователя"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                          <span className="hidden sm:inline">Удалить</span>
                         </button>
                       )}
                     </div>
@@ -888,17 +886,36 @@ export const AdminView: React.FC<AdminViewProps> = ({
             </div>
 
             {/* Add Street Form */}
-            <form onSubmit={handleAddStreet} className="flex gap-2">
+            <form onSubmit={handleAddStreet} className="flex flex-wrap items-center gap-2">
+              <select
+                value={newStreetType}
+                onChange={(e) => setNewStreetType(e.target.value as StreetKind)}
+                className="px-2.5 py-1.5 rounded-xl border border-purple-200 text-xs font-bold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer"
+              >
+                <option value="street">улица</option>
+                <option value="prospect">проспект</option>
+                <option value="lane">проулок</option>
+                <option value="other">другое название</option>
+              </select>
               <input
                 type="text"
+                required
                 value={newStreetName}
                 onChange={(e) => setNewStreetName(e.target.value)}
-                placeholder="Новая улица..."
-                className="px-3 py-1.5 rounded-xl border border-purple-200 text-xs focus:ring-2 focus:ring-purple-400"
+                placeholder={
+                  newStreetType === 'prospect'
+                    ? "Название проспекта (например: Левка Лук'яненка)..."
+                    : newStreetType === 'lane'
+                    ? 'Название проулка...'
+                    : newStreetType === 'street'
+                    ? 'Название улицы...'
+                    : 'Полное название...'
+                }
+                className="px-3 py-1.5 rounded-xl border border-purple-200 text-xs focus:ring-2 focus:ring-purple-400 min-w-[220px]"
               />
               <button
                 type="submit"
-                className="px-4 py-1.5 rounded-xl bg-purple-700 text-white font-bold text-xs flex items-center gap-1 hover:bg-purple-800"
+                className="px-4 py-1.5 rounded-xl bg-purple-700 text-white font-bold text-xs flex items-center gap-1 hover:bg-purple-800 cursor-pointer transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Добавить</span>
@@ -918,142 +935,283 @@ export const AdminView: React.FC<AdminViewProps> = ({
               </thead>
               <tbody className="divide-y divide-purple-100">
                 {streets.map((st) => (
-                   <tr key={st.id} className="hover:bg-purple-50/30">
-                     <td className="p-3 font-bold text-slate-900">
-                       {formatStreetDisplay(st.current_name)}
-                     </td>
-                     <td className="p-3 text-slate-600">
-                       {st.old_names ? (
-                         <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                           {st.old_names}
-                         </span>
-                       ) : (
-                         <span className="text-slate-400 italic">Не переименовывалась</span>
-                       )}
-                     </td>
-                     <td className="p-3 text-right">
-                       <div className="flex items-center justify-end gap-1.5">
-                         {st.old_names && onBatchRenameStreet && (
-                           <button
-                             type="button"
-                             onClick={() => {
-                               if (window.confirm(`Выполнить автозамену старых названий («${st.old_names}») на актуальное («${formatStreetDisplay(st.current_name)}») во всех существующих домах и заявках?`)) {
-                                 onBatchRenameStreet(st.old_names.split(',')[0].trim(), st.current_name);
-                                 setUndoSuccessMsg(`Старое название улицы заменено на «${formatStreetDisplay(st.current_name)}» во всех объектах и заявках!`);
-                                 setTimeout(() => setUndoSuccessMsg(null), 3500);
-                               }
-                             }}
-                             className="px-2.5 py-1 rounded-lg border border-purple-200 hover:bg-purple-50 text-purple-700 font-semibold text-xs inline-flex items-center gap-1"
-                             title="Автоматически обновить название во всех домах и заявках"
-                           >
-                             <RefreshCw className="w-3 h-3" />
-                             <span className="hidden sm:inline">Обновить в объектах</span>
-                           </button>
-                         )}
-                         <button
+                  <tr key={st.id} className="hover:bg-purple-50/30">
+                    <td className="p-3 font-bold text-slate-900">
+                      {formatStreetDisplay(st.current_name, streets)}
+                    </td>
+                    <td className="p-3 text-slate-600">
+                      {st.old_names ? (
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                          {st.old_names}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 italic">Не переименовывалась</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        {st.old_names && onBatchRenameStreet && (
+                          <button
+                            type="button"
                             onClick={() => {
-                              const detected = detectStreetType(st.current_name);
-                              setRenameStreetId(st.id);
-                              setRenameStreetType(detected.type);
-                              setRenameNewName(detected.cleanName);
+                              onBatchRenameStreet(st.old_names.split(',')[0].trim(), st.current_name);
+                              setUndoSuccessMsg(
+                                `Старое название улицы заменено на «${formatStreetDisplay(st.current_name, streets)}» во всех объектах и заявках!`
+                              );
+                              setTimeout(() => setUndoSuccessMsg(null), 3500);
                             }}
                             className="px-2.5 py-1 rounded-lg border border-purple-200 hover:bg-purple-50 text-purple-700 font-semibold text-xs inline-flex items-center gap-1 cursor-pointer"
+                            title="Автоматически обновить название во всех домах и заявках"
                           >
-                            <Edit2 className="w-3 h-3" />
-                            <span>Переименовать</span>
+                            <RefreshCw className="w-3 h-3" />
+                            <span className="hidden sm:inline">Обновить в объектах</span>
                           </button>
-                       </div>
-                     </td>
-                   </tr>
-                 ))}
-               </tbody>
-             </table>
-           </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const detected = detectStreetType(st.current_name);
+                            setEditingStreetId(st.id);
+                            setEditingStreetType(detected.type);
+                            setEditingStreetName(detected.cleanName);
+                            setEditingStreetOldNames(st.old_names || '');
+                            setEditingStreetAutoUpdate(true);
+                            setRenameStreetId(null);
+                          }}
+                          className="px-2.5 py-1 rounded-lg border border-purple-200 hover:bg-purple-50 text-purple-800 font-semibold text-xs inline-flex items-center gap-1 cursor-pointer"
+                          title="Редактировать название или исправить ошибку/неточность"
+                        >
+                          <Edit2 className="w-3 h-3 text-purple-600" />
+                          <span>Редактировать</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const detected = detectStreetType(st.current_name);
+                            setRenameStreetId(st.id);
+                            setRenameStreetType(detected.type);
+                            setRenameNewName(detected.cleanName);
+                            setEditingStreetId(null);
+                          }}
+                          className="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-xs inline-flex items-center gap-1 cursor-pointer"
+                          title="Официально переименовать (с переносом старого названия в историю)"
+                        >
+                          <span>Переименовать</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteStreet(st)}
+                          className="px-2 py-1 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-600 font-semibold text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Удалить улицу из справочника"
+                        >
+                          <Trash2 className="w-3 h-3 text-rose-600" />
+                          <span className="hidden sm:inline">Удалить</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-           {/* Rename Modal / Form */}
-            {renameStreetId && (
-              <div className="p-4 rounded-xl border border-purple-300 bg-purple-50/70 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <div>
-                    <div className="font-bold text-purple-950 text-sm">
-                      Переименование улицы:{' '}
+          {/* Direct Edit Street Modal / Form */}
+          {editingStreetId && (
+            <div className="p-4 rounded-xl border border-purple-300 bg-purple-50/80 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div>
+                  <div className="font-bold text-purple-950 text-sm flex items-center gap-2">
+                    <Edit2 className="w-4 h-4 text-purple-700" />
+                    <span>
+                      Редактирование улицы:{' '}
                       <span className="text-purple-700">
-                        {formatStreetDisplay(streets.find((s) => s.id === renameStreetId)?.current_name || '', streets)}
+                        {formatStreetDisplay(streets.find((s) => s.id === editingStreetId)?.current_name || '', streets)}
                       </span>
-                    </div>
-                    <p className="text-[11px] text-purple-800/80 mt-0.5">
-                      Выберите тип топонима («улица», «проспект», «проулок» или «другое название») и введите название
-                    </p>
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-purple-800/80 mt-0.5">
+                    Исправьте название или удалите улицу, если она не соответствует действительности.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSaveEditStreet} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                  {/* Field 1: Street Type ("улица" или "проспект" или "проулок" или "другое название") */}
+                  <div className="sm:col-span-3">
+                    <label className="text-[11px] font-bold text-purple-950 block mb-1">
+                      Тип топонима:
+                    </label>
+                    <select
+                      value={editingStreetType}
+                      onChange={(e) => setEditingStreetType(e.target.value as StreetKind)}
+                      className="w-full px-3 py-2 rounded-xl border border-purple-300 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer shadow-2xs"
+                    >
+                      <option value="street">улица</option>
+                      <option value="prospect">проспект</option>
+                      <option value="lane">проулок</option>
+                      <option value="other">другое название</option>
+                    </select>
+                  </div>
+
+                  {/* Field 2: Clean Name */}
+                  <div className="sm:col-span-4">
+                    <label className="text-[11px] font-bold text-purple-950 block mb-1">
+                      {editingStreetType === 'other' ? 'Полное название:' : 'Название:'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editingStreetName}
+                      onChange={(e) => setEditingStreetName(e.target.value)}
+                      placeholder="Например: Левка Лук'яненка, Мира, Шевченко..."
+                      className="w-full px-3 py-2 rounded-xl border border-purple-300 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-2xs"
+                    />
+                  </div>
+
+                  {/* Field 3: Old Names */}
+                  <div className="sm:col-span-5">
+                    <label className="text-[11px] font-bold text-purple-950 block mb-1">
+                      Предыдущие (старые) названия:
+                    </label>
+                    <input
+                      type="text"
+                      value={editingStreetOldNames}
+                      onChange={(e) => setEditingStreetOldNames(e.target.value)}
+                      placeholder="ул. Рокоссовского, Советская (через запятую)..."
+                      className="w-full px-3 py-2 rounded-xl border border-purple-300 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-2xs"
+                    />
                   </div>
                 </div>
 
-                <form onSubmit={handleRenameStreet} className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
-                    {/* Field 1: Street Type ("улица" или "проспект" или "проулок" или "другое название") */}
-                    <div className="sm:col-span-4">
-                      <label className="text-[11px] font-bold text-purple-950 block mb-1">
-                        Тип топонима:
-                      </label>
-                      <select
-                        value={renameStreetType}
-                        onChange={(e) => setRenameStreetType(e.target.value as StreetKind)}
-                        className="w-full px-3 py-2 rounded-xl border border-purple-300 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer shadow-2xs"
-                      >
-                        <option value="street">улица (ул.)</option>
-                        <option value="prospect">проспект (просп.)</option>
-                        <option value="lane">проулок (пер.)</option>
-                        <option value="other">другое название</option>
-                      </select>
-                    </div>
-
-                    {/* Field 2: New Name */}
-                    <div className="sm:col-span-5">
-                      <label className="text-[11px] font-bold text-purple-950 block mb-1">
-                        {renameStreetType === 'other' ? 'Введите полное название:' : 'Введите новое официальное название...'}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={renameNewName}
-                        onChange={(e) => setRenameNewName(e.target.value)}
-                        placeholder={
-                          renameStreetType === 'prospect'
-                            ? 'Например: Левка Лук\'яненка, Мира, Победы...'
-                            : renameStreetType === 'street'
-                            ? 'Например: Шевченко, Доценка, Героев...'
-                            : renameStreetType === 'lane'
-                            ? 'Например: Тихий, Садовый, Вишнёвый...'
-                            : 'Например: бульвар Шевченко, площадь Свободы...'
-                        }
-                        className="w-full px-3 py-2 rounded-xl border border-purple-300 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-2xs"
-                      />
-                    </div>
-
-                    {/* Buttons */}
-                    <div className="sm:col-span-3 flex items-center gap-1.5">
-                      <button
-                        type="submit"
-                        className="flex-1 px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs cursor-pointer shadow-2xs transition-colors"
-                      >
-                        Сохранить
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRenameStreetId(null)}
-                        className="px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold cursor-pointer"
-                      >
-                        Отмена
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Live preview of resulting name */}
-                  <div className="flex items-center gap-2 text-xs text-purple-900 bg-purple-100/60 p-2 rounded-lg border border-purple-200">
-                    <span className="font-semibold text-slate-500">Итоговое официальное название:</span>
-                    <span className="font-extrabold text-purple-950 bg-white px-2 py-0.5 rounded border border-purple-200">
-                      {formatRenamedStreet(renameNewName, renameStreetType) || '—'}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-purple-200/60">
+                  <div className="text-[11px] text-purple-900 font-medium">
+                    Будет отображаться как:{' '}
+                    <span className="font-bold text-purple-950 bg-white px-2 py-0.5 rounded border border-purple-200">
+                      {formatStreetDisplay(formatRenamedStreet(editingStreetName, editingStreetType), streets)}
                     </span>
                   </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <label className="text-[11px] font-medium text-purple-900 flex items-center gap-1.5 cursor-pointer mr-2">
+                      <input
+                        type="checkbox"
+                        checked={editingStreetAutoUpdate}
+                        onChange={(e) => setEditingStreetAutoUpdate(e.target.checked)}
+                        className="rounded text-purple-700 focus:ring-purple-400 cursor-pointer"
+                      />
+                      <span>Обновить в существующих домах и заявках</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentSt = streets.find((s) => s.id === editingStreetId);
+                        if (currentSt) handleDeleteStreet(currentSt);
+                      }}
+                      className="px-3 py-2 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors"
+                      title="Удалить эту улицу из базы"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Удалить улицу</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditingStreetId(null)}
+                      className="px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold cursor-pointer"
+                    >
+                      Отмена
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs cursor-pointer shadow-2xs transition-colors"
+                    >
+                      Сохранить изменения
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Rename Modal / Form */}
+          {renameStreetId && (
+            <div className="p-4 rounded-xl border border-purple-300 bg-purple-50/70 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div>
+                  <div className="font-bold text-purple-950 text-sm">
+                    Официальное переименование улицы:{' '}
+                    <span className="text-purple-700">
+                      {formatStreetDisplay(streets.find((s) => s.id === renameStreetId)?.current_name || '', streets)}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-purple-800/80 mt-0.5">
+                    Выберите тип топонима («улица», «проспект», «проулок» или «другое название») и введите новое официальное название. Предыдущее название сохранится в истории.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleRenameStreet} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                  {/* Field 1: Street Type ("улица" или "проспект" или "проулок" или "другое название") */}
+                  <div className="sm:col-span-4">
+                    <label className="text-[11px] font-bold text-purple-950 block mb-1">
+                      Тип топонима:
+                    </label>
+                    <select
+                      value={renameStreetType}
+                      onChange={(e) => setRenameStreetType(e.target.value as StreetKind)}
+                      className="w-full px-3 py-2 rounded-xl border border-purple-300 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer shadow-2xs"
+                    >
+                      <option value="street">улица</option>
+                      <option value="prospect">проспект</option>
+                      <option value="lane">проулок</option>
+                      <option value="other">другое название</option>
+                    </select>
+                  </div>
+
+                  {/* Field 2: New Name */}
+                  <div className="sm:col-span-5">
+                    <label className="text-[11px] font-bold text-purple-950 block mb-1">
+                      Введите новое официальное название...
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={renameNewName}
+                      onChange={(e) => setRenameNewName(e.target.value)}
+                      placeholder="Введите новое официальное название..."
+                      className="w-full px-3 py-2 rounded-xl border border-purple-300 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-2xs"
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="sm:col-span-3 flex items-center gap-1.5">
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs cursor-pointer shadow-2xs transition-colors"
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRenameStreetId(null)}
+                      className="px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold cursor-pointer"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+
+                {/* Live preview of resulting name */}
+                <div className="flex items-center gap-2 text-xs text-purple-900 bg-purple-100/60 p-2 rounded-lg border border-purple-200">
+                  <span className="font-semibold text-slate-500">Итоговое официальное название:</span>
+                  <span className="font-extrabold text-purple-950 bg-white px-2 py-0.5 rounded border border-purple-200">
+                    {formatRenamedStreet(renameNewName, renameStreetType) || '—'}
+                  </span>
+                </div>
                 <label className="flex items-center gap-2 text-xs text-purple-950 font-medium cursor-pointer">
                   <input
                     type="checkbox"
@@ -1217,7 +1375,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       </button>
                       {organizations.length > 1 && (
                         <button
-                          onClick={() => onDeleteOrganization && onDeleteOrganization(org.id)}
+                          onClick={() => setOrgToDelete(org)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                           title="Удалить организацию"
                         >
@@ -1571,6 +1729,189 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* STREET DELETE MODAL */}
+      {streetToDelete && (
+        <div
+          className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setStreetToDelete(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl w-full max-w-sm p-5 border border-rose-200 shadow-2xl space-y-4 text-xs animate-in zoom-in-95"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider block">
+                  Подтверждение удаления
+                </span>
+                <h3 className="text-base font-bold text-slate-900">
+                  Удалить улицу из справочника?
+                </h3>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-100 text-slate-700 space-y-1">
+              <div className="font-extrabold text-sm text-slate-900">
+                {formatStreetDisplay(streetToDelete.current_name, streets)}
+              </div>
+              {streetToDelete.old_names && (
+                <div className="text-[11px] text-slate-500">
+                  Старые названия: {streetToDelete.old_names}
+                </div>
+              )}
+              <div className="text-[11px] text-slate-400 mt-1">
+                Топоним будет удалён из списка улиц и подсказок. Сами дома останутся в базе.
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setStreetToDelete(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold cursor-pointer"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const display = formatStreetDisplay(streetToDelete.current_name, streets);
+                  const updated = streets.filter((s) => s.id !== streetToDelete.id);
+                  onUpdateStreets(updated);
+                  if (editingStreetId === streetToDelete.id) setEditingStreetId(null);
+                  if (renameStreetId === streetToDelete.id) setRenameStreetId(null);
+                  setUndoSuccessMsg(`Улица «${display}» успешно удалена из справочника.`);
+                  setTimeout(() => setUndoSuccessMsg(null), 3500);
+                  setStreetToDelete(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-xs cursor-pointer"
+              >
+                Да, удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* USER DELETE MODAL */}
+      {userToDelete && (
+        <div
+          className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setUserToDelete(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl w-full max-w-sm p-5 border border-rose-200 shadow-2xl space-y-4 text-xs animate-in zoom-in-95"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider block">
+                  Подтверждение удаления
+                </span>
+                <h3 className="text-base font-bold text-slate-900">
+                  Удалить сотрудника?
+                </h3>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-100 text-slate-700 space-y-1">
+              <div className="font-extrabold text-sm text-slate-900">
+                {userToDelete.full_name}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                Логин: @{userToDelete.username} · Роль: {userToDelete.role === 'admin' ? 'Администратор' : userToDelete.role === 'editor' ? 'Диспетчер/Редактор' : 'Наблюдатель'}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setUserToDelete(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold cursor-pointer"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onDeleteUser) onDeleteUser(userToDelete.id);
+                  setUndoSuccessMsg(`Учётная запись «${userToDelete.full_name}» успешно удалена.`);
+                  setTimeout(() => setUndoSuccessMsg(null), 3500);
+                  setUserToDelete(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-xs cursor-pointer"
+              >
+                Да, удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ORG DELETE MODAL */}
+      {orgToDelete && (
+        <div
+          className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setOrgToDelete(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl w-full max-w-sm p-5 border border-rose-200 shadow-2xl space-y-4 text-xs animate-in zoom-in-95"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider block">
+                  Подтверждение удаления
+                </span>
+                <h3 className="text-base font-bold text-slate-900">
+                  Удалить организацию?
+                </h3>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-100 text-slate-700 space-y-1">
+              <div className="font-extrabold text-sm text-slate-900">
+                {orgToDelete.name}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                Идентификатор: {orgToDelete.id}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setOrgToDelete(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold cursor-pointer"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onDeleteOrganization) onDeleteOrganization(orgToDelete.id);
+                  setUndoSuccessMsg(`Организация «${orgToDelete.name}» удалена.`);
+                  setTimeout(() => setUndoSuccessMsg(null), 3500);
+                  setOrgToDelete(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-xs cursor-pointer"
+              >
+                Да, удалить
+              </button>
+            </div>
           </div>
         </div>
       )}

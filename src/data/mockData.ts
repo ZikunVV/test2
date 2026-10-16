@@ -79,6 +79,8 @@ export const INITIAL_USERS: UserItem[] = [
       'messages',
       'voice_control',
       'voice_reminder',
+      'database_backup',
+      'project_download',
       'admin',
     ],
   },

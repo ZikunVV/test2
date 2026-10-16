@@ -6,7 +6,8 @@ export type SoundVariantId =
   | 'warm_marimba'
   | 'walkie_talkie'
   | 'aurora_chord'
-  | 'strict_buzzer';
+  | 'strict_buzzer'
+  | string;
 
 export type AlertEventType =
   | 'new_ticket'
@@ -23,6 +24,15 @@ export interface SoundVariantOption {
   recommendedFor: string;
   badgeColor: string;
   durationLabel: string;
+}
+
+export interface CustomSoundItem {
+  id: string; // e.g. 'custom_1729000000'
+  name: string; // e.g. 'Любимая мелодия.mp3'
+  dataUrl: string; // data:audio/...
+  durationLabel?: string;
+  sizeLabel?: string;
+  createdAt: string;
 }
 
 export const SOUND_VARIANTS: SoundVariantOption[] = [
@@ -121,6 +131,8 @@ export interface UserSoundSettings {
   statusSoundVariant: SoundVariantId;
   messageSoundVariant: SoundVariantId;
   taskSoundVariant: SoundVariantId;
+  // Пользовательские загруженные мелодии и звуки:
+  customSounds?: CustomSoundItem[];
 }
 
 export const DEFAULT_SOUND_SETTINGS: UserSoundSettings = {
@@ -146,7 +158,53 @@ export const DEFAULT_SOUND_SETTINGS: UserSoundSettings = {
   statusSoundVariant: 'walkie_talkie',
   messageSoundVariant: 'digital_pulse',
   taskSoundVariant: 'warm_marimba',
+  customSounds: [],
 };
+
+// In-memory cache for custom sound data URLs to allow instant playback
+const customSoundDataMap = new Map<string, string>();
+
+export function registerCustomSoundInMemory(id: string, dataUrl: string): void {
+  customSoundDataMap.set(id, dataUrl);
+}
+
+export function playCustomAudio(dataUrl: string, volumePercent: number = 80): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const audio = new Audio(dataUrl);
+    audio.volume = Math.max(0.01, Math.min(1, volumePercent / 100));
+    audio.play().catch(() => {});
+  } catch (e) {}
+}
+
+export function playCustomSound(soundId: string, volumePercent: number = 80): boolean {
+  if (typeof window === 'undefined') return false;
+  // 1. Check in-memory map
+  const cachedUrl = customSoundDataMap.get(soundId);
+  if (cachedUrl) {
+    playCustomAudio(cachedUrl, volumePercent);
+    return true;
+  }
+  // 2. Check localStorage across user sound settings
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('app_sound_settings_user_')) {
+        const raw = localStorage.getItem(key);
+        if (raw && raw.includes(soundId)) {
+          const parsed: UserSoundSettings = JSON.parse(raw);
+          const found = parsed.customSounds?.find((cs) => cs.id === soundId);
+          if (found && found.dataUrl) {
+            customSoundDataMap.set(soundId, found.dataUrl);
+            playCustomAudio(found.dataUrl, volumePercent);
+            return true;
+          }
+        }
+      }
+    }
+  } catch (e) {}
+  return false;
+}
 
 export function loadUserSoundSettings(userId?: number): UserSoundSettings {
   const key = `app_sound_settings_user_${userId || 1}`;
@@ -154,9 +212,18 @@ export function loadUserSoundSettings(userId?: number): UserSoundSettings {
     const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
+      const customSounds: CustomSoundItem[] = Array.isArray(parsed.customSounds)
+        ? parsed.customSounds
+        : [];
+      // Populate memory cache
+      customSounds.forEach((cs) => {
+        if (cs.id && cs.dataUrl) customSoundDataMap.set(cs.id, cs.dataUrl);
+      });
+
       return {
         ...DEFAULT_SOUND_SETTINGS,
         ...parsed,
+        customSounds,
         enabledVariants:
           Array.isArray(parsed.enabledVariants) && parsed.enabledVariants.length > 0
             ? parsed.enabledVariants
@@ -268,6 +335,12 @@ export function playSoundVariant(
   volumePercent: number = 80,
   isLoudBoost: boolean = false
 ): void {
+  // If it's a custom user sound / melody, play through HTML5 Audio
+  if (typeof variantId === 'string' && variantId.startsWith('custom_')) {
+    playCustomSound(variantId, volumePercent);
+    return;
+  }
+
   const ctx = getAudioContext();
   if (!ctx) return;
 
