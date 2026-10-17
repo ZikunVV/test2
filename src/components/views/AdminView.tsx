@@ -36,6 +36,9 @@ import {
   Phone,
   MapPin,
   ExternalLink,
+  Search,
+  LayoutGrid,
+  StretchHorizontal,
 } from 'lucide-react';
 
 interface AdminViewProps {
@@ -71,6 +74,7 @@ interface AdminViewProps {
   onBackToHome: () => void;
   onOpenBackupModal?: () => void;
   canAccessDatabase?: boolean;
+  initialTab?: 'users' | 'organizations' | 'streets' | 'audit';
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({
@@ -101,9 +105,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onBackToHome,
   onOpenBackupModal,
   canAccessDatabase = true,
+  initialTab = 'users',
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'organizations' | 'streets' | 'audit'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'organizations' | 'streets' | 'audit'>(initialTab);
   const [undoSuccessMsg, setUndoSuccessMsg] = useState<string | null>(null);
+
+  // Search & layout for Audit Log
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditCardLayout, setAuditCardLayout] = useState<'compact' | 'expanded'>('expanded');
+
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Expanded user permissions matrix
   const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
@@ -1242,12 +1257,89 @@ export const AdminView: React.FC<AdminViewProps> = ({
             </span>
           </div>
 
-          <div className="divide-y divide-purple-100 text-xs">
-            {auditLogs.map((log) => (
-              <div
-                key={log.id}
-                className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-purple-50/20 transition-colors"
+          {/* Audit Log Search + Compact layout button */}
+          <div className="p-3.5 sm:p-4 border-b border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-purple-50/20">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative w-full sm:w-80 md:w-96">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-purple-500" />
+                <input
+                  type="text"
+                  value={auditSearch}
+                  onChange={(e) => setAuditSearch(e.target.value)}
+                  placeholder="Поиск по журналу: действие, сотрудник, №, детали..."
+                  className="w-full pl-9 pr-7 py-2 text-xs rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium bg-white"
+                />
+                {auditSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setAuditSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                    title="Очистить поиск"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Кнопка переключения вида в правом углу без надписей */}
+              <button
+                type="button"
+                onClick={() => setAuditCardLayout(auditCardLayout === 'compact' ? 'expanded' : 'compact')}
+                className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 ${
+                  auditCardLayout === 'expanded'
+                    ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
+                    : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+                }`}
+                title={auditCardLayout === 'compact' ? 'Растянутый на весь экран' : 'Компактный'}
+                aria-label="Переключить размещение карточек"
               >
+                {auditCardLayout === 'compact' ? (
+                  <LayoutGrid className="w-4 h-4" />
+                ) : (
+                  <StretchHorizontal className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-500 font-medium">
+              Записей: <strong className="text-purple-900 font-bold">
+                {auditLogs.filter((log) => {
+                  if (!auditSearch.trim()) return true;
+                  const q = auditSearch.toLowerCase().trim();
+                  return (
+                    String(log.id).includes(q) ||
+                    (log.action || '').toLowerCase().includes(q) ||
+                    (log.details || '').toLowerCase().includes(q) ||
+                    (log.user_name || '').toLowerCase().includes(q) ||
+                    (log.entity || '').toLowerCase().includes(q)
+                  );
+                }).length}
+              </strong> из {auditLogs.length}
+            </div>
+          </div>
+
+          <div className={auditCardLayout === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4' : 'divide-y divide-purple-100 text-xs'}>
+            {auditLogs
+              .filter((log) => {
+                if (!auditSearch.trim()) return true;
+                const q = auditSearch.toLowerCase().trim();
+                return (
+                  String(log.id).includes(q) ||
+                  (log.action || '').toLowerCase().includes(q) ||
+                  (log.details || '').toLowerCase().includes(q) ||
+                  (log.user_name || '').toLowerCase().includes(q) ||
+                  (log.entity || '').toLowerCase().includes(q)
+                );
+              })
+              .map((log) => (
+                <div
+                  key={log.id}
+                  className={
+                    auditCardLayout === 'compact'
+                      ? 'p-3.5 rounded-2xl border border-purple-100 bg-white hover:border-purple-300 transition-all flex flex-col justify-between gap-3 text-xs shadow-2xs'
+                      : 'p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-purple-50/20 transition-colors'
+                  }
+                >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-purple-700 font-bold">

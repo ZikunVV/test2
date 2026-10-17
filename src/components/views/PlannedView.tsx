@@ -12,6 +12,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Building2,
+  Search,
+  LayoutGrid,
+  StretchHorizontal,
 } from 'lucide-react';
 
 interface PlannedViewProps {
@@ -77,10 +80,42 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
     'Декабрь',
   ];
 
+  // Search and Layout mode for Planned tickets: 'compact' (grid) vs 'expanded' (full width rows)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [plannedCardLayout, setPlannedCardLayout] = useState<'compact' | 'expanded'>(() => {
+    try {
+      const saved = localStorage.getItem('app_planned_card_layout') || localStorage.getItem('app_card_layout_mode');
+      if (saved === 'compact' || saved === 'expanded') return saved;
+    } catch (e) {}
+    return 'expanded';
+  });
+
+  const handleSetPlannedCardLayout = (mode: 'compact' | 'expanded') => {
+    setPlannedCardLayout(mode);
+    try {
+      localStorage.setItem('app_planned_card_layout', mode);
+      localStorage.setItem('app_card_layout_mode', mode);
+    } catch (e) {}
+  };
+
   // Planned tickets (strictly planned tickets or general category)
   const plannedTickets = tickets.filter(
     (t) => t.planned || t.category === 'general'
   );
+
+  const filteredPlannedTickets = plannedTickets.filter((t) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      (t.number || '').toLowerCase().includes(q) ||
+      (t.title || '').toLowerCase().includes(q) ||
+      (t.address || '').toLowerCase().includes(q) ||
+      (t.assignee || '').toLowerCase().includes(q) ||
+      (t.description || '').toLowerCase().includes(q) ||
+      (t.category || '').toLowerCase().includes(q) ||
+      (t.date || '').includes(q)
+    );
+  });
 
   const inWaitingCount = plannedTickets.filter(
     (t) => t.status === 'in_waiting'
@@ -235,6 +270,67 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
         </div>
       </div>
 
+      {/* Search and Compact layout button placed as on Главная */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-purple-200/80 shadow-2xs">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-80 md:w-96">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-purple-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Поиск плановых: номер заявки, адрес, работа, мастер..."
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white shadow-2xs text-slate-800 font-medium placeholder:text-slate-400 transition-all"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                title="Очистить поиск"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Кнопка переключения вида в правом углу без надписей */}
+          <button
+            type="button"
+            onClick={() => handleSetPlannedCardLayout(plannedCardLayout === 'compact' ? 'expanded' : 'compact')}
+            className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 ${
+              plannedCardLayout === 'expanded'
+                ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
+                : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+            }`}
+            title={
+              plannedCardLayout === 'compact'
+                ? 'Растянутый на весь экран'
+                : 'Компактный'
+            }
+            aria-label="Переключить размещение карточек"
+          >
+            {plannedCardLayout === 'compact' ? (
+              <LayoutGrid className="w-4 h-4" />
+            ) : (
+              <StretchHorizontal className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+
+        <div className="text-xs text-slate-500 font-medium">
+          {searchQuery.trim() ? (
+            <span>
+              Найдено плановых: <strong className="text-purple-900 font-bold">{filteredPlannedTickets.length}</strong> из {plannedTickets.length}
+            </span>
+          ) : (
+            <span>
+              Всего плановых: <strong className="text-purple-900 font-bold">{plannedTickets.length}</strong>
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* CALENDAR VIEW */}
       {viewMode === 'calendar' ? (
         <div className="bg-white p-5 rounded-2xl border border-purple-200/80 shadow-xs space-y-4">
@@ -380,9 +476,9 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
           </div>
         </div>
       ) : (
-        /* LIST VIEW */
-        <div className="space-y-3">
-          {plannedTickets.map((t) => (
+        /* LIST VIEW - COMPACT GRID VS EXPANDED FULL WIDTH */
+        <div className={plannedCardLayout === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5' : 'space-y-3'}>
+          {filteredPlannedTickets.map((t) => (
             <TicketCard
               key={t.id}
               ticket={t}
@@ -402,9 +498,11 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
               onInspectWorker={onInspectWorker}
             />
           ))}
-          {plannedTickets.length === 0 && (
-            <div className="py-12 px-4 text-center rounded-2xl border border-dashed border-purple-200 bg-white/50 text-xs text-slate-500">
-              Плановых заявок пока нет.
+          {filteredPlannedTickets.length === 0 && (
+            <div className="py-12 px-4 text-center rounded-2xl border border-dashed border-purple-200 bg-white/50 text-xs text-slate-500 col-span-full">
+              {searchQuery.trim()
+                ? `По запросу «${searchQuery}» плановых заявок не найдено.`
+                : 'Плановых заявок пока нет.'}
             </div>
           )}
         </div>

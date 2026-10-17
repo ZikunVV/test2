@@ -65,7 +65,9 @@ export interface Ticket {
   location_value?: string;
   execution_date?: string;
   phone?: string;
+  phone_status?: number; // Цифровой статус номера от 1 до 10 (по умолчанию 1)
   additional_phones?: string[];
+  additional_phone_statuses?: number[]; // Цифровые статусы дополнительных номеров от 1 до 10
   given_by?: string;
   assignee: string;
   assignees?: string[];
@@ -185,6 +187,7 @@ export interface PersonalPerson {
   position: string;
   residence_address: string;
   phones: string[];
+  phone_statuses?: number[]; // Цифровые статусы каждого номера от 1 до 10 (по умолчанию 1)
   notes: string;
   owner_user_id?: number;
   owner_surname?: string; // статус «фамилия учётной записи»
@@ -197,6 +200,7 @@ export interface InternalPerson {
   organization: string;
   position: string;
   phones: string[];
+  phone_statuses?: number[]; // Цифровые статусы каждого номера от 1 до 10 (по умолчанию 1)
   telegram?: string;
   viber?: string;
   notes: string;
@@ -221,10 +225,13 @@ export interface UserItem {
   password?: string;
   full_name: string;
   phone: string;
+  phone_status?: number; // Цифровой статус номера от 1 до 10 (по умолчанию 1)
   role: 'admin' | 'editor' | 'viewer';
   approved: boolean;
   created_at: string;
   permissions: string[];
+  phone_access_level?: number | null; // Уровень доступа к просмотру номеров (1-10). По умолчанию: 0/null (не видит номера)
+  can_manage_access?: boolean; // Полномочия на управление правами доступа других аккаунтов и номеров
   personal_tasks_limit?: number; // Лимит записей в Личном списке дел (по умолчанию 100)
 }
 

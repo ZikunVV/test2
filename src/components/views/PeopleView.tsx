@@ -212,43 +212,52 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
         </div>
 
         {/* Live Search input */}
+        {/* Live Search input + compact button on right side */}
         {isRegistered && (
-          <div className="space-y-2">
-            <div className="relative">
-              <Search className="w-4 h-4 text-purple-500 absolute left-3 top-2.5" />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-purple-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Поиск по Фамилии, Где работает, Кем работает, Адресу проживания или Телефону..."
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium"
+                className="w-full pl-9 pr-7 py-2 text-xs rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                  title="Очистить поиск"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
-            {/* Single active button toggle without text labels in right corner under search */}
-            <div className="flex items-center justify-end pt-0.5">
-              <button
-                type="button"
-                onClick={() => handleSetCardLayout(cardLayout === 'compact' ? 'expanded' : 'compact')}
-                className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center ${
-                  cardLayout === 'expanded'
-                    ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
-                    : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
-                }`}
-                title={
-                  cardLayout === 'compact'
-                    ? 'Растянутый на весь экран'
-                    : 'Компактный'
-                }
-                aria-label="Переключить размещение карточек"
-              >
-                {cardLayout === 'compact' ? (
-                  <LayoutGrid className="w-4 h-4" />
-                ) : (
-                  <StretchHorizontal className="w-4 h-4" />
-                )}
-              </button>
-            </div>
+            {/* Single active button toggle without text labels on right side of search */}
+            <button
+              type="button"
+              onClick={() => handleSetCardLayout(cardLayout === 'compact' ? 'expanded' : 'compact')}
+              className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 ${
+                cardLayout === 'expanded'
+                  ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
+                  : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+              }`}
+              title={
+                cardLayout === 'compact'
+                  ? 'Растянутый на весь экран'
+                  : 'Компактный'
+              }
+              aria-label="Переключить размещение карточек"
+            >
+              {cardLayout === 'compact' ? (
+                <LayoutGrid className="w-4 h-4" />
+              ) : (
+                <StretchHorizontal className="w-4 h-4" />
+              )}
+            </button>
           </div>
         )}
       </div>

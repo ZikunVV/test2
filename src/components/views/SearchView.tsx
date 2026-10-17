@@ -9,6 +9,8 @@ import {
   RotateCcw,
   User,
   MapPin,
+  LayoutGrid,
+  StretchHorizontal,
 } from 'lucide-react';
 
 interface SearchViewProps {
@@ -39,6 +41,22 @@ export const SearchView: React.FC<SearchViewProps> = ({
   const [street, setStreet] = useState('');
   const [houseNo, setHouseNo] = useState('');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  // Layout mode for Completed work cards: 'compact' (grid) vs 'expanded' (full width rows)
+  const [completedCardLayout, setCompletedCardLayout] = useState<'compact' | 'expanded'>(() => {
+    try {
+      const saved = localStorage.getItem('app_completed_card_layout') || localStorage.getItem('app_card_layout_mode');
+      if (saved === 'compact' || saved === 'expanded') return saved;
+    } catch (e) {}
+    return 'expanded';
+  });
+
+  const handleSetCompletedCardLayout = (mode: 'compact' | 'expanded') => {
+    setCompletedCardLayout(mode);
+    try {
+      localStorage.setItem('app_completed_card_layout', mode);
+      localStorage.setItem('app_card_layout_mode', mode);
+    } catch (e) {}
+  };
 
   // Only completed requests (v48.10 & v48.16 rule: only completed work, personal tasks excluded)
   const completedTickets = tickets.filter((t) => t.status === 'completed');
@@ -120,17 +138,55 @@ export const SearchView: React.FC<SearchViewProps> = ({
 
         {/* Filters Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-          <div>
+          <div className="sm:col-span-2">
             <label className="font-bold text-slate-700 block mb-1">
               Текстовый поиск
             </label>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Слова из заявки..."
-              className="w-full px-3 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
-            />
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-purple-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Слова из заявки, адрес, работа, мастер..."
+                  className="w-full pl-9 pr-7 py-2 text-xs rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium bg-white"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                    title="Очистить поиск"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Кнопка переключения вида в правом углу без надписей */}
+              <button
+                type="button"
+                onClick={() => handleSetCompletedCardLayout(completedCardLayout === 'compact' ? 'expanded' : 'compact')}
+                className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 ${
+                  completedCardLayout === 'expanded'
+                    ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
+                    : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+                }`}
+                title={
+                  completedCardLayout === 'compact'
+                    ? 'Растянутый на весь экран'
+                    : 'Компактный'
+                }
+                aria-label="Переключить размещение карточек"
+              >
+                {completedCardLayout === 'compact' ? (
+                  <LayoutGrid className="w-4 h-4" />
+                ) : (
+                  <StretchHorizontal className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
 
           <div>
@@ -221,8 +277,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
           </span>
         </div>
 
-        {/* Full-Row List of Completed Tickets */}
-        <div className="space-y-2.5">
+        {/* List of Completed Tickets: compact grid vs expanded full-width rows */}
+        <div className={completedCardLayout === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5' : 'space-y-2.5'}>
           {filteredTickets.map((t) => {
             const isSelected = selectedTicketId === t.id;
 
@@ -231,7 +287,11 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 key={t.id}
                 onClick={() => setSelectedTicketId(isSelected ? null : t.id)}
                 onDoubleClick={() => onOpenTicket(t)}
-                className={`w-full p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer text-xs flex flex-col md:flex-row md:items-center justify-between gap-4 select-none ${
+                className={`w-full p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer text-xs flex ${
+                  completedCardLayout === 'compact'
+                    ? 'flex-col justify-between items-stretch'
+                    : 'flex-col md:flex-row md:items-center justify-between'
+                } gap-4 select-none ${
                   isSelected
                     ? 'ring-2 ring-purple-600 bg-purple-100/90 border-purple-400 shadow-md scale-[1.002]'
                     : 'border-purple-200/80 bg-white hover:border-purple-300 hover:bg-purple-50/30 shadow-2xs hover:shadow-xs'

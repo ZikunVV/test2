@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ThemeConfig, GradientOption, UserItem } from '../types';
 import { useLanguage } from '../utils/i18n';
 import { PWAInstallButton } from './PWAInstallButton';
-import { ArrowLeft, Globe, ChevronDown, Menu, User, Bell, Database, FolderDown, Mic } from 'lucide-react';
+import { ArrowLeft, Globe, ChevronDown, Menu, User, Bell, Database, FolderDown, Mic, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface HeaderProps {
   theme: ThemeConfig;
@@ -41,39 +41,135 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { lang, setLang, t } = useLanguage();
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollStart, setScrollStart] = useState(0);
+
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 6);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 6);
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button, input, a, select')) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    setIsDragging(true);
+    setStartX(e.pageX - el.offsetLeft);
+    setScrollStart(el.scrollLeft);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const el = scrollRef.current;
+    if (!el) return;
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    el.scrollLeft = scrollStart - walk;
+    checkScroll();
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
+
+  const scrollByAmount = (amount: number) => {
+    scrollRef.current?.scrollBy({ left: amount, behavior: 'smooth' });
+    setTimeout(checkScroll, 200);
+  };
 
   return (
     <header
-      className="px-4 sm:px-6 py-3.5 border-b flex items-center justify-between gap-2 sm:gap-4 transition-colors sticky top-0 z-20 backdrop-blur-sm bg-white/95"
+      className="relative border-b sticky top-0 z-20 backdrop-blur-sm bg-white/95 transition-colors"
       style={{
         borderColor: theme.keyColors.cardBorder,
       }}
     >
-      {/* Left: Mobile trigger + Quick Voice Button on mobile */}
-      <div className="flex items-center gap-2">
+      {/* Left scroll indicator / nudge button for phone / narrow viewports */}
+      {canScrollLeft && (
         <button
-          onClick={onToggleMobileMenu}
-          className="p-1.5 rounded-lg lg:hidden text-slate-500 hover:text-slate-800"
-          title={t('Меню')}
+          type="button"
+          onClick={() => scrollByAmount(-180)}
+          className="absolute left-1 top-1/2 -translate-y-1/2 z-30 p-1 rounded-full bg-white/90 shadow-md border border-purple-200 text-purple-800 hover:bg-purple-50 transition-all cursor-pointer"
+          title="Листать влево"
         >
-          <Menu className="w-5 h-5" />
+          <ChevronLeft className="w-3.5 h-3.5" />
         </button>
+      )}
 
-        {onOpenVoiceControl && (
-          <button
-            type="button"
-            onClick={onOpenVoiceControl}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-950 border border-purple-300 font-bold text-xs transition-all cursor-pointer active:scale-95 shadow-2xs"
-            title="Голосовой набор заметок и голосовая навигация по сайту"
-          >
-            <Mic className="w-3.5 h-3.5 text-purple-700 shrink-0" />
-            <span className="hidden xs:inline sm:inline">Голосовой набор</span>
+      {/* Right scroll indicator / nudge button for phone / narrow viewports */}
+      {canScrollRight && (
+        <button
+          type="button"
+          onClick={() => scrollByAmount(180)}
+          className="absolute right-1 top-1/2 -translate-y-1/2 z-30 p-1 rounded-full bg-white/90 shadow-md border border-purple-200 text-purple-800 hover:bg-purple-50 transition-all cursor-pointer"
+          title="Листать вправо к пользователю"
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      )}
+
+      {/* Scrollable / Swipeable Header Row */}
+      <div
+        ref={scrollRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUpOrLeave}
+        onMouseLeave={handleMouseUpOrLeave}
+        className={`px-3 sm:px-6 py-2.5 sm:py-3.5 overflow-x-auto scrollbar-none overscroll-x-contain touch-pan-x transition-colors ${
+          isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'
+        }`}
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-x',
+        }}
+      >
+        <div className="min-w-max flex items-center justify-between gap-2.5 sm:gap-4 w-full">
+          {/* Left: Mobile trigger + Quick Voice Button on mobile */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={onToggleMobileMenu}
+              className="p-1.5 rounded-lg lg:hidden text-slate-500 hover:text-slate-800 shrink-0 cursor-pointer"
+              title={t('Меню')}
+            >
+            <Menu className="w-5 h-5" />
           </button>
-        )}
-      </div>
 
-      {/* Right controls: Back button, Display Settings, Notifications, Language, User */}
-      <div className="flex items-center gap-3 text-xs">
+          {onOpenVoiceControl && (
+            <button
+              type="button"
+              onClick={onOpenVoiceControl}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-950 border border-purple-300 font-bold text-xs transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
+              title="Голосовой набор заметок и голосовая навигация по сайту"
+            >
+              <Mic className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+              <span>Голосовой набор</span>
+            </button>
+          )}
+        </div>
+
+        {/* Right controls: Back button, Display Settings, Notifications, Language, User */}
+        <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">
         <button
           onClick={onBackClick}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5"
@@ -203,13 +299,13 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* User indicator (Image 1) with gradient */}
+        {/* User indicator (Image 1) with gradient - visible on all screens with horizontal swipe */}
         <div
-          className="hidden sm:flex items-center gap-2 font-medium"
+          className="flex items-center gap-2 font-medium shrink-0"
           style={{ color: theme.keyColors.textPrimary }}
         >
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shadow-2xs"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shadow-2xs shrink-0"
             style={{
               background: showFlatFallback
                 ? '#7652B5'
@@ -218,9 +314,11 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <User className="w-3.5 h-3.5" />
           </div>
-          <span>{currentUser?.full_name || 'Главный администратор'}</span>
+          <span className="shrink-0">{currentUser?.full_name || 'Главный администратор'}</span>
         </div>
       </div>
-    </header>
-  );
+    </div>
+  </div>
+</header>
+);
 };

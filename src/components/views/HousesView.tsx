@@ -1061,102 +1061,129 @@ export const HousesView: React.FC<HousesViewProps> = ({
             </div>
           </div>
 
-          {/* Search filter: Улица, № дома, Корпус */}
-          <div className="p-4 rounded-2xl border border-purple-200/80 bg-white grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="relative">
-              <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                Улица (поиск в любом регистре с подсказкой)
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={streetQuery}
-                  onFocus={() => setIsStreetSuggestionsOpen(true)}
-                  onBlur={() => {
-                    setTimeout(() => setIsStreetSuggestionsOpen(false), 180);
-                  }}
-                  onChange={(e) => {
-                    setStreetQuery(e.target.value);
-                    setIsStreetSuggestionsOpen(true);
-                  }}
-                  placeholder="Начните вводить первые буквы (напр.: доц, шев)..."
-                  autoComplete="off"
-                  className="w-full px-3 py-1.5 pr-7 text-xs rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium text-slate-900"
-                />
-                {streetQuery && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStreetQuery('');
-                      setIsStreetSuggestionsOpen(false);
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
-                    title="Очистить улицу"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
+          {/* Search filter: Улица, № дома, Корпус + Compact Button to the right of search as on Главная */}
+          <div className="p-4 rounded-2xl border border-purple-200/80 bg-white space-y-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+                <div className="relative">
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                    Улица (поиск в любом регистре с подсказкой)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={streetQuery}
+                      onFocus={() => setIsStreetSuggestionsOpen(true)}
+                      onBlur={() => {
+                        setTimeout(() => setIsStreetSuggestionsOpen(false), 180);
+                      }}
+                      onChange={(e) => {
+                        setStreetQuery(e.target.value);
+                        setIsStreetSuggestionsOpen(true);
+                      }}
+                      placeholder="Начните вводить первые буквы (напр.: доц, шев)..."
+                      autoComplete="off"
+                      className="w-full px-3 py-1.5 pr-7 text-xs rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium text-slate-900"
+                    />
+                    {streetQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStreetQuery('');
+                          setIsStreetSuggestionsOpen(false);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                        title="Очистить улицу"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Выпадающие подсказки улиц с первых букв */}
+                  {isStreetSuggestionsOpen && matchingStreetSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white rounded-xl border border-purple-200 shadow-xl max-h-52 overflow-y-auto divide-y divide-purple-50">
+                      <div className="px-2.5 py-1 bg-purple-50/80 text-[10px] font-extrabold text-purple-800 uppercase tracking-wider flex items-center justify-between">
+                        <span>Подсказки улиц ({matchingStreetSuggestions.length})</span>
+                        <span className="text-[9px] text-purple-600 font-semibold">Нажмите для выбора</span>
+                      </div>
+                      {matchingStreetSuggestions.map((item) => (
+                        <button
+                          key={item.name}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setStreetQuery(item.name);
+                            setIsStreetSuggestionsOpen(false);
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs hover:bg-purple-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                        >
+                          <div className="min-w-0">
+                            <div className="font-extrabold text-slate-900 truncate">
+                              {formatStreetDisplay(item.name, streets)}
+                            </div>
+                            {item.oldNames && (
+                              <div className="text-[10px] text-slate-500 truncate">
+                                ранее: {item.oldNames}
+                              </div>
+                            )}
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 font-bold text-[10px] shrink-0">
+                            Домов: {item.housesCount}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                    № дома
+                  </label>
+                  <input
+                    type="text"
+                    value={houseNumQuery}
+                    onChange={(e) => setHouseNumQuery(e.target.value)}
+                    placeholder="1, 3, 5..."
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                    Корпус
+                  </label>
+                  <input
+                    type="text"
+                    value={buildingQuery}
+                    onChange={(e) => setBuildingQuery(e.target.value)}
+                    placeholder="а, б..."
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  />
+                </div>
               </div>
 
-              {/* Выпадающие подсказки улиц с первых букв */}
-              {isStreetSuggestionsOpen && matchingStreetSuggestions.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white rounded-xl border border-purple-200 shadow-xl max-h-52 overflow-y-auto divide-y divide-purple-50">
-                  <div className="px-2.5 py-1 bg-purple-50/80 text-[10px] font-extrabold text-purple-800 uppercase tracking-wider flex items-center justify-between">
-                    <span>Подсказки улиц ({matchingStreetSuggestions.length})</span>
-                    <span className="text-[9px] text-purple-600 font-semibold">Нажмите для выбора</span>
-                  </div>
-                  {matchingStreetSuggestions.map((item) => (
-                    <button
-                      key={item.name}
-                      type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setStreetQuery(item.name);
-                        setIsStreetSuggestionsOpen(false);
-                      }}
-                      className="w-full px-3 py-2 text-left text-xs hover:bg-purple-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
-                    >
-                      <div className="min-w-0">
-                        <div className="font-extrabold text-slate-900 truncate">
-                          {formatStreetDisplay(item.name, streets)}
-                        </div>
-                        {item.oldNames && (
-                          <div className="text-[10px] text-slate-500 truncate">
-                            ранее: {item.oldNames}
-                          </div>
-                        )}
-                      </div>
-                      <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 font-bold text-[10px] shrink-0">
-                        Домов: {item.housesCount}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                № дома
-              </label>
-              <input
-                type="text"
-                value={houseNumQuery}
-                onChange={(e) => setHouseNumQuery(e.target.value)}
-                placeholder="1, 3, 5..."
-                className="w-full px-3 py-1.5 text-xs rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                Корпус
-              </label>
-              <input
-                type="text"
-                value={buildingQuery}
-                onChange={(e) => setBuildingQuery(e.target.value)}
-                placeholder="а, б..."
-                className="w-full px-3 py-1.5 text-xs rounded-xl border border-purple-200 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300"
-              />
+              {/* Single button toggle on the right side of search without labels */}
+              <button
+                type="button"
+                onClick={() => handleSetHouseCardLayout(houseCardLayout === 'compact' ? 'expanded' : 'compact')}
+                className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 self-end ${
+                  houseCardLayout === 'expanded'
+                    ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
+                    : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+                }`}
+                title={
+                  houseCardLayout === 'compact'
+                    ? 'Растянутый на весь экран'
+                    : 'Компактный'
+                }
+                aria-label="Переключить размещение карточек"
+              >
+                {houseCardLayout === 'compact' ? (
+                  <LayoutGrid className="w-4 h-4" />
+                ) : (
+                  <StretchHorizontal className="w-4 h-4" />
+                )}
+              </button>
             </div>
           </div>
 

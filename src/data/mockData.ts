@@ -53,6 +53,9 @@ export const INITIAL_USERS: UserItem[] = [
     role: 'admin',
     approved: true,
     created_at: '2026-01-10',
+    phone_access_level: 10,
+    can_manage_access: true,
+    phone_status: 10,
     permissions: [
       'home',
       'map',
@@ -82,6 +85,8 @@ export const INITIAL_USERS: UserItem[] = [
       'database_backup',
       'project_download',
       'admin',
+      'manage_user_access',
+      'view_phone_statuses',
     ],
   },
   {
@@ -91,9 +96,12 @@ export const INITIAL_USERS: UserItem[] = [
     password: '123',
     full_name: 'Дежурный диспетчер',
     phone: '+38 (067) 554-12-88',
+    phone_status: 1,
     role: 'editor',
     approved: true,
     created_at: '2026-02-15',
+    phone_access_level: null, // По умолчанию не видит номера телефонов
+    can_manage_access: false,
     permissions: [
       'home',
       'map',
@@ -122,9 +130,12 @@ export const INITIAL_USERS: UserItem[] = [
     password: '123',
     full_name: 'Сотрудник службы',
     phone: '+38 (093) 111-22-33',
+    phone_status: 1,
     role: 'viewer',
     approved: true,
     created_at: '2026-03-01',
+    phone_access_level: null, // По умолчанию не видит номера телефонов
+    can_manage_access: false,
     permissions: ['home', 'map', 'houses', 'search'],
   },
 ];

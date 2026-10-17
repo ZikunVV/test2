@@ -193,10 +193,21 @@ export default function App() {
           ? 'Vjqgfhjkm0639444986Admin'
           : u.password
         : u.password || '123';
+      
+      const adminPerms = isAdminUser
+        ? Array.from(new Set([...(u.permissions || []), 'manage_user_access', 'view_phone_statuses']))
+        : (u.permissions || []);
+
       return {
         ...u,
         organization_id: u.organization_id || (isAdminUser ? 'all' : 'org-1'),
         password: nextPass,
+        permissions: adminPerms,
+        phone_access_level: isAdminUser
+          ? (typeof u.phone_access_level === 'number' ? u.phone_access_level : 10)
+          : (typeof u.phone_access_level === 'number' ? u.phone_access_level : null),
+        can_manage_access: isAdminUser ? true : Boolean(u.can_manage_access),
+        phone_status: typeof u.phone_status === 'number' ? u.phone_status : (isAdminUser ? 10 : 1),
         personal_tasks_limit:
           typeof u.personal_tasks_limit === 'number' ? u.personal_tasks_limit : 100,
       };
@@ -2468,6 +2479,7 @@ export default function App() {
                   theme={theme}
                   gradient={currentGradient}
                   showFlatFallback={showFlatFallback}
+                  initialTab={activeSidebarNav === 'history' ? 'audit' : 'users'}
                   users={users}
                   auditLogs={auditLogs}
                   streets={streets}

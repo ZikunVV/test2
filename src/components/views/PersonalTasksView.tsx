@@ -161,6 +161,24 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   const currentTasks = myTasks.filter((t) => t.status !== 'completed');
   const completedTasks = myTasks.filter((t) => t.status === 'completed');
 
+  // Search in Personal Tasks & Notes
+  const [tasksSearch, setTasksSearch] = useState('');
+
+  const filterTaskBySearch = (t: PersonalTask) => {
+    if (!tasksSearch.trim()) return true;
+    const q = tasksSearch.toLowerCase().trim();
+    return (
+      (t.title || '').toLowerCase().includes(q) ||
+      (t.description || '').toLowerCase().includes(q) ||
+      (t.task_date || '').includes(q) ||
+      (t.reminder_time_label || '').toLowerCase().includes(q) ||
+      (t.owner_surname || '').toLowerCase().includes(q)
+    );
+  };
+
+  const filteredCurrentTasks = currentTasks.filter(filterTaskBySearch);
+  const filteredCompletedTasks = completedTasks.filter(filterTaskBySearch);
+
   // Filter personal people strictly by current user account
   const myPeople = personalPeople.filter((p) => {
     if (!currentUser) return false;
@@ -751,46 +769,99 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
         </div>
       )}
 
-      {/* VIEW MODE: LIST */}
+      {/* VIEW MODE: LIST (ЛИЧНЫЙ СПИСОК ДЕЛ И СПИСОК ЗАМЕТОК) */}
       {viewMode === 'list' && (
         <div className="space-y-4">
-          {/* Tabs Bar in List Mode */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center p-1 rounded-xl border border-purple-200 bg-white text-xs">
+          {/* Tabs Bar & Search Toolbar in List Mode */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-purple-200 shadow-2xs">
+            <div className="flex items-center p-1 rounded-xl border border-purple-200 bg-white text-xs shrink-0">
               <button
+                type="button"
                 onClick={() => setActiveListTab('current')}
-                className={`px-3.5 py-1.5 rounded-lg font-bold transition-all ${
+                className={`px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   activeListTab === 'current'
                     ? 'bg-purple-700 text-white shadow-xs'
                     : 'text-slate-600 hover:text-purple-900'
                 }`}
               >
-                Текущие дела ({currentTasks.length})
+                Текущие дела ({filteredCurrentTasks.length})
               </button>
               <button
+                type="button"
                 onClick={() => setActiveListTab('completed')}
-                className={`px-3.5 py-1.5 rounded-lg font-bold transition-all ${
+                className={`px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   activeListTab === 'completed'
                     ? 'bg-purple-700 text-white shadow-xs'
                     : 'text-slate-600 hover:text-purple-900'
                 }`}
               >
-                Свои выполненные ({completedTasks.length})
+                Свои выполненные ({filteredCompletedTasks.length})
+              </button>
+            </div>
+
+            {/* Поисковая строка по заметкам/делам + кнопка компактный с правой стороны поиска как на Главная */}
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <div className="relative w-full sm:w-80 md:w-96">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-purple-500" />
+                <input
+                  type="text"
+                  value={tasksSearch}
+                  onChange={(e) => setTasksSearch(e.target.value)}
+                  placeholder="Поиск заметок и дел: название, текст, дата..."
+                  className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white shadow-2xs text-slate-800 font-medium placeholder:text-slate-400 transition-all"
+                />
+                {tasksSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setTasksSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                    title="Очистить поиск"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Кнопка переключения вида в правом углу без надписей */}
+              <button
+                type="button"
+                onClick={() => handleSetPersonalCardLayout(personalCardLayout === 'compact' ? 'expanded' : 'compact')}
+                className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 ${
+                  personalCardLayout === 'expanded'
+                    ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
+                    : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+                }`}
+                title={
+                  personalCardLayout === 'compact'
+                    ? 'Растянутый на весь экран'
+                    : 'Компактный'
+                }
+                aria-label="Переключить размещение карточек"
+              >
+                {personalCardLayout === 'compact' ? (
+                  <LayoutGrid className="w-4 h-4" />
+                ) : (
+                  <StretchHorizontal className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
 
-          {/* TAB CONTENT: CURRENT & COMPLETED TASKS (ФОРМА НА ВСЮ СТРОКУ КАК НА ГЛАВНОЙ) */}
+          {/* TAB CONTENT: CURRENT & COMPLETED TASKS (КОМПАКТНЫЙ РЕЖИМ VS РАСТЯНУТЫЙ НА ВЕСЬ ЭКРАН) */}
           {(activeListTab === 'current' || activeListTab === 'completed') && (
-            <div className="space-y-2.5">
-              {(activeListTab === 'current' ? currentTasks : completedTasks).map((task) => {
+            <div className={personalCardLayout === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5' : 'space-y-2.5'}>
+              {(activeListTab === 'current' ? filteredCurrentTasks : filteredCompletedTasks).map((task) => {
                 const isSelected = selectedTaskId === task.id;
                 return (
                   <div
                     key={task.id}
                     onClick={() => setSelectedTaskId(isSelected ? null : task.id)}
                     onDoubleClick={() => handleOpenEditTask(task)}
-                    className={`w-full p-3.5 sm:p-4 rounded-2xl border transition-all text-xs flex items-center justify-between gap-4 cursor-pointer select-none ${
+                    className={`w-full p-3.5 sm:p-4 rounded-2xl border transition-all text-xs flex ${
+                      personalCardLayout === 'compact'
+                        ? 'flex-col justify-between items-stretch'
+                        : 'items-center justify-between'
+                    } gap-4 cursor-pointer select-none ${
                       isSelected
                         ? 'ring-2 ring-purple-600 bg-purple-50/90 border-purple-400 shadow-md scale-[1.003]'
                         : 'border-purple-200/80 bg-white hover:border-purple-300 shadow-2xs hover:shadow-xs'
@@ -884,14 +955,16 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                 );
               })}
 
-              {(activeListTab === 'current' ? currentTasks : completedTasks).length === 0 && (
-                <div className="p-8 rounded-2xl border border-dashed border-purple-200 bg-white/70 text-center text-xs text-slate-500 space-y-2">
+              {(activeListTab === 'current' ? filteredCurrentTasks : filteredCompletedTasks).length === 0 && (
+                <div className="p-8 rounded-2xl border border-dashed border-purple-200 bg-white/70 text-center text-xs text-slate-500 space-y-2 col-span-full">
                   <p>
-                    {activeListTab === 'current'
+                    {tasksSearch.trim()
+                      ? `По запросу «${tasksSearch}» записей не найдено.`
+                      : activeListTab === 'current'
                       ? 'В вашем списке пока нет активных дел.'
                       : 'В вашем списке пока нет выполненных дел.'}
                   </p>
-                  {activeListTab === 'current' && (
+                  {activeListTab === 'current' && !tasksSearch.trim() && (
                     <button
                       onClick={() => handleOpenCreateTask()}
                       className="px-3.5 py-1.5 rounded-xl bg-purple-700 text-white font-bold inline-flex items-center gap-1 text-xs"
@@ -910,17 +983,52 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
       {/* VIEW MODE: PHONEBOOK (ТЕЛЕФОННАЯ КНИГА РЯДОМ С «СДЕЛАТЬ ЗАМЕТКУ») */}
       {viewMode === 'phonebook' && (
         <div className="bg-white p-5 rounded-2xl border border-purple-200 shadow-xs space-y-4">
-          {/* Top toolbar with search and Add Contact button */}
+          {/* Top toolbar with search, compact toggle button, and Add Contact button */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-purple-100">
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-purple-500 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                value={phonebookSearch}
-                onChange={(e) => setPhonebookSearch(e.target.value)}
-                placeholder="Поиск по ФИО, телефону, организации, должности, адресу..."
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium bg-white"
-              />
+            <div className="flex items-center gap-2 flex-1 max-w-md">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-purple-500 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  value={phonebookSearch}
+                  onChange={(e) => setPhonebookSearch(e.target.value)}
+                  placeholder="Поиск по ФИО, телефону, организации, должности, адресу..."
+                  className="w-full pl-9 pr-7 py-2 text-xs rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium bg-white"
+                />
+                {phonebookSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setPhonebookSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                    title="Очистить поиск"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Кнопка переключения вида в правом углу без надписей */}
+              <button
+                type="button"
+                onClick={() => handleSetPersonalCardLayout(personalCardLayout === 'compact' ? 'expanded' : 'compact')}
+                className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 ${
+                  personalCardLayout === 'expanded'
+                    ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
+                    : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+                }`}
+                title={
+                  personalCardLayout === 'compact'
+                    ? 'Растянутый на весь экран'
+                    : 'Компактный'
+                }
+                aria-label="Переключить размещение карточек"
+              >
+                {personalCardLayout === 'compact' ? (
+                  <LayoutGrid className="w-4 h-4" />
+                ) : (
+                  <StretchHorizontal className="w-4 h-4" />
+                )}
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
@@ -929,7 +1037,7 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
               </span>
               <button
                 onClick={handleOpenCreatePerson}
-                className="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors"
+                className="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Добавить контакт</span>
@@ -947,8 +1055,8 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
             </span>
           </div>
 
-          {/* Compact full-row contacts list */}
-          <div className="space-y-2">
+          {/* Contacts list: compact grid vs expanded full-width rows */}
+          <div className={personalCardLayout === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5' : 'space-y-2'}>
             {filteredPhonebook.map((p) => {
               const isSelected = selectedPersonId === p.id;
               return (
@@ -956,7 +1064,11 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                   key={p.id}
                   onClick={() => setSelectedPersonId(isSelected ? null : p.id)}
                   onDoubleClick={() => handleOpenEditPerson(p)}
-                  className={`w-full p-2.5 sm:px-4 sm:py-3 rounded-2xl border transition-all text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 cursor-pointer select-none ${
+                  className={`w-full p-3.5 sm:px-4 sm:py-3 rounded-2xl border transition-all text-xs flex ${
+                    personalCardLayout === 'compact'
+                      ? 'flex-col justify-between items-stretch'
+                      : 'flex-col md:flex-row md:items-center justify-between'
+                  } gap-3 cursor-pointer select-none ${
                     isSelected
                       ? 'ring-2 ring-purple-600 bg-purple-50/90 border-purple-400 shadow-md scale-[1.002]'
                       : 'border-purple-200/80 bg-white hover:border-purple-300 shadow-2xs hover:shadow-xs'
