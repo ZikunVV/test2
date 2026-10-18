@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ThemeConfig, Ticket } from '../types';
+import { ThemeConfig, Ticket, UserItem, StreetItem } from '../types';
 import { MessengerShareButtons } from '../utils/messengers';
+import { PhoneBadgeDisplay } from './PhoneBadgeDisplay';
 import {
   X,
   MapPin,
@@ -24,7 +25,6 @@ import {
   Edit,
   History,
 } from 'lucide-react';
-import { StreetItem } from '../types';
 import {
   findTicketsForFullAddress,
   findTicketsForAddress,
@@ -36,6 +36,7 @@ interface TicketDetailModalProps {
   ticket: Ticket | null;
   onClose: () => void;
   theme: ThemeConfig;
+  currentUser?: UserItem | null;
   isAdmin?: boolean;
   canAccept?: boolean;
   canComplete?: boolean;
@@ -44,8 +45,14 @@ interface TicketDetailModalProps {
   canDelete?: boolean;
   tickets?: Ticket[];
   streets?: StreetItem[];
-  onSelectTicket?: (ticket: Ticket) => void;
-  onOpenEdit?: (ticket: Ticket) => void;
+  onSelectTicket?: (t: Ticket) => void;
+  onOpenEdit?: (t: Ticket) => void;
+  onUpdatePhoneStatus?: (
+    ticketId: string,
+    newStatus: number,
+    isAdditional?: boolean,
+    additionalIndex?: number
+  ) => void;
   onUpdateStatus: (
     ticketId: string,
     status: Ticket['status'],
@@ -79,6 +86,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   ticket,
   onClose,
   theme,
+  currentUser,
   isAdmin = true,
   canAccept = isAdmin,
   canComplete = isAdmin,
@@ -94,6 +102,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   onWithdrawTicket,
   onAddWork,
   onInspectWorker,
+  onUpdatePhoneStatus,
 }) => {
   if (!ticket) return null;
 
@@ -452,19 +461,41 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 <span className="text-[10px] text-slate-400 block font-medium">
                   Телефоны для связи
                 </span>
-                <div className="mt-0.5 space-y-1">
-                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{ticket.phone || ticket.residentPhone || 'Не указан'}</span>
+                <div className="mt-1 space-y-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <PhoneBadgeDisplay
+                      phone={ticket.phone || ticket.residentPhone || ''}
+                      status={ticket.phone_status || 1}
+                      currentUser={currentUser}
+                      onUpdateStatus={(newStatus) => {
+                        if (onUpdatePhoneStatus) {
+                          onUpdatePhoneStatus(ticket.id, newStatus, false);
+                        }
+                      }}
+                      size="sm"
+                    />
                   </div>
                   {ticket.additional_phones &&
                     ticket.additional_phones.map((p, idx) => (
                       <div
                         key={idx}
-                        className="text-slate-600 flex items-center gap-1.5 text-[11px]"
+                        className="flex items-center gap-1.5 flex-wrap"
                       >
-                        <Phone className="w-3 h-3 text-slate-400" />
-                        <span>{p}</span>
+                        <PhoneBadgeDisplay
+                          phone={p}
+                          status={
+                            (ticket.additional_phone_statuses &&
+                              ticket.additional_phone_statuses[idx]) ||
+                            1
+                          }
+                          currentUser={currentUser}
+                          onUpdateStatus={(newStatus) => {
+                            if (onUpdatePhoneStatus) {
+                              onUpdatePhoneStatus(ticket.id, newStatus, true, idx);
+                            }
+                          }}
+                          size="xs"
+                        />
                       </div>
                     ))}
                 </div>

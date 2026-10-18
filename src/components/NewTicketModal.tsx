@@ -25,6 +25,11 @@ import {
   Lock,
 } from 'lucide-react';
 import {
+  canUserSeePhoneStatusBadge,
+  canUserManageAccessRights,
+  PHONE_STATUS_STYLES,
+} from '../utils/phoneAccess';
+import {
   normalizeStreetName,
   formatStreetDisplay,
   findTicketsForAddress,
@@ -42,6 +47,7 @@ interface NewTicketModalProps {
   theme: ThemeConfig;
   gradient: GradientOption;
   showFlatFallback: boolean;
+  currentUser?: UserItem | null;
   houses: House[];
   streets?: StreetItem[];
   people?: PersonalPerson[];
@@ -61,6 +67,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   theme,
   gradient,
   showFlatFallback,
+  currentUser,
   houses,
   streets = [],
   people = [],
@@ -96,7 +103,12 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   // Contacts & Reporter
   const [givenBy, setGivenBy] = useState('');
   const [mainPhone, setMainPhone] = useState('');
+  const [mainPhoneStatus, setMainPhoneStatus] = useState<number>(1);
   const [additionalPhones, setAdditionalPhones] = useState<string[]>([]);
+  const [additionalPhoneStatuses, setAdditionalPhoneStatuses] = useState<number[]>([]);
+
+  const canSeeStatus = canUserSeePhoneStatusBadge(currentUser);
+  const canManage = canUserManageAccessRights(currentUser);
 
   // Corporate employees strictly filtered: people from "Личный список дел" must NOT get into available workers
   // "в «Выбор из списка сотрудников» не должны попадать люди которые в списке «Личный список дел»"
@@ -402,6 +414,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
 
   const handleAddPhone = () => {
     setAdditionalPhones([...additionalPhones, '']);
+    setAdditionalPhoneStatuses([...additionalPhoneStatuses, 1]);
   };
 
   const handleUpdatePhone = (idx: number, val: string) => {
@@ -410,8 +423,15 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     setAdditionalPhones(updated);
   };
 
+  const handleUpdatePhoneStatus = (idx: number, st: number) => {
+    const updated = [...additionalPhoneStatuses];
+    updated[idx] = st;
+    setAdditionalPhoneStatuses(updated);
+  };
+
   const handleRemovePhone = (idx: number) => {
     setAdditionalPhones(additionalPhones.filter((_, i) => i !== idx));
+    setAdditionalPhoneStatuses(additionalPhoneStatuses.filter((_, i) => i !== idx));
   };
 
   const toggleWorker = (w: string) => {
@@ -505,7 +525,9 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               .join(', ') || undefined,
       execution_date: executionDate || undefined,
       phone: mainPhone.trim() || undefined,
+      phone_status: mainPhoneStatus,
       additional_phones: additionalPhones.filter((p) => p.trim().length > 0),
+      additional_phone_statuses: additionalPhoneStatuses,
       given_by: givenBy.trim() || undefined,
       assignee: selectedWorkers.length > 0 ? selectedWorkers.join(', ') : 'Не назначен',
       assignees: selectedWorkers,
@@ -1010,16 +1032,40 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               </div>
 
               <div>
-                <label className="font-semibold block mb-1 text-slate-700">
-                  Основной телефон
-                </label>
-                <input
-                  type="tel"
-                  value={mainPhone}
-                  onChange={(e) => setMainPhone(e.target.value)}
-                  placeholder="+38 (0__) ___-__-__"
-                  className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white focus:outline-none"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-slate-700">
+                    Основной телефон
+                  </label>
+                  {canSeeStatus && (
+                    <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md">
+                      Статус {mainPhoneStatus}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="tel"
+                    value={mainPhone}
+                    onChange={(e) => setMainPhone(e.target.value)}
+                    placeholder="+38 (0__) ___-__-__"
+                    className="flex-1 px-3 py-2 rounded-xl border border-purple-200 bg-white focus:outline-none font-mono text-xs"
+                  />
+                  {canSeeStatus && (
+                    <select
+                      value={mainPhoneStatus}
+                      disabled={!canManage}
+                      onChange={(e) => setMainPhoneStatus(Number(e.target.value))}
+                      className="px-2 py-2 rounded-xl border border-purple-200 bg-purple-50 font-bold text-xs text-purple-950 focus:ring-2 focus:ring-purple-300"
+                      title="Цифровой статус номера от 1 до 10"
+                    >
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((s) => (
+                        <option key={s} value={s}>
+                          Ур. {s}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1027,26 +1073,46 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
             {additionalPhones.length > 0 && (
               <div className="space-y-2 pt-1">
                 <span className="text-[11px] font-semibold text-slate-500 block">
-                  Дополнительные номера:
+                  Дополнительные номера (с индивидуальным статусом от 1 до 10):
                 </span>
-                {additionalPhones.map((ph, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <input
-                      type="tel"
-                      value={ph}
-                      onChange={(e) => handleUpdatePhone(idx, e.target.value)}
-                      placeholder="+38 (0__) ___-__-__"
-                      className="flex-1 px-3 py-1.5 rounded-xl border border-purple-200 bg-white text-xs"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePhone(idx)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                {additionalPhones.map((ph, idx) => {
+                  const st = additionalPhoneStatuses[idx] || 1;
+                  return (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="tel"
+                        value={ph}
+                        onChange={(e) => handleUpdatePhone(idx, e.target.value)}
+                        placeholder="+38 (0__) ___-__-__"
+                        className="flex-1 px-3 py-1.5 rounded-xl border border-purple-200 bg-white font-mono text-xs"
+                      />
+                      {canSeeStatus && (
+                        <select
+                          value={st}
+                          disabled={!canManage}
+                          onChange={(e) =>
+                            handleUpdatePhoneStatus(idx, Number(e.target.value))
+                          }
+                          className="px-2 py-1.5 rounded-xl border border-purple-200 bg-purple-50 font-bold text-xs text-purple-950"
+                          title="Цифровой статус доп. номера (1-10)"
+                        >
+                          {Array.from({ length: 10 }, (_, i) => i + 1).map((s) => (
+                            <option key={s} value={s}>
+                              Ур. {s}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhone(idx)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 

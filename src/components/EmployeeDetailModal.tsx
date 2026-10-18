@@ -1,5 +1,11 @@
 import React from 'react';
-import { PersonalPerson } from '../types';
+import { PersonalPerson, UserItem } from '../types';
+import { PhoneBadgeDisplay } from './PhoneBadgeDisplay';
+import {
+  canUserViewPhoneNumber,
+  canUserSeePhoneStatusBadge,
+  canUserManageAccessRights,
+} from '../utils/phoneAccess';
 import { User, Briefcase, Building, MapPin, Phone, X, Check, Lock } from 'lucide-react';
 
 export interface InspectedWorkerInfo {
@@ -9,6 +15,7 @@ export interface InspectedWorkerInfo {
   organization?: string;
   residence_address?: string;
   phones?: string[];
+  phone_statuses?: number[];
   notes?: string;
   owner_surname?: string;
   isManual?: boolean;
@@ -17,15 +24,19 @@ export interface InspectedWorkerInfo {
 interface EmployeeDetailModalProps {
   worker: InspectedWorkerInfo | null;
   onClose: () => void;
+  currentUser?: UserItem | null;
   canSendMessenger?: boolean;
   canViewPhone?: boolean;
+  onUpdatePersonPhoneStatus?: (personId: string, phoneIdx: number, newStatus: number) => void;
 }
 
 export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
   worker,
   onClose,
+  currentUser,
   canSendMessenger = true,
   canViewPhone = true,
+  onUpdatePersonPhoneStatus,
 }) => {
   if (!worker) return null;
 
@@ -106,14 +117,12 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
             <span className="text-[10px] text-slate-400 block font-semibold mb-1.5">
               Контактные телефоны и мессенджеры
             </span>
-            {!canViewPhone ? (
-              <div className="flex items-center gap-2 bg-slate-100/90 p-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs select-none">
-                <Lock className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>Номер телефона скрыт (нет прав доступа)</span>
-              </div>
-            ) : worker.phones && worker.phones.length > 0 ? (
+            {worker.phones && worker.phones.length > 0 ? (
               <div className="space-y-2">
                 {worker.phones.map((phone, i) => {
+                  const status =
+                    (worker.phone_statuses && worker.phone_statuses[i]) || 1;
+                  const isPhoneVisible = canUserViewPhoneNumber(currentUser, status);
                   const digitsOnly = phone.replace(/[^0-9]/g, '');
                   const intlPhone = digitsOnly.startsWith('0')
                     ? `38${digitsOnly}`
@@ -123,14 +132,20 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
                       key={i}
                       className="flex items-center justify-between gap-2 flex-wrap bg-white p-2 rounded-xl border border-purple-200 shadow-2xs"
                     >
-                      <a
-                        href={`tel:${phone}`}
-                        className="inline-flex items-center gap-1.5 text-purple-800 hover:text-purple-950 font-mono font-bold text-xs"
-                      >
-                        <Phone className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                        <span>{phone}</span>
-                      </a>
-                      {canSendMessenger && intlPhone.length >= 10 && (
+                      <PhoneBadgeDisplay
+                        phone={phone}
+                        status={status}
+                        currentUser={currentUser}
+                        onUpdateStatus={(newStatus) => {
+                          if (worker.id && onUpdatePersonPhoneStatus) {
+                            onUpdatePersonPhoneStatus(worker.id, i, newStatus);
+                          }
+                        }}
+                        size="sm"
+                      />
+
+                      {/* Messenger buttons only if phone is visible to this user */}
+                      {isPhoneVisible && canSendMessenger && intlPhone.length >= 10 && (
                         <div className="flex items-center gap-1.5">
                           <a
                             href={`https://t.me/+${intlPhone}`}

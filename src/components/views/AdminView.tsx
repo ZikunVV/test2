@@ -41,10 +41,14 @@ import {
   StretchHorizontal,
 } from 'lucide-react';
 
+import { AccountAccessModal } from '../AccountAccessModal';
+import { PhoneBadgeDisplay } from '../PhoneBadgeDisplay';
+
 interface AdminViewProps {
   theme: ThemeConfig;
   gradient: GradientOption;
   showFlatFallback: boolean;
+  currentUser?: UserItem | null;
   users: UserItem[];
   auditLogs: AuditLogItem[];
   streets: StreetItem[];
@@ -70,6 +74,7 @@ interface AdminViewProps {
   onToggleUserApproved: (userId: number) => void;
   onUpdateUserPermissions?: (userId: number, permissions: string[]) => void;
   onUpdateUserPersonalLimit?: (userId: number, limit: number) => void;
+  onUpdateUserAccess?: (userId: number, updates: Partial<UserItem>) => void;
   onUndoAuditAction: (logId: number) => void;
   onBackToHome: () => void;
   onOpenBackupModal?: () => void;
@@ -81,6 +86,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   theme,
   gradient,
   showFlatFallback,
+  currentUser,
   users,
   auditLogs,
   streets,
@@ -101,6 +107,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onToggleUserApproved,
   onUpdateUserPermissions,
   onUpdateUserPersonalLimit,
+  onUpdateUserAccess,
   onUndoAuditAction,
   onBackToHome,
   onOpenBackupModal,
@@ -109,6 +116,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'organizations' | 'streets' | 'audit'>(initialTab);
   const [undoSuccessMsg, setUndoSuccessMsg] = useState<string | null>(null);
+
+  // Dedicated Account Access Rights Modal state
+  const [accessModalUser, setAccessModalUser] = useState<UserItem | null>(null);
 
   // Search & layout for Audit Log
   const [auditSearch, setAuditSearch] = useState('');
@@ -681,17 +691,51 @@ export const AdminView: React.FC<AdminViewProps> = ({
                               : assignedOrg?.name || 'КП «ЖЄК-10»'}
                           </span>
                         </span>
+
+                        {/* Phone viewing permission level badge */}
+                        {user.role === 'admin' || (typeof user.phone_access_level === 'number' && user.phone_access_level > 0) ? (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-emerald-600" />
+                            <span>Видит тел: Ур. {user.role === 'admin' ? 10 : user.phone_access_level}</span>
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1">
+                            <Lock className="w-3 h-3 text-slate-400" />
+                            <span>Тел: скрыты</span>
+                          </span>
+                        )}
+
+                        {/* Can manage access badge */}
+                        {(user.role === 'admin' || user.can_manage_access || user.permissions?.includes('manage_user_access')) && (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1">
+                            <Shield className="w-3 h-3 text-purple-700" />
+                            <span>Управление доступом</span>
+                          </span>
+                        )}
                       </div>
 
-                      <div className="text-slate-500 text-[11px] mt-1 space-x-3 font-mono">
-                        <span>Тел: {user.phone}</span>
+                      <div className="text-slate-500 text-[11px] mt-1 flex items-center gap-3 flex-wrap font-mono">
+                        <div className="flex items-center gap-1.5">
+                          <span>Тел:</span>
+                          <PhoneBadgeDisplay
+                            phone={user.phone}
+                            status={user.phone_status || (user.role === 'admin' ? 10 : 1)}
+                            currentUser={currentUser}
+                            onUpdateStatus={(newStatus) => {
+                              if (onUpdateUserAccess) {
+                                onUpdateUserAccess(user.id, { phone_status: newStatus });
+                              }
+                            }}
+                            size="xs"
+                          />
+                        </div>
                         <span>Логин: {user.username}</span>
                         <span>Пароль: {user.password || (user.username === 'admin' ? 'admin' : '123')}</span>
                         <span>Регистрация: {user.created_at}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2.5 flex-wrap self-end lg:self-auto">
+                    <div className="flex items-center gap-2 flex-wrap self-end lg:self-auto">
                       {/* Approved toggle */}
                       <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-slate-700 select-none">
                         <input
@@ -745,16 +789,28 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         </span>
                       )}
 
-                      {/* Permissions toggle button */}
+                      {/* Separate Section Modal Button: Настройка прав доступа */}
+                      <button
+                        type="button"
+                        onClick={() => setAccessModalUser(user)}
+                        className="px-3 py-1 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                        title="Открыть отдельный раздел настройки прав доступа аккаунта и номеров телефонов"
+                      >
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>Настройка прав</span>
+                      </button>
+
+                      {/* Permissions quick toggle accordion */}
                       <button
                         type="button"
                         onClick={() =>
                           setExpandedUserId(isExpanded ? null : user.id)
                         }
-                        className="px-3 py-1 rounded-lg border border-purple-200 hover:bg-purple-50 text-purple-800 font-bold flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg border border-purple-200 hover:bg-purple-50 text-purple-800 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                        title="Быстрый просмотр разрешений"
                       >
                         <Key className="w-3.5 h-3.5 text-purple-600" />
-                        <span>Права ({userPerms.length})</span>
+                        <span>({userPerms.length})</span>
                       </button>
 
                       {user.username !== 'admin' && onDeleteUser && (
@@ -2007,6 +2063,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Dedicated Account Access Rights Modal */}
+      <AccountAccessModal
+        isOpen={Boolean(accessModalUser)}
+        onClose={() => setAccessModalUser(null)}
+        targetUser={accessModalUser}
+        currentUser={currentUser}
+        organizations={organizations}
+        onSaveAccess={(userId, updates) => {
+          if (onUpdateUserAccess) {
+            onUpdateUserAccess(userId, updates);
+          }
+        }}
+      />
     </div>
   );
 };

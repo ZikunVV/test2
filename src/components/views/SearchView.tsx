@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ThemeConfig, GradientOption, Ticket } from '../../types';
+import { ThemeConfig, GradientOption, Ticket, UserItem } from '../../types';
+import { PhoneBadgeDisplay } from '../PhoneBadgeDisplay';
 import {
   Search,
   ArrowLeft,
@@ -18,8 +19,15 @@ interface SearchViewProps {
   gradient: GradientOption;
   showFlatFallback: boolean;
   tickets: Ticket[];
+  currentUser?: UserItem | null;
   onOpenTicket: (ticket: Ticket) => void;
   onInspectWorker?: (workerName: string) => void;
+  onUpdateTicketPhoneStatus?: (
+    ticketId: string,
+    newStatus: number,
+    isAdditional?: boolean,
+    additionalIndex?: number
+  ) => void;
   onBackToHome: () => void;
 }
 
@@ -28,8 +36,10 @@ export const SearchView: React.FC<SearchViewProps> = ({
   gradient,
   showFlatFallback,
   tickets,
+  currentUser,
   onOpenTicket,
   onInspectWorker,
+  onUpdateTicketPhoneStatus,
   onBackToHome,
 }) => {
   // v48.16 Search filters for completed work
@@ -365,6 +375,56 @@ export const SearchView: React.FC<SearchViewProps> = ({
                     <p className="text-[11px] text-slate-500 line-clamp-1">
                       {t.description}
                     </p>
+                  )}
+
+                  {/* Contact phones with digital status (1-10) */}
+                  {(t.phone ||
+                    t.residentPhone ||
+                    (t.additional_phones && t.additional_phones.length > 0)) && (
+                    <div
+                      className="flex flex-wrap items-center gap-2 pt-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {(t.phone || t.residentPhone) && (
+                        <PhoneBadgeDisplay
+                          phone={t.phone || t.residentPhone || ''}
+                          status={t.phone_status || 1}
+                          currentUser={currentUser}
+                          onUpdateStatus={
+                            onUpdateTicketPhoneStatus
+                              ? (newStatus) =>
+                                  onUpdateTicketPhoneStatus(t.id, newStatus, false)
+                              : undefined
+                          }
+                          size="xs"
+                        />
+                      )}
+                      {t.additional_phones &&
+                        t.additional_phones.map((p, idx) => (
+                          <PhoneBadgeDisplay
+                            key={idx}
+                            phone={p}
+                            status={
+                              (t.additional_phone_statuses &&
+                                t.additional_phone_statuses[idx]) ||
+                              1
+                            }
+                            currentUser={currentUser}
+                            onUpdateStatus={
+                              onUpdateTicketPhoneStatus
+                                ? (newStatus) =>
+                                    onUpdateTicketPhoneStatus(
+                                      t.id,
+                                      newStatus,
+                                      true,
+                                      idx
+                                    )
+                                : undefined
+                            }
+                            size="xs"
+                          />
+                        ))}
+                    </div>
                   )}
                 </div>
 

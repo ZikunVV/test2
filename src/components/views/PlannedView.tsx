@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ThemeConfig, GradientOption, Ticket } from '../../types';
+import { ThemeConfig, GradientOption, Ticket, UserItem } from '../../types';
 import { TicketCard } from '../TicketCard';
 import {
   Calendar as CalendarIcon,
@@ -22,10 +22,17 @@ interface PlannedViewProps {
   gradient: GradientOption;
   showFlatFallback: boolean;
   tickets: Ticket[];
+  currentUser?: UserItem | null;
   onOpenTicket: (ticket: Ticket) => void;
   onEditTicket?: (ticket: Ticket) => void;
   onAccept?: (ticketId: string) => void;
   onComplete?: (ticketId: string) => void;
+  onUpdateTicketPhoneStatus?: (
+    ticketId: string,
+    newStatus: number,
+    isAdditional?: boolean,
+    additionalIndex?: number
+  ) => void;
   canEdit?: boolean;
   canCreate?: boolean;
   canAccept?: boolean;
@@ -41,10 +48,12 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
   gradient,
   showFlatFallback,
   tickets,
+  currentUser,
   onOpenTicket,
   onEditTicket,
   onAccept,
   onComplete,
+  onUpdateTicketPhoneStatus,
   canEdit = true,
   canCreate = canEdit,
   canAccept = canEdit,
@@ -496,6 +505,8 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
               onOpenDetails={(ticket) => onOpenTicket(ticket)}
               onEditTicket={onEditTicket}
               onInspectWorker={onInspectWorker}
+              currentUser={currentUser}
+              onUpdatePhoneStatus={onUpdateTicketPhoneStatus}
             />
           ))}
           {filteredPlannedTickets.length === 0 && (

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ThemeConfig, GradientOption, PersonalTask, PersonalPerson, UserItem } from '../../types';
+import { PhoneBadgeDisplay } from '../PhoneBadgeDisplay';
 import { getUserSurname } from '../../utils/userUtils';
 import { useLanguage } from '../../utils/i18n';
 import { parseVoiceReminderCommand } from '../../utils/voiceReminderParser';
@@ -49,6 +50,7 @@ interface PersonalTasksViewProps {
   onUpdatePersonalPerson: (person: PersonalPerson) => void;
   onCreatePersonalPerson: (person: PersonalPerson) => void;
   onDeletePersonalPerson: (id: string) => void;
+  onUpdatePersonPhoneStatus?: (personId: string, phoneIdx: number, newStatus: number) => void;
   onBackToHome: () => void;
 }
 
@@ -68,6 +70,7 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   onUpdatePersonalPerson,
   onCreatePersonalPerson,
   onDeletePersonalPerson,
+  onUpdatePersonPhoneStatus,
   onBackToHome,
 }) => {
   const isAuthorized = Boolean(currentUser && currentUser.approved);
@@ -1119,17 +1122,23 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                   >
                     {p.phones && p.phones.length > 0 && (
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {p.phones.map((phone, i) => (
-                          <a
-                            key={i}
-                            href={`tel:${phone}`}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-mono font-bold text-xs transition-colors"
-                            title="Позвонить"
-                          >
-                            <Phone className="w-3 h-3 text-emerald-600 shrink-0" />
-                            <span>{phone}</span>
-                          </a>
-                        ))}
+                        {p.phones.map((phone, i) => {
+                          const status = (p.phone_statuses && p.phone_statuses[i]) || 1;
+                          return (
+                            <PhoneBadgeDisplay
+                              key={i}
+                              phone={phone}
+                              status={status}
+                              currentUser={currentUser}
+                              onUpdateStatus={(newStatus) => {
+                                if (onUpdatePersonPhoneStatus) {
+                                  onUpdatePersonPhoneStatus(p.id, i, newStatus);
+                                }
+                              }}
+                              size="xs"
+                            />
+                          );
+                        })}
                       </div>
                     )}
 

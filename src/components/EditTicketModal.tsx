@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Ticket, ThemeConfig, PersonalPerson } from '../types';
-import { X, Check, FileEdit, Building, MapPin, User, Calendar, Phone, AlertCircle } from 'lucide-react';
+import { Ticket, ThemeConfig, PersonalPerson, UserItem } from '../types';
+import {
+  canUserSeePhoneStatusBadge,
+  canUserManageAccessRights,
+  PHONE_STATUS_STYLES,
+} from '../utils/phoneAccess';
+import { X, Check, FileEdit, Building, MapPin, User, Calendar, Phone, AlertCircle, Plus, Trash2 } from 'lucide-react';
 
 interface EditTicketModalProps {
   isOpen: boolean;
@@ -8,6 +13,7 @@ interface EditTicketModalProps {
   onClose: () => void;
   onSaveTicket: (updatedTicket: Ticket) => void;
   theme: ThemeConfig;
+  currentUser?: UserItem | null;
   people?: PersonalPerson[];
   onInspectWorker?: (workerName: string) => void;
 }
@@ -18,6 +24,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
   onClose,
   onSaveTicket,
   theme,
+  currentUser,
   people = [],
   onInspectWorker,
 }) => {
@@ -44,6 +51,15 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
   const [workDescription, setWorkDescription] = useState(ticket.work_description || '');
   const [workMaterials, setWorkMaterials] = useState(ticket.work_materials || '');
 
+  const canSeeStatus = canUserSeePhoneStatusBadge(currentUser);
+  const canManage = canUserManageAccessRights(currentUser);
+
+  const [phoneStatus, setPhoneStatus] = useState<number>(ticket.phone_status || 1);
+  const [additionalPhones, setAdditionalPhones] = useState<string[]>(ticket.additional_phones || []);
+  const [additionalPhoneStatuses, setAdditionalPhoneStatuses] = useState<number[]>(
+    ticket.additional_phone_statuses || (ticket.additional_phones || []).map(() => 1)
+  );
+
   // Reset values when ticket changes
   useEffect(() => {
     if (ticket) {
@@ -62,12 +78,39 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
       setSelectedWorkers(workers);
       setCustomWorker('');
       setPhone(ticket.phone || '');
+      setPhoneStatus(ticket.phone_status || 1);
+      setAdditionalPhones(ticket.additional_phones || []);
+      setAdditionalPhoneStatuses(
+        ticket.additional_phone_statuses || (ticket.additional_phones || []).map(() => 1)
+      );
       setResidentName(ticket.residentName || '');
       setDescription(ticket.description || '');
       setWorkDescription(ticket.work_description || '');
       setWorkMaterials(ticket.work_materials || '');
     }
   }, [ticket]);
+
+  const handleAddAdditionalPhone = () => {
+    setAdditionalPhones([...additionalPhones, '']);
+    setAdditionalPhoneStatuses([...additionalPhoneStatuses, 1]);
+  };
+
+  const handleUpdateAdditionalPhone = (idx: number, val: string) => {
+    const nextPhones = [...additionalPhones];
+    nextPhones[idx] = val;
+    setAdditionalPhones(nextPhones);
+  };
+
+  const handleUpdateAdditionalPhoneStatus = (idx: number, st: number) => {
+    const nextStatuses = [...additionalPhoneStatuses];
+    nextStatuses[idx] = st;
+    setAdditionalPhoneStatuses(nextStatuses);
+  };
+
+  const handleRemoveAdditionalPhone = (idx: number) => {
+    setAdditionalPhones(additionalPhones.filter((_, i) => i !== idx));
+    setAdditionalPhoneStatuses(additionalPhoneStatuses.filter((_, i) => i !== idx));
+  };
 
   // Corporate employees strictly filtered: people from "Личный список дел" must NOT get into available workers
   const corporateEmployees = React.useMemo(() => {
@@ -135,6 +178,9 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
       assignee: finalAssignee,
       assignees: finalAssignees,
       phone: phone.trim() || undefined,
+      phone_status: phoneStatus,
+      additional_phones: additionalPhones.map((p) => p.trim()).filter(Boolean),
+      additional_phone_statuses: additionalPhoneStatuses,
       residentName: residentName.trim() || undefined,
       description: description.trim() || undefined,
       work_description: workDescription.trim() || undefined,
@@ -466,17 +512,93 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1 flex items-center gap-1">
-                <Phone className="w-3.5 h-3.5 text-purple-600" />
-                <span>Телефон заявителя</span>
-              </label>
-              <input
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+38 (0__) ___-__-__"
-                className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-bold text-slate-700 flex items-center gap-1">
+                  <Phone className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Телефон заявителя</span>
+                </label>
+                {canSeeStatus && (
+                  <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md">
+                    Статус {phoneStatus}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+38 (0__) ___-__-__"
+                  className="flex-1 px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-mono text-xs"
+                />
+                {canSeeStatus && (
+                  <select
+                    value={phoneStatus}
+                    disabled={!canManage}
+                    onChange={(e) => setPhoneStatus(Number(e.target.value))}
+                    className="px-2 py-2 rounded-xl border border-purple-200 bg-purple-50 font-bold text-xs text-purple-950 focus:ring-2 focus:ring-purple-300"
+                    title="Цифровой статус номера от 1 до 10"
+                  >
+                    {Array.from({ length: 10 }, (_, i) => i + 1).map((s) => (
+                      <option key={s} value={s}>
+                        Ур. {s}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* Additional phones list */}
+              <div className="mt-2 space-y-1.5">
+                {additionalPhones.map((ph, idx) => {
+                  const st = additionalPhoneStatuses[idx] || 1;
+                  return (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="tel"
+                        value={ph}
+                        onChange={(e) => handleUpdateAdditionalPhone(idx, e.target.value)}
+                        placeholder="Доп. номер (+38...)"
+                        className="flex-1 px-3 py-1.5 rounded-xl border border-purple-200 bg-white font-mono text-xs focus:ring-2 focus:ring-purple-300"
+                      />
+                      {canSeeStatus && (
+                        <select
+                          value={st}
+                          disabled={!canManage}
+                          onChange={(e) =>
+                            handleUpdateAdditionalPhoneStatus(idx, Number(e.target.value))
+                          }
+                          className="px-2 py-1.5 rounded-xl border border-purple-200 bg-purple-50 font-bold text-xs text-purple-950"
+                          title="Цифровой статус доп. номера (1-10)"
+                        >
+                          {Array.from({ length: 10 }, (_, i) => i + 1).map((s) => (
+                            <option key={s} value={s}>
+                              Ур. {s}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAdditionalPhone(idx)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                        title="Удалить номер"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+
+                <button
+                  type="button"
+                  onClick={handleAddAdditionalPhone}
+                  className="mt-1 text-[11px] font-bold text-purple-700 hover:text-purple-900 inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>+ Добавить ещё номер</span>
+                </button>
+              </div>
             </div>
           </div>
 

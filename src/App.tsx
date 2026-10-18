@@ -2091,6 +2091,85 @@ export default function App() {
     );
   };
 
+  const handleUpdateUserAccess = (userId: number, updates: Partial<UserItem>) => {
+    const canManage =
+      currentUser.role === 'admin' ||
+      currentUser.can_manage_access ||
+      currentUser.permissions?.includes('manage_user_access');
+
+    if (!canManage) {
+      console.warn('Unauthorized attempt to update user access rights');
+      return;
+    }
+
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id !== userId) return u;
+        return {
+          ...u,
+          ...updates,
+        };
+      })
+    );
+
+    const targetUser = users.find((u) => u.id === userId);
+    setAuditLogs((prev) => [
+      {
+        id: Date.now(),
+        action: 'Изменение прав доступа',
+        entity: 'Пользователь',
+        entity_id: userId,
+        user_name: currentUser?.full_name || 'Администратор',
+        details: `Обновлены права доступа аккаунта «${targetUser?.full_name || userId}» (уровень просмотра тел.: ${
+          typeof updates.phone_access_level === 'number' && updates.phone_access_level > 0
+            ? `Ур. ${updates.phone_access_level}`
+            : 'скрыты'
+        })`,
+        created_at: new Date().toLocaleString('ru-RU'),
+        can_undo: false,
+      },
+      ...prev,
+    ]);
+  };
+
+  const handleUpdateTicketPhoneStatus = (
+    ticketId: string,
+    newStatus: number,
+    isAdditional: boolean = false,
+    additionalIndex: number = 0
+  ) => {
+    setTickets((prev) =>
+      prev.map((t) => {
+        if (t.id !== ticketId) return t;
+        if (!isAdditional) {
+          return { ...t, phone_status: newStatus };
+        }
+        const currentStatuses = [
+          ...(t.additional_phone_statuses || (t.additional_phones || []).map(() => 1)),
+        ];
+        currentStatuses[additionalIndex] = newStatus;
+        return { ...t, additional_phone_statuses: currentStatuses };
+      })
+    );
+  };
+
+  const handleUpdatePersonPhoneStatus = (
+    personId: string,
+    phoneIdx: number,
+    newStatus: number
+  ) => {
+    setPersonalPeople((prev) =>
+      prev.map((p) => {
+        if (p.id !== personId) return p;
+        const currentStatuses = [
+          ...(p.phone_statuses || (p.phones || []).map(() => 1)),
+        ];
+        currentStatuses[phoneIdx] = newStatus;
+        return { ...p, phone_statuses: currentStatuses };
+      })
+    );
+  };
+
   const handleUndoAuditAction = (logId: number) => {
     const targetLog = auditLogs.find((l) => l.id === logId);
     if (targetLog && targetLog.entity_id) {
@@ -2387,10 +2466,12 @@ export default function App() {
                   gradient={currentGradient}
                   showFlatFallback={showFlatFallback}
                   tickets={currentOrgTickets}
+                  currentUser={currentUser}
                   onOpenTicket={(t) => setSelectedTicketForDetail(t)}
                   onEditTicket={(t) => handleOpenEditTicket(t)}
                   onAccept={(id) => handleUpdateStatus(id, 'in_progress')}
                   onComplete={(id) => handleUpdateStatus(id, 'completed')}
+                  onUpdateTicketPhoneStatus={handleUpdateTicketPhoneStatus}
                   canEdit={canEditTickets}
                   canCreate={canCreateTicket}
                   canAccept={canAcceptTicket}
@@ -2454,8 +2535,10 @@ export default function App() {
                   gradient={currentGradient}
                   showFlatFallback={showFlatFallback}
                   tickets={currentOrgTickets}
+                  currentUser={currentUser}
                   onOpenTicket={(t) => setSelectedTicketForDetail(t)}
                   onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
+                  onUpdateTicketPhoneStatus={handleUpdateTicketPhoneStatus}
                   onBackToHome={() => setActiveSidebarNav('home')}
                 />
               )}
@@ -2500,6 +2583,8 @@ export default function App() {
                   onToggleUserApproved={handleToggleUserApproved}
                   onUpdateUserPermissions={handleUpdateUserPermissions}
                   onUpdateUserPersonalLimit={handleUpdateUserPersonalLimit}
+                  onUpdateUserAccess={handleUpdateUserAccess}
+                  currentUser={currentUser}
                   onUndoAuditAction={handleUndoAuditAction}
                   onBackToHome={() => setActiveSidebarNav('home')}
                   canAccessDatabase={canAccessDatabase}
@@ -2741,6 +2826,8 @@ export default function App() {
                           onOpenDetails={(t) => setSelectedTicketForDetail(t)}
                           onEditTicket={(t) => handleOpenEditTicket(t)}
                           onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
+                          currentUser={currentUser}
+                          onUpdatePhoneStatus={handleUpdateTicketPhoneStatus}
                         />
                       ))}
                     </div>
@@ -2795,6 +2882,7 @@ export default function App() {
         canInspectWorker={canViewEmployeeCard}
         canViewEmployeePhone={canViewEmployeePhone}
         onCreatePerson={handleCreatePersonalPerson}
+        currentUser={currentUser}
       />
 
       {/* Ticket Details / Edit Form Modal (Opens on Double Click) */}
@@ -2802,6 +2890,7 @@ export default function App() {
         ticket={selectedTicketForDetail}
         onClose={() => setSelectedTicketForDetail(null)}
         theme={theme}
+        currentUser={currentUser}
         isAdmin={canEditTickets}
         canAccept={canAcceptTicket}
         canComplete={canCompleteTicket}
@@ -2813,6 +2902,7 @@ export default function App() {
         onSelectTicket={(t) => setSelectedTicketForDetail(t)}
         onOpenEdit={(t) => handleOpenEditTicket(t)}
         onUpdateStatus={handleUpdateStatus}
+        onUpdatePhoneStatus={handleUpdateTicketPhoneStatus}
         onSubmitReport={handleSubmitReport}
         onWithdrawTicket={handleWithdrawTicket}
         onAddWork={handleAddWork}
@@ -2823,6 +2913,7 @@ export default function App() {
       <EditTicketModal
         isOpen={isEditTicketModalOpen}
         ticket={editingTicket}
+        currentUser={currentUser}
         onClose={() => {
           setIsEditTicketModalOpen(false);
           setEditingTicket(null);
@@ -2888,6 +2979,8 @@ export default function App() {
           onClose={() => setInspectedWorker(null)}
           canSendMessenger={canSendMessenger}
           canViewPhone={canViewEmployeePhone}
+          currentUser={currentUser}
+          onUpdatePersonPhoneStatus={handleUpdatePersonPhoneStatus}
         />
       )}
 

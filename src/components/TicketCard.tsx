@@ -1,7 +1,7 @@
-import React from 'react';
-import { Ticket, ThemeConfig } from '../types';
+import { Ticket, ThemeConfig, UserItem } from '../types';
 import { MessengerShareButtons } from '../utils/messengers';
-import { Check, ArrowRight, MapPin, Edit } from 'lucide-react';
+import { PhoneBadgeDisplay } from './PhoneBadgeDisplay';
+import { Check, ArrowRight, MapPin, Edit, User } from 'lucide-react';
 
 interface TicketCardProps {
   ticket: Ticket;
@@ -11,6 +11,13 @@ interface TicketCardProps {
   canAccept?: boolean;
   canComplete?: boolean;
   canSendMessenger?: boolean;
+  currentUser?: UserItem | null;
+  onUpdatePhoneStatus?: (
+    ticketId: string,
+    newStatus: number,
+    isAdditional?: boolean,
+    additionalIndex?: number
+  ) => void;
   onSelect?: (ticketId: string) => void;
   onAccept: (ticketId: string) => void;
   onComplete: (ticketId: string) => void;
@@ -27,6 +34,8 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   canAccept = canEdit,
   canComplete = canEdit,
   canSendMessenger = canEdit,
+  currentUser,
+  onUpdatePhoneStatus,
   onSelect,
   onAccept,
   onComplete,
@@ -212,6 +221,50 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             )}
           </span>
         </div>
+
+        {/* Contact phone numbers with independent digital status (1-10) */}
+        {(ticket.phone ||
+          ticket.residentPhone ||
+          (ticket.additional_phones && ticket.additional_phones.length > 0)) && (
+          <div
+            className="flex flex-wrap items-center gap-2 pt-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(ticket.phone || ticket.residentPhone) && (
+              <PhoneBadgeDisplay
+                phone={ticket.phone || ticket.residentPhone || ''}
+                status={ticket.phone_status || 1}
+                currentUser={currentUser}
+                onUpdateStatus={
+                  onUpdatePhoneStatus
+                    ? (newStatus) => onUpdatePhoneStatus(ticket.id, newStatus, false)
+                    : undefined
+                }
+                size="xs"
+              />
+            )}
+            {ticket.additional_phones &&
+              ticket.additional_phones.map((p, idx) => (
+                <PhoneBadgeDisplay
+                  key={idx}
+                  phone={p}
+                  status={
+                    (ticket.additional_phone_statuses &&
+                      ticket.additional_phone_statuses[idx]) ||
+                    1
+                  }
+                  currentUser={currentUser}
+                  onUpdateStatus={
+                    onUpdatePhoneStatus
+                      ? (newStatus) =>
+                          onUpdatePhoneStatus(ticket.id, newStatus, true, idx)
+                      : undefined
+                  }
+                  size="xs"
+                />
+              ))}
+          </div>
+        )}
       </div>
 
       {/* Right Action Button & Detail Icon */}
