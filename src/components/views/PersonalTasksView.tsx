@@ -608,29 +608,6 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
             <FileText className="w-3.5 h-3.5" />
             <span>Сделать заметку</span>
           </button>
-
-          {/* Single button toggle in right corner without labels */}
-          <button
-            type="button"
-            onClick={() => handleSetPersonalCardLayout(personalCardLayout === 'compact' ? 'expanded' : 'compact')}
-            className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 ml-auto ${
-              personalCardLayout === 'expanded'
-                ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
-                : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
-            }`}
-            title={
-              personalCardLayout === 'compact'
-                ? 'Растянутый на весь экран'
-                : 'Компактный'
-            }
-            aria-label="Переключить размещение карточек"
-          >
-            {personalCardLayout === 'compact' ? (
-              <LayoutGrid className="w-4 h-4" />
-            ) : (
-              <StretchHorizontal className="w-4 h-4" />
-            )}
-          </button>
         </div>
       </div>
 

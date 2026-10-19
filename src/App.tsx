@@ -18,6 +18,7 @@ import {
 import {
   GradientId,
   Ticket,
+  TicketStatus,
   NotificationItem,
   House,
   PersonalTask,
@@ -42,6 +43,8 @@ import { TicketCard } from './components/TicketCard';
 import { NewTicketModal } from './components/NewTicketModal';
 import { TicketDetailModal } from './components/TicketDetailModal';
 import { EditTicketModal } from './components/EditTicketModal';
+import { TicketStatusConfirmModal } from './components/TicketStatusConfirmModal';
+import { DeleteTicketConfirmModal } from './components/DeleteTicketConfirmModal';
 import { NotificationsPopover } from './components/NotificationsPopover';
 import { downloadProjectArchive } from './utils/exportProject';
 import { EmployeeDetailModal, InspectedWorkerInfo } from './components/EmployeeDetailModal';
@@ -415,7 +418,7 @@ export default function App() {
   const canAcceptTicket = hasPermission('accept_request') || hasPermission('new_request');
   const canEditTickets = hasPermission('edit_request') || hasPermission('new_request');
   const canCompleteTicket = hasPermission('complete_request') || hasPermission('new_request');
-  const canDeleteTicket = hasPermission('delete_request');
+  const canDeleteTicket = isAdmin || hasPermission('delete_request');
 
   const canAddHouses = hasPermission('new_house');
   const canEditHouses = hasPermission('edit_house') || hasPermission('new_house');
@@ -1077,6 +1080,85 @@ export default function App() {
   const [isVoiceControlOpen, setIsVoiceControlOpen] =
     useState<boolean>(false);
   const [isInsightsOpen, setIsInsightsOpen] = useState<boolean>(false);
+
+  // Status action confirmation modal (Принять в работу / Завершить с подтверждением)
+  const [confirmStatusModalTicket, setConfirmStatusModalTicket] = useState<Ticket | null>(null);
+  const [confirmStatusModalTarget, setConfirmStatusModalTarget] = useState<TicketStatus | null>(null);
+
+  const handleRequestAcceptTicket = (ticketId: string) => {
+    const t = tickets.find((item) => item.id === ticketId);
+    if (!t) return;
+    setConfirmStatusModalTicket(t);
+    setConfirmStatusModalTarget('in_progress');
+  };
+
+  const handleRequestCompleteTicket = (ticketId: string) => {
+    const t = tickets.find((item) => item.id === ticketId);
+    if (!t) return;
+    setConfirmStatusModalTicket(t);
+    setConfirmStatusModalTarget('completed');
+  };
+
+  // Ticket deletion confirmation state & handlers (Удаление заявки с подтверждением для Администратора / у кого есть права)
+  const [confirmDeleteTicket, setConfirmDeleteTicket] = useState<Ticket | null>(null);
+
+  const handleRequestDeleteTicket = (ticketId: string) => {
+    if (!canDeleteTicket) {
+      alert('У вас нет прав для удаления заявок.');
+      return;
+    }
+    const t = tickets.find((item) => item.id === ticketId);
+    if (!t) return;
+    setConfirmDeleteTicket(t);
+  };
+
+  const handleConfirmDeleteTicket = (ticketId: string) => {
+    if (!canDeleteTicket) {
+      alert('У вас нет прав для удаления заявок.');
+      return;
+    }
+    const t = tickets.find((item) => item.id === ticketId);
+    setTickets((prev) => prev.filter((item) => item.id !== ticketId));
+
+    if (selectedTicketForDetail?.id === ticketId) {
+      setSelectedTicketForDetail(null);
+    }
+    if (editingTicket?.id === ticketId) {
+      setIsEditTicketModalOpen(false);
+      setEditingTicket(null);
+    }
+    if (selectedTicketId === ticketId) {
+      setSelectedTicketId(null);
+    }
+
+    setAuditLogs((prev) => [
+      {
+        id: Date.now(),
+        action: 'Удаление заявки',
+        entity: 'Заявка',
+        entity_id: ticketId,
+        user_name: currentUser.full_name,
+        details: t
+          ? `Удалена заявка №${t.number}: ${t.title} (${t.address})`
+          : `Удалена заявка ID: ${ticketId}`,
+        created_at: new Date().toLocaleString('ru-RU'),
+        can_undo: false,
+      },
+      ...prev,
+    ]);
+
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        title: 'Заявка удалена',
+        description: t ? `Заявка №${t.number} была удалена из системы` : 'Заявка была удалена',
+        time: 'Только что',
+        unread: true,
+        type: 'info',
+      },
+      ...prev,
+    ]);
+  };
 
   // Multi-Tenancy Data Isolation (Шаг 2):
   // Filter tickets strictly by currently active organization
@@ -2469,14 +2551,16 @@ export default function App() {
                   currentUser={currentUser}
                   onOpenTicket={(t) => setSelectedTicketForDetail(t)}
                   onEditTicket={(t) => handleOpenEditTicket(t)}
-                  onAccept={(id) => handleUpdateStatus(id, 'in_progress')}
-                  onComplete={(id) => handleUpdateStatus(id, 'completed')}
+                  onAccept={(id) => handleRequestAcceptTicket(id)}
+                  onComplete={(id) => handleRequestCompleteTicket(id)}
                   onUpdateTicketPhoneStatus={handleUpdateTicketPhoneStatus}
                   canEdit={canEditTickets}
                   canCreate={canCreateTicket}
                   canAccept={canAcceptTicket}
                   canComplete={canCompleteTicket}
                   canSendMessenger={canSendMessenger}
+                  canDelete={canDeleteTicket}
+                  onDelete={(id) => handleRequestDeleteTicket(id)}
                   onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
                   onNewPlannedTicket={(prefilledDate) => {
                     setNewTicketPrefilledDate(prefilledDate);
@@ -2536,6 +2620,8 @@ export default function App() {
                   showFlatFallback={showFlatFallback}
                   tickets={currentOrgTickets}
                   currentUser={currentUser}
+                  canDelete={canDeleteTicket}
+                  onDeleteTicket={(id) => handleRequestDeleteTicket(id)}
                   onOpenTicket={(t) => setSelectedTicketForDetail(t)}
                   onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
                   onUpdateTicketPhoneStatus={handleUpdateTicketPhoneStatus}
@@ -2816,13 +2902,15 @@ export default function App() {
                           canAccept={canAcceptTicket}
                           canComplete={canCompleteTicket}
                           canSendMessenger={canSendMessenger}
+                          canDelete={canDeleteTicket}
+                          onDelete={(id) => handleRequestDeleteTicket(id)}
                           onSelect={() => {
                             setSelectedTicketId(
                               selectedTicketId === ticket.id ? null : ticket.id
                             );
                           }}
-                          onAccept={(id) => handleUpdateStatus(id, 'in_progress')}
-                          onComplete={(id) => handleUpdateStatus(id, 'completed')}
+                          onAccept={(id) => handleRequestAcceptTicket(id)}
+                          onComplete={(id) => handleRequestCompleteTicket(id)}
                           onOpenDetails={(t) => setSelectedTicketForDetail(t)}
                           onEditTicket={(t) => handleOpenEditTicket(t)}
                           onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
@@ -2897,6 +2985,7 @@ export default function App() {
         canEdit={canEditTickets}
         canSendMessenger={canSendMessenger}
         canDelete={canDeleteTicket}
+        onDeleteTicket={(id) => handleRequestDeleteTicket(id)}
         tickets={tickets}
         streets={streets}
         onSelectTicket={(t) => setSelectedTicketForDetail(t)}
@@ -2914,6 +3003,8 @@ export default function App() {
         isOpen={isEditTicketModalOpen}
         ticket={editingTicket}
         currentUser={currentUser}
+        canDelete={canDeleteTicket}
+        onDeleteTicket={(id) => handleRequestDeleteTicket(id)}
         onClose={() => {
           setIsEditTicketModalOpen(false);
           setEditingTicket(null);
@@ -2921,6 +3012,8 @@ export default function App() {
         onSaveTicket={handleUpdateTicket}
         theme={theme}
         people={personalPeople}
+        streets={streets}
+        houses={currentOrgHouses}
         onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
       />
 
@@ -2996,6 +3089,32 @@ export default function App() {
         onReplyMessage={handleReplyAdminMessage}
         onToggleResolved={handleToggleAdminMessageResolved}
         onDeleteMessage={handleDeleteAdminMessage}
+      />
+
+      {/* Confirmation Modal for Accepting or Completing Tickets */}
+      <TicketStatusConfirmModal
+        isOpen={Boolean(confirmStatusModalTicket && confirmStatusModalTarget)}
+        ticket={confirmStatusModalTicket}
+        targetStatus={confirmStatusModalTarget}
+        onClose={() => {
+          setConfirmStatusModalTicket(null);
+          setConfirmStatusModalTarget(null);
+        }}
+        onConfirm={(ticketId, status) => {
+          handleUpdateStatus(ticketId, status);
+        }}
+        theme={theme}
+      />
+
+      {/* Confirmation Modal for Deleting Ticket (for Administrator or authorized users) */}
+      <DeleteTicketConfirmModal
+        isOpen={Boolean(confirmDeleteTicket)}
+        ticket={confirmDeleteTicket}
+        onClose={() => setConfirmDeleteTicket(null)}
+        onConfirmDelete={(ticketId) => {
+          handleConfirmDeleteTicket(ticketId);
+          setConfirmDeleteTicket(null);
+        }}
       />
 
       {/* Visual Signal-Alert Banner (Всплывающий сигнал-оповещение сверху экрана — компактный на телефоне по ширине заявок) */}

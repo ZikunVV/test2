@@ -1,7 +1,7 @@
 import { Ticket, ThemeConfig, UserItem } from '../types';
 import { MessengerShareButtons } from '../utils/messengers';
 import { PhoneBadgeDisplay } from './PhoneBadgeDisplay';
-import { Check, ArrowRight, MapPin, Edit, User } from 'lucide-react';
+import { Check, ArrowRight, MapPin, Edit, User, Trash2 } from 'lucide-react';
 
 interface TicketCardProps {
   ticket: Ticket;
@@ -11,6 +11,7 @@ interface TicketCardProps {
   canAccept?: boolean;
   canComplete?: boolean;
   canSendMessenger?: boolean;
+  canDelete?: boolean;
   currentUser?: UserItem | null;
   onUpdatePhoneStatus?: (
     ticketId: string,
@@ -21,6 +22,7 @@ interface TicketCardProps {
   onSelect?: (ticketId: string) => void;
   onAccept: (ticketId: string) => void;
   onComplete: (ticketId: string) => void;
+  onDelete?: (ticketId: string) => void;
   onOpenDetails: (ticket: Ticket) => void;
   onEditTicket?: (ticket: Ticket) => void;
   onInspectWorker?: (workerName: string) => void;
@@ -34,11 +36,13 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   canAccept = canEdit,
   canComplete = canEdit,
   canSendMessenger = canEdit,
+  canDelete = false,
   currentUser,
   onUpdatePhoneStatus,
   onSelect,
   onAccept,
   onComplete,
+  onDelete,
   onOpenDetails,
   onEditTicket,
   onInspectWorker,
@@ -326,6 +330,17 @@ export const TicketCard: React.FC<TicketCardProps> = ({
               ? 'В работе'
               : 'В ожидании'}
           </span>
+        )}
+
+        {canDelete && onDelete && (
+          <button
+            type="button"
+            onClick={() => onDelete(ticket.id)}
+            className="p-1.5 rounded-xl border border-rose-200 text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-all duration-150 flex items-center justify-center cursor-pointer shadow-2xs shrink-0"
+            title="Удалить заявку (требуется подтверждение)"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         )}
       </div>
     </div>
