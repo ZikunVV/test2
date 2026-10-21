@@ -23,7 +23,9 @@ import {
   Sliders,
   Volume2,
   Palette,
+  RotateCw,
 } from 'lucide-react';
+import { APP_VERSION, APP_BUILD_NUMBER, APP_VERSION_LABEL } from '../version';
 
 interface SidebarProps {
   theme: ThemeConfig;
@@ -549,6 +551,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <LogOut className="w-3.5 h-3.5" />
               </button>
             )}
+          </div>
+
+          {/* Version counter at the very bottom of left menu */}
+          <div className="pt-2 mt-1 border-t border-purple-200/60 flex items-center justify-between text-[11px] select-none">
+            <div className="flex items-center gap-1.5 font-bold text-slate-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Сервер онлайн" />
+              <span>{APP_VERSION_LABEL}</span>
+              <span className="text-[10px] text-purple-800 bg-purple-100 font-extrabold px-1.5 py-0.2 rounded">
+                #{APP_BUILD_NUMBER}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const r of registrations) {
+                      await r.unregister();
+                    }
+                  }
+                  if ('caches' in window) {
+                    const keys = await caches.keys();
+                    for (const k of keys) {
+                      await caches.delete(k);
+                    }
+                  }
+                } catch (e) {}
+                window.location.reload();
+              }}
+              title="Принудительно обновить страницу и сбросить кэш браузера"
+              className="p-1 rounded-lg hover:bg-purple-100 text-purple-700 hover:text-purple-950 transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-bold"
+            >
+              <RotateCw className="w-3 h-3" />
+              <span>{t('Обновить')}</span>
+            </button>
           </div>
         </div>
       </aside>
