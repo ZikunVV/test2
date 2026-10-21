@@ -336,35 +336,6 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                         {person.full_name}
                       </h3>
                     </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      {canEdit && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEdit(person);
-                          }}
-                          className="p-1 rounded-lg border border-purple-200 hover:bg-purple-100 text-purple-700 transition-colors cursor-pointer"
-                          title="Редактировать сотрудника"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {canDelete && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPersonToDelete(person);
-                          }}
-                          className="p-1 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-600 transition-colors cursor-pointer"
-                          title="Удалить сотрудника"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
                   </div>
 
                   {/* Work & Position */}
@@ -530,37 +501,6 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                         );
                       })}
                     </div>
-                  )}
-                </div>
-
-                {/* Action Buttons: Edit & Delete */}
-                <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-purple-100">
-                  {canEdit && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenEdit(person);
-                      }}
-                      className="px-3 py-1.5 rounded-xl border border-purple-200 hover:bg-purple-100 text-purple-700 transition-colors cursor-pointer flex items-center gap-1.5 font-bold text-xs"
-                      title="Редактировать сотрудника (форма на всю ширину)"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                      <span>Редактировать</span>
-                    </button>
-                  )}
-                  {canDelete && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPersonToDelete(person);
-                      }}
-                      className="p-1.5 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-600 transition-colors cursor-pointer"
-                      title="Удалить сотрудника"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   )}
                 </div>
               </div>

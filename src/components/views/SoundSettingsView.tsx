@@ -36,6 +36,7 @@ import {
   Upload,
   Music,
   Trash2,
+  Palette,
 } from 'lucide-react';
 
 interface SoundSettingsViewProps {
@@ -48,6 +49,7 @@ interface SoundSettingsViewProps {
   onTriggerTestAlert: (
     type: 'new_ticket' | 'urgent_ticket' | 'ticket_status' | 'new_message' | 'personal_task'
   ) => void;
+  onNavigateToColors?: () => void;
   onBackToHome: () => void;
 }
 
@@ -59,6 +61,7 @@ export const SoundSettingsView: React.FC<SoundSettingsViewProps> = ({
   soundSettings,
   onUpdateSoundSettings,
   onTriggerTestAlert,
+  onNavigateToColors,
   onBackToHome,
 }) => {
   const [playingVariantId, setPlayingVariantId] = useState<SoundVariantId | null>(null);
@@ -409,7 +412,19 @@ export const SoundSettingsView: React.FC<SoundSettingsViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+        <div className="flex items-center gap-2 self-start sm:self-center shrink-0 flex-wrap">
+          {onNavigateToColors && (
+            <button
+              type="button"
+              onClick={onNavigateToColors}
+              className="px-3.5 py-2 rounded-xl border border-purple-200 bg-white hover:bg-purple-50 text-slate-700 hover:text-purple-900 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
+              title="Перейти к выбору цветового режима и стиля оформления"
+            >
+              <Palette className="w-4 h-4 text-purple-600" />
+              <span>Папка «Цветовой режим»</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleResetDefaults}

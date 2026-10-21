@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LIGHT_LAVENDER_THEME } from './data/themes';
+import { LIGHT_LAVENDER_THEME, getThemeForPalette } from './data/themes';
 import { GRADIENT_VARIANTS } from './data/gradients';
 import {
   subscribeToCloudWorkspace,
@@ -17,6 +17,7 @@ import {
 } from './data/mockData';
 import {
   GradientId,
+  BackgroundMode,
   Ticket,
   TicketStatus,
   NotificationItem,
@@ -28,6 +29,7 @@ import {
   UserItem,
   StreetItem,
   Organization,
+  DisplaySettings,
 } from './types';
 import {
   DEFAULT_STREETS,
@@ -63,6 +65,7 @@ import { SearchView } from './components/views/SearchView';
 import { InternalView } from './components/views/InternalView';
 import { AdminView } from './components/views/AdminView';
 import { SoundSettingsView } from './components/views/SoundSettingsView';
+import { ColorSettingsView } from './components/views/ColorSettingsView';
 import {
   UserSoundSettings,
   AlertEventType,
@@ -103,17 +106,210 @@ function loadStorage<T>(key: string, fallback: T): T {
   return fallback;
 }
 
+interface UserColorSettings {
+  gradientId: GradientId;
+  backgroundMode: BackgroundMode;
+  showFlatFallback: boolean;
+  displaySettings: DisplaySettings;
+  displayFiltersEnabled: boolean;
+}
+
+const DEFAULT_USER_COLOR_SETTINGS: UserColorSettings = {
+  gradientId: 'amethyst_dawn',
+  backgroundMode: 'palette',
+  showFlatFallback: false,
+  displaySettings: {
+    saturation: 100,
+    contrast: 100,
+    brightness: 100,
+    warmth: 0,
+  },
+  displayFiltersEnabled: false,
+};
+
+function loadUserColorSettings(userId?: number): UserColorSettings {
+  const uid = userId || 1;
+  const key = `app_color_settings_user_${uid}`;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        gradientId: parsed.gradientId || 'amethyst_dawn',
+        backgroundMode: parsed.backgroundMode || 'palette',
+        showFlatFallback: !!parsed.showFlatFallback,
+        displaySettings: parsed.displaySettings || DEFAULT_USER_COLOR_SETTINGS.displaySettings,
+        displayFiltersEnabled: !!parsed.displayFiltersEnabled,
+      };
+    }
+    // Backward compatibility for existing user 1
+    if (uid === 1) {
+      const savedGrad = localStorage.getItem('app_current_gradient_id') as GradientId;
+      const savedBg = localStorage.getItem('app_background_mode') as BackgroundMode;
+      const savedFlat = localStorage.getItem('app_show_flat_fallback') === 'true';
+      const savedFilters = localStorage.getItem('app_display_filters_enabled') === 'true';
+      const savedDisplay = localStorage.getItem('app_display_settings');
+      if (savedGrad || savedBg || savedDisplay) {
+        return {
+          gradientId: savedGrad || 'amethyst_dawn',
+          backgroundMode: savedBg || 'palette',
+          showFlatFallback: savedFlat,
+          displaySettings: savedDisplay ? JSON.parse(savedDisplay) : DEFAULT_USER_COLOR_SETTINGS.displaySettings,
+          displayFiltersEnabled: savedFilters,
+        };
+      }
+    }
+  } catch (e) {}
+  return DEFAULT_USER_COLOR_SETTINGS;
+}
+
+function saveUserColorSettings(userId: number | undefined, settings: UserColorSettings): void {
+  const uid = userId || 1;
+  const key = `app_color_settings_user_${uid}`;
+  try {
+    localStorage.setItem(key, JSON.stringify(settings));
+  } catch (e) {}
+}
+
 export default function App() {
-  // Base fixed theme: "Светлая лаванда"
-  const theme = LIGHT_LAVENDER_THEME;
+  // Current active user ID (isolated per-user preferences: sounds, colors, filters)
+  const [currentUserId, setCurrentUserId] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('app_current_user_id');
+      return saved ? Number(saved) : 1;
+    } catch (e) {
+      return 1;
+    }
+  });
 
-  // Fixed active gradient: Variant 2: "Аметистовый рассвет" (Amethyst Dawn) as requested!
-  const [currentGradientId, setCurrentGradientId] =
-    useState<GradientId>('amethyst_dawn');
-  const currentGradient = GRADIENT_VARIANTS[currentGradientId];
+  const initialColorCfg = loadUserColorSettings(currentUserId);
 
-  // Compare mode: flat color fallback vs gradient
-  const [showFlatFallback, setShowFlatFallback] = useState<boolean>(false);
+  // Background mode (per-user)
+  const [backgroundMode, setBackgroundMode] = useState<BackgroundMode>(initialColorCfg.backgroundMode);
+  // Active gradient (per-user)
+  const [currentGradientId, setCurrentGradientId] = useState<GradientId>(initialColorCfg.gradientId);
+  // Compare mode: flat color vs gradient (per-user)
+  const [showFlatFallback, setShowFlatFallback] = useState<boolean>(initialColorCfg.showFlatFallback);
+  // Display screen filters toggle (per-user)
+  const [displayFiltersEnabled, setDisplayFiltersEnabled] = useState<boolean>(initialColorCfg.displayFiltersEnabled);
+  // Sliders optical settings (per-user)
+  const [displaySettings, setDisplaySettings] = useState<DisplaySettings>(initialColorCfg.displaySettings);
+
+  // Sync color settings whenever user switches account
+  useEffect(() => {
+    const userCfg = loadUserColorSettings(currentUserId);
+    setBackgroundMode(userCfg.backgroundMode);
+    setCurrentGradientId(userCfg.gradientId);
+    setShowFlatFallback(userCfg.showFlatFallback);
+    setDisplayFiltersEnabled(userCfg.displayFiltersEnabled);
+    setDisplaySettings(userCfg.displaySettings);
+  }, [currentUserId]);
+
+  const currentGradient =
+    GRADIENT_VARIANTS[currentGradientId] || GRADIENT_VARIANTS.amethyst_dawn;
+
+  // Dynamic theme synced with selected palette and site background mode
+  const theme = useMemo(
+    () => getThemeForPalette(currentGradientId, backgroundMode),
+    [currentGradientId, backgroundMode]
+  );
+
+  const handleChangeBackgroundMode = (mode: BackgroundMode) => {
+    setBackgroundMode(mode);
+    saveUserColorSettings(currentUserId, {
+      gradientId: currentGradientId,
+      backgroundMode: mode,
+      showFlatFallback,
+      displaySettings,
+      displayFiltersEnabled,
+    });
+  };
+
+  const handleSelectGradient = (id: GradientId) => {
+    setCurrentGradientId(id);
+    saveUserColorSettings(currentUserId, {
+      gradientId: id,
+      backgroundMode,
+      showFlatFallback,
+      displaySettings,
+      displayFiltersEnabled,
+    });
+  };
+
+  const handleToggleFlatFallback = (val: boolean) => {
+    setShowFlatFallback(val);
+    saveUserColorSettings(currentUserId, {
+      gradientId: currentGradientId,
+      backgroundMode,
+      showFlatFallback: val,
+      displaySettings,
+      displayFiltersEnabled,
+    });
+  };
+
+  const handleToggleDisplayFilters = (enabled: boolean) => {
+    setDisplayFiltersEnabled(enabled);
+    saveUserColorSettings(currentUserId, {
+      gradientId: currentGradientId,
+      backgroundMode,
+      showFlatFallback,
+      displaySettings,
+      displayFiltersEnabled: enabled,
+    });
+  };
+
+  const handleUpdateDisplaySettings = (settings: DisplaySettings) => {
+    setDisplaySettings(settings);
+    saveUserColorSettings(currentUserId, {
+      gradientId: currentGradientId,
+      backgroundMode,
+      showFlatFallback,
+      displaySettings: settings,
+      displayFiltersEnabled,
+    });
+  };
+
+  const handleResetDisplaySettings = () => {
+    const defaults: DisplaySettings = {
+      saturation: 100,
+      contrast: 100,
+      brightness: 100,
+      warmth: 0,
+    };
+    setDisplaySettings(defaults);
+    setDisplayFiltersEnabled(false);
+    saveUserColorSettings(currentUserId, {
+      gradientId: currentGradientId,
+      backgroundMode,
+      showFlatFallback,
+      displaySettings: defaults,
+      displayFiltersEnabled: false,
+    });
+  };
+
+  // Full reset back to default settings for the active user account
+  const handleResetAllColorSettings = () => {
+    const defaults = DEFAULT_USER_COLOR_SETTINGS;
+    setCurrentGradientId(defaults.gradientId);
+    setBackgroundMode(defaults.backgroundMode);
+    setShowFlatFallback(defaults.showFlatFallback);
+    setDisplayFiltersEnabled(defaults.displayFiltersEnabled);
+    setDisplaySettings(defaults.displaySettings);
+
+    saveUserColorSettings(currentUserId, defaults);
+
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        title: 'Настройки оформления сброшены',
+        description: 'Цветовой режим и фон для текущего аккаунта возвращены к исходному состоянию по умолчанию.',
+        time: 'Только что',
+        unread: true,
+        type: 'info',
+      },
+      ...prev,
+    ]);
+  };
 
   // Selected ticket for single-click color change
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -343,14 +539,6 @@ export default function App() {
       return localStorage.getItem('app_is_authenticated') === 'true';
     } catch (e) {
       return false;
-    }
-  });
-  const [currentUserId, setCurrentUserId] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('app_current_user_id');
-      return saved ? Number(saved) : 1;
-    } catch (e) {
-      return 1;
     }
   });
   const currentUser = users.find((u) => u.id === currentUserId) || users[0];
@@ -2444,6 +2632,14 @@ export default function App() {
       style={{
         backgroundColor: theme.keyColors.canvasBg,
         color: theme.keyColors.textPrimary,
+        filter:
+          displayFiltersEnabled &&
+          (displaySettings.saturation !== 100 ||
+            displaySettings.contrast !== 100 ||
+            displaySettings.brightness !== 100 ||
+            displaySettings.warmth !== 0)
+            ? `saturate(${displaySettings.saturation}%) contrast(${displaySettings.contrast}%) brightness(${displaySettings.brightness}%) sepia(${displaySettings.warmth}%)`
+            : undefined,
       }}
     >
         {/* Main Container: Sidebar + Content Area */}
@@ -2718,6 +2914,30 @@ export default function App() {
                       );
                     }
                   }}
+                  onNavigateToColors={() => setActiveSidebarNav('colors')}
+                  onBackToHome={() => setActiveSidebarNav('home')}
+                />
+              )}
+
+              {/* VIEW: SETTINGS -> COLORS (НАСТРОЙКИ -> ПАПКА "ЦВЕТОВОЙ РЕЖИМ") */}
+              {(activeSidebarNav === 'colors' || activeSidebarNav === 'settings') && (
+                <ColorSettingsView
+                  theme={theme}
+                  currentGradient={currentGradient}
+                  currentGradientId={currentGradientId}
+                  onSelectGradient={handleSelectGradient}
+                  showFlatFallback={showFlatFallback}
+                  onToggleFlatFallback={handleToggleFlatFallback}
+                  backgroundMode={backgroundMode}
+                  onChangeBackgroundMode={handleChangeBackgroundMode}
+                  displaySettings={displaySettings}
+                  onUpdateDisplaySettings={handleUpdateDisplaySettings}
+                  onResetDisplaySettings={handleResetDisplaySettings}
+                  onResetAllSettings={handleResetAllColorSettings}
+                  displayFiltersEnabled={displayFiltersEnabled}
+                  onToggleDisplayFilters={handleToggleDisplayFilters}
+                  currentUser={currentUser}
+                  onNavigateToSounds={() => setActiveSidebarNav('sounds')}
                   onBackToHome={() => setActiveSidebarNav('home')}
                 />
               )}

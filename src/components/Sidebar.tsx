@@ -22,6 +22,7 @@ import {
   Building,
   Sliders,
   Volume2,
+  Palette,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -328,7 +329,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   setSettingsFolderOpen((prev) => !prev);
                 }}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all group cursor-pointer ${
-                  activeNav === 'sounds' || settingsFolderOpen
+                  activeNav === 'sounds' || activeNav === 'colors' || settingsFolderOpen
                     ? 'bg-purple-100/90 text-purple-950 border border-purple-300/80 shadow-2xs'
                     : 'text-slate-800 hover:text-slate-950 hover:bg-white/80 border border-transparent'
                 }`}
@@ -379,6 +380,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         }`}
                       />
                       <span className="tracking-tight">{t('Звуки')}</span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectNav('colors');
+                      onCloseMobile();
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all group relative overflow-hidden cursor-pointer ${
+                      activeNav === 'colors'
+                        ? 'text-white shadow-sm'
+                        : 'text-slate-700 hover:text-slate-950 bg-white/50 hover:bg-white/90 border border-purple-200/60'
+                    }`}
+                    style={{
+                      background:
+                        activeNav === 'colors'
+                          ? showFlatFallback
+                            ? '#7652B5'
+                            : gradient.activeItemGradient
+                          : undefined,
+                      boxShadow:
+                        activeNav === 'colors' && !showFlatFallback
+                          ? gradient.buttonShadow
+                          : 'none',
+                    }}
+                  >
+                    <div className="flex items-center gap-2 z-10">
+                      <Palette
+                        className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                          activeNav === 'colors'
+                            ? 'text-white stroke-[2.5]'
+                            : 'text-purple-700 stroke-2'
+                        }`}
+                      />
+                      <span className="tracking-tight">{t('Цветовой режим')}</span>
                     </div>
                   </button>
                 </div>
