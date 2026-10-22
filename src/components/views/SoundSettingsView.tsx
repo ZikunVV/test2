@@ -36,7 +36,6 @@ import {
   Upload,
   Music,
   Trash2,
-  Palette,
 } from 'lucide-react';
 
 interface SoundSettingsViewProps {
@@ -49,7 +48,6 @@ interface SoundSettingsViewProps {
   onTriggerTestAlert: (
     type: 'new_ticket' | 'urgent_ticket' | 'ticket_status' | 'new_message' | 'personal_task'
   ) => void;
-  onNavigateToColors?: () => void;
   onBackToHome: () => void;
 }
 
@@ -61,7 +59,6 @@ export const SoundSettingsView: React.FC<SoundSettingsViewProps> = ({
   soundSettings,
   onUpdateSoundSettings,
   onTriggerTestAlert,
-  onNavigateToColors,
   onBackToHome,
 }) => {
   const [playingVariantId, setPlayingVariantId] = useState<SoundVariantId | null>(null);
@@ -375,26 +372,6 @@ export const SoundSettingsView: React.FC<SoundSettingsViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* GLOBAL SETTINGS TABS: [ 🎨 Цветовой режим ]  [ 🔊 Звуки ] */}
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-2 border-2 border-purple-200 shadow-sm flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onNavigateToColors}
-          className="flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-slate-700 hover:text-purple-950 hover:bg-purple-50 transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent hover:border-purple-200"
-        >
-          <Palette className="w-4 h-4 text-purple-700" />
-          <span>🎨 Цветовой режим (Фон, Кнопки, Контраст)</span>
-        </button>
-
-        <button
-          type="button"
-          className="flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 cursor-default bg-purple-700 text-white shadow-md ring-2 ring-purple-300"
-        >
-          <Volume2 className="w-4 h-4 stroke-[2.5]" />
-          <span>🔊 Звуки и оповещения</span>
-        </button>
-      </div>
-
       {/* Header & Folder Path ("Настройки" -> "Звуки") */}
       <div className="bg-white rounded-2xl p-5 border border-purple-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1.5">
@@ -432,19 +409,7 @@ export const SoundSettingsView: React.FC<SoundSettingsViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-center shrink-0 flex-wrap">
-          {onNavigateToColors && (
-            <button
-              type="button"
-              onClick={onNavigateToColors}
-              className="px-3.5 py-2 rounded-xl border border-purple-200 bg-white hover:bg-purple-50 text-slate-700 hover:text-purple-900 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
-              title="Перейти к выбору цветового режима и стиля оформления"
-            >
-              <Palette className="w-4 h-4 text-purple-600" />
-              <span>Папка «Цветовой режим»</span>
-            </button>
-          )}
-
+        <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
           <button
             type="button"
             onClick={handleResetDefaults}

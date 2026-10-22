@@ -1,38 +1,6 @@
-export type ThemeId = string;
+export type ThemeId = 'light_lavender';
 
-export type GradientId =
-  | 'amethyst_dawn'
-  | 'soft_to_deep'
-  | 'lavender_indigo'
-  | 'pearl_ombre'
-  | 'emerald_mint'
-  | 'amber_sunset'
-  | 'night_sapphire'
-  | 'ruby_crimson'
-  | 'arctic_teal'
-  | 'nordic_slate'
-  | 'royal_purple'
-  | 'warm_sand'
-  | 'dark_night'
-  | 'mint_lime'
-  | 'ocean_azure'
-  | 'marsala_wine'
-  | 'aurora_green'
-  | 'honey_caramel'
-  | 'pine_forest'
-  | 'coral_peach'
-  | 'smoky_rose'
-  | 'cyber_violet'
-  | 'platinum_steel';
-
-export type BackgroundMode =
-  | 'palette'
-  | 'lavender'
-  | 'scandinavian'
-  | 'warm_ivory'
-  | 'soft_mint'
-  | 'ice_sky'
-  | 'dark_slate';
+export type GradientId = 'soft_to_deep' | 'amethyst_dawn' | 'lavender_indigo' | 'pearl_ombre';
 
 export interface GradientOption {
   id: GradientId;

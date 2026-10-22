@@ -24,7 +24,6 @@ import {
   ArrowRight,
   Edit,
   History,
-  Trash2,
 } from 'lucide-react';
 import {
   findTicketsForFullAddress,
@@ -44,7 +43,6 @@ interface TicketDetailModalProps {
   canEdit?: boolean;
   canSendMessenger?: boolean;
   canDelete?: boolean;
-  onDeleteTicket?: (ticketId: string) => void;
   tickets?: Ticket[];
   streets?: StreetItem[];
   onSelectTicket?: (t: Ticket) => void;
@@ -95,7 +93,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   canEdit = isAdmin,
   canSendMessenger = isAdmin,
   canDelete = isAdmin,
-  onDeleteTicket,
   tickets = [],
   streets = [],
   onSelectTicket,
@@ -112,7 +109,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   // Tabs: Details, Worker Report, Works/Acts, Address History (Ознакомиться), Admin Withdraw
   const [activeTab, setActiveTab] = useState<'info' | 'report' | 'works' | 'address_history' | 'withdraw'>('info');
   const [addressFilter, setAddressFilter] = useState<'all' | 'apartment'>('all');
-  const [confirmTargetStatus, setConfirmTargetStatus] = useState<Ticket['status'] | null>(null);
 
   // Location specification key (3rd mandatory indicator)
   const ticketLocationKey = React.useMemo(() => {
@@ -318,24 +314,12 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             {canSendMessenger && <MessengerShareButtons ticket={ticket} />}
             {canEdit && onOpenEdit && (
               <button
-                type="button"
                 onClick={() => onOpenEdit(ticket)}
-                className="px-3 py-1.5 rounded-xl border border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50 text-purple-900 font-semibold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                className="px-3 py-1.5 rounded-xl border border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50 text-purple-900 font-semibold transition-all flex items-center gap-1.5 shadow-2xs"
                 title="Редактировать заявку"
               >
                 <Edit className="w-3.5 h-3.5 text-purple-700" />
                 <span>Редактировать</span>
-              </button>
-            )}
-            {canDelete && onDeleteTicket && (
-              <button
-                type="button"
-                onClick={() => onDeleteTicket(ticket.id)}
-                className="px-3 py-1.5 rounded-xl border border-rose-200 hover:border-rose-300 bg-white hover:bg-rose-50 text-rose-700 font-semibold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                title="Удалить заявку (требуется подтверждение)"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                <span>Удалить</span>
               </button>
             )}
             <button
@@ -423,7 +407,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             <div className="p-4 rounded-xl border border-purple-100 bg-[#F9F8FD] grid grid-cols-2 sm:grid-cols-4 gap-3.5">
               <div>
                 <span className="text-[10px] text-slate-400 block font-medium">
-                  Адрес объекта в управлении
+                  Адрес дома
                 </span>
                 <span className="font-bold text-slate-900 flex items-center gap-1 mt-0.5">
                   <Building className="w-3.5 h-3.5 text-purple-700 shrink-0" />
@@ -433,7 +417,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
 
               <div>
                 <span className="text-[10px] text-slate-400 block font-medium">
-                  Место уточнения / № квартиры
+                  Уточнение / Квартира
                 </span>
                 <span className="font-bold text-slate-900 mt-0.5 block">
                   {ticket.apartment || '—'}
@@ -617,71 +601,34 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             {/* Quick Status Action Buttons */}
             <div className="pt-3 border-t border-purple-100 flex flex-wrap items-center justify-between gap-3">
               {canAccept || canComplete || canEdit ? (
-                confirmTargetStatus ? (
-                  <div className="flex items-center gap-2 p-2 rounded-xl bg-amber-50 border border-amber-300 animate-in fade-in flex-wrap">
-                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="text-xs font-bold text-amber-950">
-                      {confirmTargetStatus === 'in_progress'
-                        ? 'Подтвердить перевод заявки «В работу»?'
-                        : confirmTargetStatus === 'completed'
-                        ? 'Подтвердить завершение заявки?'
-                        : 'Вернуть заявку в статус «В ожидании»?'}
-                    </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-slate-500 font-semibold">Изменить статус:</span>
+                  {canAccept && ticket.status !== 'in_progress' && (
                     <button
-                      type="button"
-                      onClick={() => {
-                        onUpdateStatus(ticket.id, confirmTargetStatus);
-                        setConfirmTargetStatus(null);
-                      }}
-                      className={`px-3 py-1 rounded-lg text-white font-bold text-xs shadow-xs cursor-pointer ${
-                        confirmTargetStatus === 'completed'
-                          ? 'bg-emerald-600 hover:bg-emerald-700'
-                          : 'bg-purple-700 hover:bg-purple-800'
-                      }`}
+                      onClick={() => onUpdateStatus(ticket.id, 'in_progress')}
+                      className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold border border-amber-300 transition-colors"
                     >
-                      Да, подтверждаю
+                      В работу
                     </button>
+                  )}
+                  {canComplete && ticket.status !== 'completed' && (
                     <button
-                      type="button"
-                      onClick={() => setConfirmTargetStatus(null)}
-                      className="px-2.5 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold text-xs cursor-pointer"
+                      onClick={() => onUpdateStatus(ticket.id, 'completed')}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-xs flex items-center gap-1"
                     >
-                      Отмена
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Завершить заявку</span>
                     </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-slate-500 font-semibold">Изменить статус:</span>
-                    {canAccept && ticket.status !== 'in_progress' && (
-                      <button
-                        type="button"
-                        onClick={() => setConfirmTargetStatus('in_progress')}
-                        className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold border border-amber-300 transition-colors cursor-pointer"
-                      >
-                        В работу
-                      </button>
-                    )}
-                    {canComplete && ticket.status !== 'completed' && (
-                      <button
-                        type="button"
-                        onClick={() => setConfirmTargetStatus('completed')}
-                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Завершить заявку</span>
-                      </button>
-                    )}
-                    {canEdit && ticket.status !== 'in_waiting' && (
-                      <button
-                        type="button"
-                        onClick={() => setConfirmTargetStatus('in_waiting')}
-                        className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold border border-rose-300 transition-colors cursor-pointer"
-                      >
-                        В ожидание
-                      </button>
-                    )}
-                  </div>
-                )
+                  )}
+                  {canEdit && ticket.status !== 'in_waiting' && (
+                    <button
+                      onClick={() => onUpdateStatus(ticket.id, 'in_waiting')}
+                      className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold border border-rose-300 transition-colors"
+                    >
+                      В ожидание
+                    </button>
+                  )}
+                </div>
               ) : (
                 <div className="text-xs text-slate-500 font-medium">
                   Режим просмотра (изменение статуса доступно при наличии прав доступа)

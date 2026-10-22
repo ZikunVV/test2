@@ -1035,6 +1035,29 @@ export const HousesView: React.FC<HousesViewProps> = ({
                   <span>Все дома ({houses.length})</span>
                 </button>
               </div>
+
+              {/* Single button toggle in right corner without labels */}
+              <button
+                type="button"
+                onClick={() => handleSetHouseCardLayout(houseCardLayout === 'compact' ? 'expanded' : 'compact')}
+                className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs flex items-center justify-center shrink-0 ${
+                  houseCardLayout === 'expanded'
+                    ? 'bg-purple-700 text-white border-purple-800 ring-2 ring-purple-300 shadow-xs'
+                    : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+                }`}
+                title={
+                  houseCardLayout === 'compact'
+                    ? 'Растянутый на весь экран'
+                    : 'Компактный'
+                }
+                aria-label="Переключить размещение карточек"
+              >
+                {houseCardLayout === 'compact' ? (
+                  <LayoutGrid className="w-4 h-4" />
+                ) : (
+                  <StretchHorizontal className="w-4 h-4" />
+                )}
+              </button>
             </div>
           </div>
 
