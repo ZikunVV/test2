@@ -38,6 +38,8 @@ interface PlannedViewProps {
   canAccept?: boolean;
   canComplete?: boolean;
   canSendMessenger?: boolean;
+  canDelete?: boolean;
+  onDelete?: (ticketId: string) => void;
   onInspectWorker?: (workerName: string) => void;
   onNewPlannedTicket: (prefilledDate?: string) => void;
   onBackToHome: () => void;
@@ -59,6 +61,8 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
   canAccept = canEdit,
   canComplete = canEdit,
   canSendMessenger = canEdit,
+  canDelete = false,
+  onDelete,
   onInspectWorker,
   onNewPlannedTicket,
   onBackToHome,
@@ -497,6 +501,8 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
               canAccept={canAccept}
               canComplete={canComplete}
               canSendMessenger={canSendMessenger}
+              canDelete={canDelete}
+              onDelete={onDelete}
               onSelect={() => {
                 setSelectedTicketId(selectedTicketId === t.id ? null : t.id);
               }}

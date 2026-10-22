@@ -12,6 +12,7 @@ import {
   MapPin,
   LayoutGrid,
   StretchHorizontal,
+  Trash2,
 } from 'lucide-react';
 
 interface SearchViewProps {
@@ -20,6 +21,8 @@ interface SearchViewProps {
   showFlatFallback: boolean;
   tickets: Ticket[];
   currentUser?: UserItem | null;
+  canDelete?: boolean;
+  onDeleteTicket?: (ticketId: string) => void;
   onOpenTicket: (ticket: Ticket) => void;
   onInspectWorker?: (workerName: string) => void;
   onUpdateTicketPhoneStatus?: (
@@ -37,6 +40,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
   showFlatFallback,
   tickets,
   currentUser,
+  canDelete = false,
+  onDeleteTicket,
   onOpenTicket,
   onInspectWorker,
   onUpdateTicketPhoneStatus,
@@ -428,12 +433,25 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   )}
                 </div>
 
-                {/* Right: "Выполнено" status badge */}
-                <div className="flex items-center shrink-0 self-end md:self-center">
+                {/* Right: "Выполнено" status badge & quick delete button */}
+                <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Выполнено</span>
                   </span>
+                  {canDelete && onDeleteTicket && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteTicket(t.id);
+                      }}
+                      className="p-1.5 rounded-xl border border-rose-200 text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-all flex items-center justify-center cursor-pointer shadow-2xs shrink-0"
+                      title="Удалить заявку (требуется подтверждение)"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             );
