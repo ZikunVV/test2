@@ -375,6 +375,26 @@ export const SoundSettingsView: React.FC<SoundSettingsViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* GLOBAL SETTINGS TABS: [ 🎨 Цветовой режим ]  [ 🔊 Звуки ] */}
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-2 border-2 border-purple-200 shadow-sm flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onNavigateToColors}
+          className="flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-slate-700 hover:text-purple-950 hover:bg-purple-50 transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent hover:border-purple-200"
+        >
+          <Palette className="w-4 h-4 text-purple-700" />
+          <span>🎨 Цветовой режим (Фон, Кнопки, Контраст)</span>
+        </button>
+
+        <button
+          type="button"
+          className="flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 cursor-default bg-purple-700 text-white shadow-md ring-2 ring-purple-300"
+        >
+          <Volume2 className="w-4 h-4 stroke-[2.5]" />
+          <span>🔊 Звуки и оповещения</span>
+        </button>
+      </div>
+
       {/* Header & Folder Path ("Настройки" -> "Звуки") */}
       <div className="bg-white rounded-2xl p-5 border border-purple-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1.5">

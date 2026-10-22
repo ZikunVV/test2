@@ -2681,6 +2681,7 @@ export default function App() {
               canAccessProject={canAccessProject}
               onOpenBackupModal={canAccessDatabase ? () => setIsBackupModalOpen(true) : undefined}
               onDownloadProject={canAccessProject ? handleDownloadProject : undefined}
+              onNavigateToColors={() => setActiveSidebarNav('colors')}
               isDownloadingProject={isDownloadingProject}
               currentUser={currentUser}
             />

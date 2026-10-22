@@ -323,105 +323,105 @@ export const Sidebar: React.FC<SidebarProps> = ({
               );
             })}
 
-            {/* Отдельно вынесенная активная кнопка "Настройки" и внутри неё папка "Звуки" */}
+            {/* Раздел "Настройки" — всегда открыт, с прямым переходом в Цветовой режим и Звуки */}
             <div className="pt-2 mt-2 border-t border-purple-200/70 space-y-1">
               <button
                 type="button"
                 onClick={() => {
-                  setSettingsFolderOpen((prev) => !prev);
+                  onSelectNav('colors');
+                  onCloseMobile();
                 }}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all group cursor-pointer ${
-                  activeNav === 'sounds' || activeNav === 'colors' || settingsFolderOpen
+                  activeNav === 'sounds' || activeNav === 'colors' || activeNav === 'settings'
                     ? 'bg-purple-100/90 text-purple-950 border border-purple-300/80 shadow-2xs'
                     : 'text-slate-800 hover:text-slate-950 hover:bg-white/80 border border-transparent'
                 }`}
+                title="Открыть настройки приложения"
               >
                 <div className="flex items-center gap-2.5">
                   <Sliders className="w-4 h-4 text-purple-700 stroke-[2.2] transition-transform group-hover:scale-110" />
                   <span className="tracking-tight">{t('Настройки')}</span>
                 </div>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-purple-700 transition-transform duration-200 ${
-                    settingsFolderOpen ? 'rotate-180' : ''
-                  }`}
-                />
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-200/80 text-purple-900">
+                  2 раздела
+                </span>
               </button>
 
-              {settingsFolderOpen && (
-                <div className="pl-3.5 pr-0.5 py-0.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSelectNav('sounds');
-                      onCloseMobile();
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all group relative overflow-hidden cursor-pointer ${
-                      activeNav === 'sounds'
-                        ? 'text-white shadow-sm'
-                        : 'text-slate-700 hover:text-slate-950 bg-white/50 hover:bg-white/90 border border-purple-200/60'
-                    }`}
-                    style={{
-                      background:
-                        activeNav === 'sounds'
-                          ? showFlatFallback
-                            ? '#7652B5'
-                            : gradient.activeItemGradient
-                          : undefined,
-                      boxShadow:
-                        activeNav === 'sounds' && !showFlatFallback
-                          ? gradient.buttonShadow
-                          : 'none',
-                    }}
-                  >
-                    <div className="flex items-center gap-2 z-10">
-                      <Volume2
-                        className={`w-4 h-4 transition-transform group-hover:scale-110 ${
-                          activeNav === 'sounds'
-                            ? 'text-white stroke-[2.5]'
-                            : 'text-purple-700 stroke-2'
-                        }`}
-                      />
-                      <span className="tracking-tight">{t('Звуки')}</span>
-                    </div>
-                  </button>
+              <div className="pl-2 space-y-1 pt-0.5">
+                {/* 1. Цветовой режим */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelectNav('colors');
+                    onCloseMobile();
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all group relative overflow-hidden cursor-pointer ${
+                    activeNav === 'colors' || activeNav === 'settings'
+                      ? 'text-white shadow-sm'
+                      : 'text-slate-700 hover:text-slate-950 bg-white/60 hover:bg-white border border-purple-200/60'
+                  }`}
+                  style={{
+                    background:
+                      activeNav === 'colors' || activeNav === 'settings'
+                        ? showFlatFallback
+                          ? '#7652B5'
+                          : gradient.activeItemGradient
+                        : undefined,
+                    boxShadow:
+                      (activeNav === 'colors' || activeNav === 'settings') && !showFlatFallback
+                        ? gradient.buttonShadow
+                        : 'none',
+                  }}
+                >
+                  <div className="flex items-center gap-2 z-10">
+                    <Palette
+                      className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                        activeNav === 'colors' || activeNav === 'settings'
+                          ? 'text-white stroke-[2.5]'
+                          : 'text-purple-700 stroke-2'
+                      }`}
+                    />
+                    <span className="tracking-tight font-extrabold">{t('Цветовой режим')}</span>
+                  </div>
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSelectNav('colors');
-                      onCloseMobile();
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all group relative overflow-hidden cursor-pointer ${
-                      activeNav === 'colors'
-                        ? 'text-white shadow-sm'
-                        : 'text-slate-700 hover:text-slate-950 bg-white/50 hover:bg-white/90 border border-purple-200/60'
-                    }`}
-                    style={{
-                      background:
-                        activeNav === 'colors'
-                          ? showFlatFallback
-                            ? '#7652B5'
-                            : gradient.activeItemGradient
-                          : undefined,
-                      boxShadow:
-                        activeNav === 'colors' && !showFlatFallback
-                          ? gradient.buttonShadow
-                          : 'none',
-                    }}
-                  >
-                    <div className="flex items-center gap-2 z-10">
-                      <Palette
-                        className={`w-4 h-4 transition-transform group-hover:scale-110 ${
-                          activeNav === 'colors'
-                            ? 'text-white stroke-[2.5]'
-                            : 'text-purple-700 stroke-2'
-                        }`}
-                      />
-                      <span className="tracking-tight">{t('Цветовой режим')}</span>
-                    </div>
-                  </button>
-                </div>
-              )}
+                {/* 2. Звуки */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelectNav('sounds');
+                    onCloseMobile();
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all group relative overflow-hidden cursor-pointer ${
+                    activeNav === 'sounds'
+                      ? 'text-white shadow-sm'
+                      : 'text-slate-700 hover:text-slate-950 bg-white/60 hover:bg-white border border-purple-200/60'
+                  }`}
+                  style={{
+                    background:
+                      activeNav === 'sounds'
+                        ? showFlatFallback
+                          ? '#7652B5'
+                          : gradient.activeItemGradient
+                        : undefined,
+                    boxShadow:
+                      activeNav === 'sounds' && !showFlatFallback
+                        ? gradient.buttonShadow
+                        : 'none',
+                  }}
+                >
+                  <div className="flex items-center gap-2 z-10">
+                    <Volume2
+                      className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                        activeNav === 'sounds'
+                          ? 'text-white stroke-[2.5]'
+                          : 'text-purple-700 stroke-2'
+                      }`}
+                    />
+                    <span className="tracking-tight font-extrabold">{t('Звуки')}</span>
+                  </div>
+                </button>
+              </div>
             </div>
           </nav>
         </div>
