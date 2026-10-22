@@ -5,13 +5,23 @@ import { LanguageProvider } from './utils/i18n.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import './index.css';
 
-// Unregister any stale Service Workers that intercept network requests in dev mode
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const r of registrations) {
-      r.unregister().catch(() => {});
-    }
-  }).catch(() => {});
+// Automatically unregister and clear any existing Service Workers and CacheStorage
+// so every browser immediately sees fresh updates without stuck caches
+if (typeof window !== 'undefined') {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const r of registrations) {
+        r.unregister().catch(() => {});
+      }
+    }).catch(() => {});
+  }
+  if ('caches' in window) {
+    caches.keys().then((names) => {
+      for (const name of names) {
+        caches.delete(name).catch(() => {});
+      }
+    }).catch(() => {});
+  }
 }
 
 createRoot(document.getElementById('root')!).render(

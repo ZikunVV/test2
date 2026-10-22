@@ -1,0 +1,31 @@
+{
+  "id": "/",
+  "name": "WORKFLOW — Система управления ЖКХ",
+  "short_name": "WORKFLOW",
+  "description": "Диспетчерская служба ЖКХ, реестр домов, плановые работы и контроль исполнения заявок в реальном времени.",
+  "theme_color": "#6D28D9",
+  "background_color": "#F5F3FF",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
