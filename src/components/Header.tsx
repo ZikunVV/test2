@@ -18,7 +18,6 @@ interface HeaderProps {
   canAccessProject?: boolean;
   onOpenBackupModal?: () => void;
   onDownloadProject?: () => void;
-  onNavigateToColors?: () => void;
   isDownloadingProject?: boolean;
   currentUser?: UserItem;
 }
@@ -37,7 +36,6 @@ export const Header: React.FC<HeaderProps> = ({
   canAccessProject = isAdmin,
   onOpenBackupModal,
   onDownloadProject,
-  onNavigateToColors,
   isDownloadingProject = false,
   currentUser,
 }) => {
@@ -237,20 +235,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Quick Settings / Colors button in Header */}
-        {onNavigateToColors && (
-          <button
-            onClick={onNavigateToColors}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-bold transition-all hover:bg-purple-50 text-purple-900 border-purple-200 shadow-2xs cursor-pointer"
-            style={{
-              borderColor: theme.keyColors.cardBorder,
-            }}
-            title="Цветовой режим, фон сайта и комфорт глаз"
-          >
-            <Palette className="w-3.5 h-3.5 text-purple-700" />
-            <span className="hidden md:inline">{t('Цветовой режим')}</span>
-          </button>
-        )}
+
 
         {/* Language selector */}
         <div className="relative">

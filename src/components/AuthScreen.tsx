@@ -156,60 +156,24 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    if (enteredOtpCode.trim() !== expectedAdminRegCode) {
+    const cleanUsername = regUsername.trim();
+    const cleanPassword = regPassword.trim();
+    const cleanOtp = enteredOtpCode.trim();
+
+    if (!cleanUsername || !cleanPassword) {
+      setErrorMsg('Укажите логин и пароль.');
+      return;
+    }
+
+    if (cleanOtp !== expectedAdminRegCode) {
       setErrorMsg(
         'Неверный 6-значный код регистрации. Получите актуальный код у Администратора (лично или по телефону).'
       );
       return;
     }
 
-    if (regMethod === 'phone') {
-      const phoneDigits = normalizeDigits(regPhone);
-      if (!regFullName.trim() || phoneDigits.length < 9) {
-        setErrorMsg('Укажите корректный номер телефона.');
-        return;
-      }
-      if (isPhoneAlreadyAuthorized(regPhone)) {
-        setErrorMsg(
-          'этот номер телефона уже авторизован, за более детальной информацией обращаться к Администратору'
-        );
-        return;
-      }
-      if (!regPassword.trim()) {
-        setErrorMsg('Пожалуйста, придумайте пароль для дальнейших входов в систему.');
-        return;
-      }
-
-      const autoUsername = regUsername.trim() || `+${phoneDigits}`;
-      const finalPassword = regPassword.trim();
-
-      const created = onRegisterUser({
-        full_name: regFullName.trim(),
-        username: autoUsername,
-        password: finalPassword,
-        phone: regPhone.trim(),
-        organization_id: regOrgId,
-        role: 'viewer',
-      });
-
-      onLoginSuccess(created);
-      return;
-    }
-
-    if (!regFullName.trim() || !regUsername.trim() || !regPassword.trim()) {
-      setErrorMsg('Заполните ФИО, логин и пароль.');
-      return;
-    }
-
-    if (regPhone.trim() && isPhoneAlreadyAuthorized(regPhone)) {
-      setErrorMsg(
-        'этот номер телефона уже авторизован, за более детальной информацией обращаться к Администратору'
-      );
-      return;
-    }
-
     const exists = users.some(
-      (u) => u.username.toLowerCase() === regUsername.trim().toLowerCase()
+      (u) => u.username.toLowerCase() === cleanUsername.toLowerCase()
     );
     if (exists) {
       setErrorMsg('Этот логин уже занят. Выберите другой.');
@@ -218,11 +182,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
     // All newly registered users automatically receive "viewer" (Только чтение) status
     const created = onRegisterUser({
-      full_name: regFullName.trim(),
-      username: regUsername.trim(),
-      password: regPassword.trim(),
-      phone: regPhone.trim() || '—',
-      organization_id: regOrgId,
+      full_name: cleanUsername,
+      username: cleanUsername,
+      password: cleanPassword,
+      phone: '—',
+      organization_id: regOrgId || organizations[0]?.id || 'org-1',
       role: 'viewer',
     });
 
@@ -956,223 +920,82 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 </button>
               </form>
             ) : (
-              <form onSubmit={handleRegisterSubmit} className="space-y-3">
+              <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
                 <div>
                   <h2 className="text-lg font-black text-slate-900">
-                    Регистрация нового сотрудника
+                    Регистрация сотрудника
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Выберите вашу организацию и заполните данные для получения доступа.
+                    Укажите логин, пароль и 6-значный код от Администратора для входа.
                   </p>
                 </div>
 
-                {/* Sub-tabs: By Phone vs By Login */}
-                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200/80">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRegMethod('phone');
-                      setErrorMsg(null);
-                    }}
-                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      regMethod === 'phone'
-                        ? 'bg-white text-purple-900 shadow-2xs border border-purple-200/80'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <Phone className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                    <span className="truncate">По номеру телефона</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRegMethod('login');
-                      setErrorMsg(null);
-                    }}
-                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      regMethod === 'login'
-                        ? 'bg-white text-purple-900 shadow-2xs border border-purple-200/80'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <User className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                    <span className="truncate">По логину</span>
-                  </button>
-                </div>
-
+                {/* 1. Логин */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    ФИО полностью <span className="text-rose-500">*</span>
+                    Логин <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <User className="w-4 h-4 text-purple-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <User className="w-4 h-4 text-purple-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       required
-                      value={regFullName}
-                      onChange={(e) => setRegFullName(e.target.value)}
-                      placeholder="Иваненко Сергей Петрович"
-                      className="w-full pl-10 pr-4 py-2 rounded-xl border border-purple-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      value={regUsername}
+                      onChange={(e) => setRegUsername(e.target.value)}
+                      placeholder="Придумайте логин"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 text-xs font-mono font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white"
                     />
                   </div>
                 </div>
 
-                {regMethod === 'phone' ? (
-                  <div className="space-y-2.5 p-3 rounded-2xl bg-purple-50/60 border border-purple-200/90">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Мобильный телефон <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Phone className="w-3.5 h-3.5 text-purple-600 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="tel"
-                          required
-                          value={regPhone}
-                          onChange={(e) => setRegPhone(e.target.value)}
-                          placeholder="+38 (067) 123-45-67"
-                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-purple-200 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Код от Администратора (6 цифр) <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          maxLength={6}
-                          required
-                          value={enteredOtpCode}
-                          onChange={(e) =>
-                            setEnteredOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
-                          }
-                          placeholder="6 цифр от Админа"
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-purple-300 text-xs font-mono font-black tracking-widest text-center text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Пароль для дальнейших входов <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={regPassword}
-                          onChange={(e) => setRegPassword(e.target.value)}
-                          placeholder="Придумайте пароль"
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-purple-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-400"
-                        />
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-purple-900 font-medium leading-snug">
-                      Введите 6-значный код доступа, который вам сообщил Администратор лично или по телефону.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Логин для входа <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={regUsername}
-                          onChange={(e) => setRegUsername(e.target.value)}
-                          placeholder="ivanenko"
-                          className="w-full px-3.5 py-2 rounded-xl border border-purple-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Пароль <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={regPassword}
-                          onChange={(e) => setRegPassword(e.target.value)}
-                          placeholder="Придумайте пароль"
-                          className="w-full px-3.5 py-2 rounded-xl border border-purple-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-purple-400"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Контактный телефон
-                        </label>
-                        <div className="relative">
-                          <Phone className="w-3.5 h-3.5 text-purple-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            value={regPhone}
-                            onChange={(e) => setRegPhone(e.target.value)}
-                            placeholder="+38 (067) 123-45-67"
-                            className="w-full pl-9 pr-3 py-2 rounded-xl border border-purple-200 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Код от Администратора (6 цифр) <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          maxLength={6}
-                          required
-                          value={enteredOtpCode}
-                          onChange={(e) =>
-                            setEnteredOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
-                          }
-                          placeholder="6 цифр от Админа"
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-purple-300 text-xs font-mono font-black tracking-widest text-center text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-
+                {/* 2. Пароль */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Ваша организация (ЖЭК / ОСМД / Компания)
+                    Пароль <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <Building2 className="w-4 h-4 text-purple-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <select
-                      value={regOrgId}
-                      onChange={(e) => setRegOrgId(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 rounded-xl border border-purple-200 bg-purple-50/50 text-xs font-bold text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    >
-                      {organizations.map((org) => (
-                        <option key={org.id} value={org.id}>
-                          {org.name} ({org.slug}.azikun.com)
-                        </option>
-                      ))}
-                    </select>
+                    <Lock className="w-4 h-4 text-purple-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      placeholder="Придумайте пароль"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-purple-200 text-xs font-mono font-medium focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white"
+                    />
                   </div>
+                </div>
+
+                {/* 3. Код от администратора */}
+                <div className="p-3 rounded-2xl bg-purple-50/70 border border-purple-200/90 space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-800">
+                    Код от администратора (6 цифр) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    required
+                    value={enteredOtpCode}
+                    onChange={(e) =>
+                      setEnteredOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                    }
+                    placeholder="6 цифр от Админа"
+                    className="w-full px-3 py-2.5 rounded-xl bg-white border border-purple-300 text-sm font-mono font-black tracking-widest text-center text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <p className="text-[10px] text-purple-800 font-medium leading-tight">
+                    Код выдаёт Администратор компании лично или по телефону.
+                  </p>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
                   style={{
                     background: showFlatFallback ? '#7652B5' : gradient.cssGradient,
                   }}
                 >
                   <Shield className="w-4 h-4" />
-                  <span>
-                    {regMethod === 'phone'
-                      ? 'Подтвердить код и войти'
-                      : 'Зарегистрироваться и войти'}
-                  </span>
+                  <span>Зарегистрироваться и войти</span>
                 </button>
               </form>
             )}
