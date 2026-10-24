@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ThemeConfig, GradientOption, UserItem } from '../types';
 import { useLanguage } from '../utils/i18n';
 import { PWAInstallButton } from './PWAInstallButton';
-import { ArrowLeft, Globe, ChevronDown, Menu, User, Bell, Database, FolderDown, Mic, ChevronLeft, ChevronRight, Palette } from 'lucide-react';
+import { Globe, ChevronDown, Menu, User, Bell, Database, FolderDown, Mic, ChevronLeft, ChevronRight, Palette } from 'lucide-react';
 
 interface HeaderProps {
   theme: ThemeConfig;
@@ -167,20 +167,8 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Right controls: Back button, Display Settings, Notifications, Language, User */}
+        {/* Right controls: PWA Install, Notifications, Language, User */}
         <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">
-        <button
-          onClick={onBackClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5"
-          style={{
-            borderColor: theme.keyColors.cardBorder,
-            color: theme.keyColors.textPrimary,
-          }}
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>{t('Назад')}</span>
-        </button>
-
         {/* PWA Install Button (Шаг 5) */}
         <PWAInstallButton />
 

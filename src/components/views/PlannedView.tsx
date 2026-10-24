@@ -116,7 +116,11 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
     (t) => t.planned || t.category === 'general'
   );
 
+  // Active status filter: 'all' | 'in_progress' | 'in_waiting' | 'completed' (active buttons like on Главная)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'in_progress' | 'in_waiting' | 'completed'>('all');
+
   const filteredPlannedTickets = plannedTickets.filter((t) => {
+    if (statusFilter !== 'all' && t.status !== statusFilter) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
     return (
@@ -188,26 +192,44 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center justify-between pb-3 border-b border-purple-100">
-        <div className="flex items-center gap-2 text-xs">
+      {/* Breadcrumb & View Toggle + New Ticket Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-purple-100">
+        <div className="flex items-center gap-2 text-xs flex-wrap">
           <button
             onClick={onBackToHome}
-            className="flex items-center gap-1 font-semibold text-purple-700 hover:text-purple-900 transition-colors"
+            className="flex items-center gap-1 font-semibold text-purple-700 hover:text-purple-900 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Главная</span>
           </button>
           <span className="text-slate-300">/</span>
           <span className="font-bold text-slate-800">Плановые работы</span>
+          {statusFilter !== 'all' && (
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className="ml-2 px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 font-bold text-[10px] hover:bg-purple-200 transition-colors flex items-center gap-1 cursor-pointer"
+              title="Сбросить фильтр статуса"
+            >
+              <span>
+                Фильтр:{' '}
+                {statusFilter === 'in_progress'
+                  ? 'В работе'
+                  : statusFilter === 'in_waiting'
+                  ? 'В ожидании'
+                  : 'Выполнено'}
+              </span>
+              <span className="text-purple-600 font-black">✕</span>
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-end w-full sm:w-auto">
           {/* View toggle */}
           <div className="flex items-center p-1 rounded-xl border border-purple-200 bg-white text-xs">
             <button
               onClick={() => setViewMode('calendar')}
-              className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'calendar'
                   ? 'bg-purple-700 text-white shadow-xs'
                   : 'text-slate-600 hover:text-purple-900'
@@ -218,7 +240,7 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'list'
                   ? 'bg-purple-700 text-white shadow-xs'
                   : 'text-slate-600 hover:text-purple-900'
@@ -232,7 +254,7 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
           {canCreate && (
             <button
               onClick={() => onNewPlannedTicket()}
-              className="px-3.5 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-xs hover:opacity-95"
+              className="px-3.5 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-xs hover:opacity-95 cursor-pointer shrink-0"
               style={{
                 background: showFlatFallback ? '#7652B5' : gradient.cssGradient,
               }}
@@ -244,41 +266,92 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
         </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary / Filter Cards: "В работе", "В ожидании", "Выполнено" — активные кликабельные кнопки как на Главной */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-4 rounded-2xl border border-amber-200/80 bg-white flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold text-amber-800">В работе</span>
-            <div className="text-2xl font-black text-slate-900 mt-0.5">
-              {inProgressCount}
+        {/* 1. В работе */}
+        <div
+          onClick={() => setStatusFilter((prev) => (prev === 'in_progress' ? 'all' : 'in_progress'))}
+          className={`cursor-pointer rounded-2xl p-4 border transition-all duration-200 relative overflow-hidden group shadow-2xs hover:shadow-xs select-none ${
+            statusFilter === 'in_progress'
+              ? 'ring-2 ring-amber-500 bg-amber-50/80 border-amber-400 shadow-sm scale-[1.01]'
+              : 'border-amber-200/80 bg-white hover:border-amber-300 hover:bg-amber-50/30'
+          }`}
+          title={statusFilter === 'in_progress' ? 'Активен фильтр: В работе (клик — сбросить)' : 'Клик — показать только заявки «В работе»'}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-amber-900">В работе</span>
+              <div className="text-2xl font-black text-amber-950 mt-0.5">
+                {inProgressCount}
+              </div>
+            </div>
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold transition-transform group-hover:scale-105 ${
+              statusFilter === 'in_progress' ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-100 text-amber-700'
+            }`}>
+              <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-            <Clock className="w-4 h-4" />
+          <div className="mt-2 text-[11px] font-medium flex items-center gap-1.5 text-amber-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span>{statusFilter === 'in_progress' ? '● Фильтр активен (клик — сбросить)' : 'нажмите для фильтрации'}</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl border border-rose-200/80 bg-white flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold text-rose-800">В ожидании</span>
-            <div className="text-2xl font-black text-slate-900 mt-0.5">
-              {inWaitingCount}
+        {/* 2. В ожидании */}
+        <div
+          onClick={() => setStatusFilter((prev) => (prev === 'in_waiting' ? 'all' : 'in_waiting'))}
+          className={`cursor-pointer rounded-2xl p-4 border transition-all duration-200 relative overflow-hidden group shadow-2xs hover:shadow-xs select-none ${
+            statusFilter === 'in_waiting'
+              ? 'ring-2 ring-rose-500 bg-rose-50/80 border-rose-400 shadow-sm scale-[1.01]'
+              : 'border-rose-200/80 bg-white hover:border-rose-300 hover:bg-rose-50/30'
+          }`}
+          title={statusFilter === 'in_waiting' ? 'Активен фильтр: В ожидании (клик — сбросить)' : 'Клик — показать только заявки «В ожидании»'}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-rose-900">В ожидании</span>
+              <div className="text-2xl font-black text-rose-950 mt-0.5">
+                {inWaitingCount}
+              </div>
+            </div>
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold transition-transform group-hover:scale-105 ${
+              statusFilter === 'in_waiting' ? 'bg-rose-500 text-white shadow-xs' : 'bg-rose-100 text-rose-700'
+            }`}>
+              <AlertCircle className="w-4 h-4" />
             </div>
           </div>
-          <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
-            <AlertCircle className="w-4 h-4" />
+          <div className="mt-2 text-[11px] font-medium flex items-center gap-1.5 text-rose-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            <span>{statusFilter === 'in_waiting' ? '● Фильтр активен (клик — сбросить)' : 'нажмите для фильтрации'}</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl border border-emerald-200/80 bg-white flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold text-emerald-800">Выполнено</span>
-            <div className="text-2xl font-black text-slate-900 mt-0.5">
-              {completedCount}
+        {/* 3. Выполнено */}
+        <div
+          onClick={() => setStatusFilter((prev) => (prev === 'completed' ? 'all' : 'completed'))}
+          className={`cursor-pointer rounded-2xl p-4 border transition-all duration-200 relative overflow-hidden group shadow-2xs hover:shadow-xs select-none ${
+            statusFilter === 'completed'
+              ? 'ring-2 ring-emerald-500 bg-emerald-50/80 border-emerald-400 shadow-sm scale-[1.01]'
+              : 'border-emerald-200/80 bg-white hover:border-emerald-300 hover:bg-emerald-50/30'
+          }`}
+          title={statusFilter === 'completed' ? 'Активен фильтр: Выполнено (клик — сбросить)' : 'Клик — показать только выполненные заявки'}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-emerald-900">Выполнено</span>
+              <div className="text-2xl font-black text-emerald-950 mt-0.5">
+                {completedCount}
+              </div>
+            </div>
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold transition-transform group-hover:scale-105 ${
+              statusFilter === 'completed' ? 'bg-emerald-500 text-white shadow-xs' : 'bg-emerald-100 text-emerald-700'
+            }`}>
+              <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-            <CheckCircle2 className="w-4 h-4" />
+          <div className="mt-2 text-[11px] font-medium flex items-center gap-1.5 text-emerald-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>{statusFilter === 'completed' ? '● Фильтр активен (клик — сбросить)' : 'нажмите для фильтрации'}</span>
           </div>
         </div>
       </div>

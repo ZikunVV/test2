@@ -524,11 +524,11 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Breadcrumb & Actions Bar */}
-      <div className="flex items-center justify-between pb-3 border-b border-purple-100 flex-wrap gap-2">
-        <div className="flex items-center gap-2 text-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-purple-100">
+        <div className="flex items-center gap-2 text-xs flex-wrap">
           <button
             onClick={onBackToHome}
-            className="flex items-center gap-1 font-semibold text-purple-700 hover:text-purple-900 transition-colors"
+            className="flex items-center gap-1 font-semibold text-purple-700 hover:text-purple-900 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Главная</span>
@@ -545,12 +545,12 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
           </span>
         </div>
 
-        {/* View toggle: Календарь - Список (как в Плановые работы) */}
-        <div className="flex items-center gap-2">
+        {/* View toggle: Календарь - Список, Телефонная книга, Сделать заметку */}
+        <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-end w-full sm:w-auto">
           <div className="flex items-center p-1 rounded-xl border border-purple-200 bg-white text-xs">
             <button
               onClick={() => setViewMode('calendar')}
-              className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'calendar'
                   ? 'bg-purple-700 text-white shadow-xs'
                   : 'text-slate-600 hover:text-purple-900'
@@ -561,21 +561,21 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'list'
                   ? 'bg-purple-700 text-white shadow-xs'
                   : 'text-slate-600 hover:text-purple-900'
               }`}
             >
               <List className="w-3.5 h-3.5" />
-              <span>Список заметок</span>
+              <span>Список</span>
             </button>
           </div>
 
           {/* Кнопка Телефонная книга рядом с Сделать заметку */}
           <button
             onClick={() => setViewMode('phonebook')}
-            className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all border cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all border cursor-pointer shrink-0 ${
               viewMode === 'phonebook'
                 ? 'bg-purple-800 text-white border-purple-900 ring-2 ring-purple-300'
                 : 'border-purple-200 bg-white hover:bg-purple-50 text-purple-900 active:scale-95'
@@ -600,7 +600,7 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
           {/* Кнопка Сделать заметку */}
           <button
             onClick={() => handleOpenCreateTask(selectedCalendarDate || undefined)}
-            className="px-3.5 py-1.5 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-xs hover:opacity-95"
+            className="px-3.5 py-1.5 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-xs hover:opacity-95 cursor-pointer shrink-0"
             style={{
               background: showFlatFallback ? '#7652B5' : gradient.cssGradient,
             }}
