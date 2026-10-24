@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   StretchHorizontal,
   Trash2,
+  ArrowUpDown,
 } from 'lucide-react';
 
 interface SearchViewProps {
@@ -76,28 +77,38 @@ export const SearchView: React.FC<SearchViewProps> = ({
   // Only completed requests (v48.10 & v48.16 rule: only completed work, personal tasks excluded)
   const completedTickets = tickets.filter((t) => t.status === 'completed');
 
-  const filteredTickets = completedTickets.filter((t) => {
-    if (query) {
-      const q = query.toLowerCase();
-      const match =
-        t.number.toLowerCase().includes(q) ||
-        t.title.toLowerCase().includes(q) ||
-        t.address.toLowerCase().includes(q) ||
-        t.assignee.toLowerCase().includes(q) ||
-        (t.description || '').toLowerCase().includes(q);
-      if (!match) return false;
-    }
-    if (dateFrom && t.date < dateFrom) return false;
-    if (dateTo && t.date > dateTo) return false;
-    if (reqNo && !t.number.toLowerCase().includes(reqNo.toLowerCase()))
-      return false;
-    if (executor && !t.assignee.toLowerCase().includes(executor.toLowerCase()))
-      return false;
-    if (street && !t.address.toLowerCase().includes(street.toLowerCase()))
-      return false;
-    if (houseNo && !t.address.includes(houseNo)) return false;
-    return true;
-  });
+  // Sorting state: 'desc' (от большего номера к меньшему) vs 'asc' (от меньшего к большему)
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+
+  const filteredTickets = completedTickets
+    .filter((t) => {
+      if (query) {
+        const q = query.toLowerCase();
+        const match =
+          t.number.toLowerCase().includes(q) ||
+          t.title.toLowerCase().includes(q) ||
+          t.address.toLowerCase().includes(q) ||
+          t.assignee.toLowerCase().includes(q) ||
+          (t.description || '').toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      if (dateFrom && t.date < dateFrom) return false;
+      if (dateTo && t.date > dateTo) return false;
+      if (reqNo && !t.number.toLowerCase().includes(reqNo.toLowerCase()))
+        return false;
+      if (executor && !t.assignee.toLowerCase().includes(executor.toLowerCase()))
+        return false;
+      if (street && !t.address.toLowerCase().includes(street.toLowerCase()))
+        return false;
+      if (houseNo && !t.address.includes(houseNo)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const numA = a.number || '';
+      const numB = b.number || '';
+      const cmp = numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
+      return sortOrder === 'desc' ? -cmp : cmp;
+    });
 
   const handleResetFilters = () => {
     setQuery('');
@@ -282,14 +293,26 @@ export const SearchView: React.FC<SearchViewProps> = ({
 
       {/* Results List */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-600 flex-wrap gap-2">
+        <div className="flex items-center justify-between text-xs font-bold text-slate-700 flex-wrap gap-2.5">
           <span>
             Найдено выполненных работ:{' '}
-            <strong className="text-purple-900 font-mono">{filteredTickets.length}</strong>
+            <strong className="text-purple-900 font-mono text-sm">{filteredTickets.length}</strong>
           </span>
-          <span className="text-[11px] text-slate-400 font-normal">
-            Один клик — выделить цветом · Двойной клик — открыть заявку
-          </span>
+
+          {/* Кнопка сортировки по номеру заявки (только стрелочки вверх и вниз) */}
+          <button
+            type="button"
+            onClick={() => setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
+            className="p-2 rounded-xl border border-purple-200 bg-white hover:bg-purple-50 text-purple-800 shadow-2xs transition-all cursor-pointer active:scale-90 flex items-center justify-center"
+            title={
+              sortOrder === 'desc'
+                ? 'Сортировка: от большего к меньшему (нажмите для переключения)'
+                : 'Сортировка: от меньшего к большему (нажмите для переключения)'
+            }
+            aria-label="Сортировка по номеру заявки"
+          >
+            <ArrowUpDown className="w-4 h-4 text-purple-700 stroke-[2.4]" />
+          </button>
         </div>
 
         {/* List of Completed Tickets: compact grid vs expanded full-width rows */}

@@ -1,6 +1,6 @@
 // Application Version & Build Tracking
 // Increments with every update
-export const APP_VERSION = 'v7';
-export const APP_BUILD_NUMBER = 7;
-export const APP_VERSION_LABEL = 'Версия: v7';
-export const APP_BUILD_DATE = '23.10.2026';
+export const APP_VERSION = 'v11';
+export const APP_BUILD_NUMBER = 11;
+export const APP_VERSION_LABEL = 'Версия: v11';
+export const APP_BUILD_DATE = '24.10.2026';

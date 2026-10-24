@@ -40,7 +40,6 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser,
 }) => {
   const { lang, setLang, t } = useLanguage();
-  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -237,68 +236,50 @@ export const Header: React.FC<HeaderProps> = ({
 
 
 
-        {/* Language selector */}
-        <div className="relative">
-          <button
-            onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-            className="flex items-center gap-1.5 py-1 px-2 rounded-md hover:bg-black/5 transition-colors cursor-pointer"
-            style={{ color: theme.keyColors.textSecondary }}
-          >
-            <Globe className="w-3.5 h-3.5 opacity-70" />
-            <span>
-              {t('Язык:')}{' '}
-              <strong style={{ color: theme.keyColors.textPrimary }}>
-                {lang === 'ru' ? 'Русский' : lang === 'ua' ? 'Українська' : 'English'}
-              </strong>
-            </span>
-            <ChevronDown className="w-3.5 h-3.5" />
-          </button>
-
-          {langDropdownOpen && (
-            <div
-              className="absolute right-0 mt-1 w-36 rounded-lg shadow-lg border p-1 z-30 bg-white"
-              style={{
-                borderColor: theme.keyColors.cardBorder,
-              }}
+        {/* Языковой переключатель (Всегда на виду, никогда не скрывается за фоном) */}
+        <div
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50/90 border border-purple-200/90 shrink-0 shadow-2xs"
+          title="Выбор языка интерфейса"
+        >
+          <Globe className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+          <div className="flex items-center p-0.5 rounded-lg bg-white border border-purple-200/80 gap-0.5">
+            <button
+              type="button"
+              onClick={() => setLang('ru')}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                lang === 'ru'
+                  ? 'bg-purple-700 text-white shadow-2xs font-black'
+                  : 'text-slate-600 hover:text-purple-900 hover:bg-purple-50'
+              }`}
+              title="Русский язык"
             >
-              <button
-                onClick={() => {
-                  setLang('ru');
-                  setLangDropdownOpen(false);
-                }}
-                className={`w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-purple-50 font-medium ${
-                  lang === 'ru' ? 'bg-purple-50 text-purple-900 font-bold' : ''
-                }`}
-                style={{ color: lang === 'ru' ? undefined : theme.keyColors.textPrimary }}
-              >
-                Русский (RU)
-              </button>
-              <button
-                onClick={() => {
-                  setLang('ua');
-                  setLangDropdownOpen(false);
-                }}
-                className={`w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-purple-50 font-medium ${
-                  lang === 'ua' ? 'bg-purple-50 text-purple-900 font-bold' : ''
-                }`}
-                style={{ color: lang === 'ua' ? undefined : theme.keyColors.textPrimary }}
-              >
-                Українська (UA)
-              </button>
-              <button
-                onClick={() => {
-                  setLang('en');
-                  setLangDropdownOpen(false);
-                }}
-                className={`w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-purple-50 font-medium ${
-                  lang === 'en' ? 'bg-purple-50 text-purple-900 font-bold' : ''
-                }`}
-                style={{ color: lang === 'en' ? undefined : theme.keyColors.textPrimary }}
-              >
-                English (EN)
-              </button>
-            </div>
-          )}
+              RU
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang('ua')}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                lang === 'ua'
+                  ? 'bg-purple-700 text-white shadow-2xs font-black'
+                  : 'text-slate-600 hover:text-purple-900 hover:bg-purple-50'
+              }`}
+              title="Українська мова"
+            >
+              UA
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang('en')}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                lang === 'en'
+                  ? 'bg-purple-700 text-white shadow-2xs font-black'
+                  : 'text-slate-600 hover:text-purple-900 hover:bg-purple-50'
+              }`}
+              title="English"
+            >
+              EN
+            </button>
+          </div>
         </div>
 
         {/* User indicator (Image 1) with gradient - visible on all screens with horizontal swipe */}

@@ -357,25 +357,13 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     });
   }, [locationType, apartmentNumber, entranceNumber, locationValue]);
 
-  // All tickets for the house (street + house number + building)
-  // "когда вводишь название улицы потом пишешь номер дома, сразу после этого появляется надпись (По этому адресу уже есть заявки: 3(нажмите для ознакомления) Ознакомиться)"
-  const matchingHouseTickets = React.useMemo(() => {
-    if (!street.trim() || !houseNumber.trim()) return [];
-    return findTicketsForAddress(
-      tickets,
-      {
-        street,
-        houseNumber,
-        building,
-      },
-      streets
-    );
-  }, [tickets, street, houseNumber, building, streets]);
-
-  // Exact 3-indicator full match tickets (street + house number + location specification)
-  // "а полное совпадение это когда ещё и номер квартиры или место уточнения то есть введено минимум обязательно три показателя ( улица, номер дома, место уточнения )"
+  // Exact 4-indicator full match tickets (1. улица + 2. номер дома + 3. место уточнения + 4. номер квартиры / подъезда)
+  // "только при совпадении 4 данных( улица, номер дома, место уточнения,номер квартиры) должно выскакивать сообщение о совпадении заявки"
   const matchingFullAddressTickets = React.useMemo(() => {
     if (!street.trim() || !houseNumber.trim() || !targetLocationKey) return [];
+    if (locationType === 'apartment' && !apartmentNumber.trim()) return [];
+    if (locationType !== 'apartment' && !entranceNumber.trim() && !locationValue.trim()) return [];
+
     return findTicketsForFullAddress(
       tickets,
       {
@@ -386,13 +374,21 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
       },
       streets
     );
-  }, [tickets, street, houseNumber, building, targetLocationKey, streets]);
+  }, [
+    tickets,
+    street,
+    houseNumber,
+    building,
+    locationType,
+    apartmentNumber,
+    entranceNumber,
+    locationValue,
+    targetLocationKey,
+    streets,
+  ]);
 
-  // Active tickets list for review modal
-  const matchingPreviousTickets = React.useMemo(() => {
-    if (matchingFullAddressTickets.length > 0) return matchingFullAddressTickets;
-    return matchingHouseTickets;
-  }, [matchingFullAddressTickets, matchingHouseTickets]);
+  // Active tickets list for review modal - ONLY when all 4 indicators match
+  const matchingPreviousTickets = matchingFullAddressTickets;
 
   const [reviewFilter, setReviewFilter] = useState<'all' | 'full'>('all');
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -403,12 +399,55 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     setHasReviewed(false);
   }, [street, houseNumber, building, targetLocationKey]);
 
+  // Function to completely reset all form fields to a pristine blank state
+  const resetForm = () => {
+    setStreet('');
+    setHouseNumber('');
+    setBuilding('');
+    setIsStreetSuggestionsOpen(false);
+    setLocationType('apartment');
+    setApartmentNumber('');
+    setEntranceNumber('');
+    setLocationValue('');
+    setRequestDate(prefilledDate || new Date().toISOString().slice(0, 10));
+    setExecutionDate('');
+    setGivenBy('');
+    setMainPhone('');
+    setMainPhoneStatus(1);
+    setAdditionalPhones([]);
+    setAdditionalPhoneStatuses([]);
+    setSelectedWorkers([]);
+    setIsAddingEmployee(false);
+    setNewEmpFullName('');
+    setNewEmpPosition('');
+    setNewEmpPhone('');
+    setNewEmpOrg('');
+    setEmployeeAddSuccess(null);
+    setGoal('');
+    setCategory('water');
+    setUrgency('normal');
+    setIsPlanned(Boolean(isPlannedDefault || prefilledDate));
+    setShowWorkDetails(false);
+    setWorkDescription('');
+    setWorkMaterials('');
+    setFuturePlan('');
+    setErrorMessage(null);
+    setInspectedWorker(null);
+    setShowReviewModal(false);
+    setHasReviewed(false);
+  };
+
+  // Reset form to completely clean state EVERY TIME the modal is opened
   useEffect(() => {
-    if (prefilledDate) {
-      setRequestDate(prefilledDate);
-      setIsPlanned(true);
+    if (isOpen) {
+      resetForm();
     }
-  }, [prefilledDate]);
+  }, [isOpen, prefilledDate, isPlannedDefault]);
+
+  const handleCloseModal = () => {
+    resetForm();
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -548,6 +587,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
       works: [],
     });
 
+    resetForm();
     onClose();
   };
 
@@ -623,7 +663,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleCloseModal}
             className="p-1.5 rounded-lg hover:bg-black/5 text-slate-400 hover:text-slate-600 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -760,41 +800,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
 
             {/* Появление надписи сразу после ввода улицы и номера дома */}
             {/* "когда вводишь название улицы потом пишешь номер дома, сразу после этого появляется надпись (По этому адресу уже есть заявки: 3(нажмите для ознакомления) Ознакомиться)" */}
-            {matchingHouseTickets.length > 0 && (
-              <div className="p-2.5 sm:p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 flex items-center justify-between gap-2.5 animate-in fade-in">
-                <div className="flex items-center gap-2 min-w-0">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <div className="text-xs">
-                    <span className="font-bold">
-                      По этому адресу уже есть заявки: {matchingHouseTickets.length}
-                      {matchingFullAddressTickets.length > 0 && (
-                        <span className="text-amber-800 font-semibold ml-1">
-                          (из них с полным совпадением по кв./месту: {matchingFullAddressTickets.length})
-                        </span>
-                      )}
-                    </span>
-                    <span className="hidden sm:inline text-amber-800 ml-1">
-                      (нажмите для ознакомления)
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (matchingFullAddressTickets.length > 0) {
-                      setReviewFilter('full');
-                    } else {
-                      setReviewFilter('all');
-                    }
-                    setShowReviewModal(true);
-                  }}
-                  className="px-2.5 sm:px-3 py-1 bg-amber-200/90 hover:bg-amber-300 text-amber-950 font-bold rounded-lg text-xs transition-colors shrink-0 shadow-2xs flex items-center gap-1 cursor-pointer"
-                >
-                  <History className="w-3.5 h-3.5" />
-                  <span>Ознакомиться</span>
-                </button>
-              </div>
-            )}
+
 
             {/* Location Type & Specification (Apartment / Entrance / Technical / etc.) */}
             {/* "введи поле выбора номера подъезда, при выборе Место уточнения если это не квартира" */}
@@ -946,6 +952,34 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                     className="w-full px-3 py-1.5 rounded-xl border border-purple-200 bg-white font-medium text-xs focus:ring-2 focus:ring-purple-400"
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Сообщение о совпадении заявки: появляется ТОЛЬКО при совпадении 4 данных (улица, номер дома, место уточнения, номер квартиры/подъезда) */}
+            {matchingFullAddressTickets.length > 0 && (
+              <div className="p-3 rounded-xl bg-amber-50 border-2 border-amber-400 text-amber-950 flex items-center justify-between gap-3 animate-in fade-in shadow-xs mt-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <div className="text-xs">
+                    <span className="font-extrabold text-amber-950">
+                      Внимание! По этому адресу и {locationType === 'apartment' ? `квартире №${apartmentNumber}` : 'месту уточнения'} уже есть в базе: {matchingFullAddressTickets.length} {matchingFullAddressTickets.length === 1 ? 'заявка' : 'заявки'}
+                    </span>
+                    <span className="hidden sm:inline text-amber-800 ml-1">
+                      (нажмите для ознакомления)
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReviewFilter('full');
+                    setShowReviewModal(true);
+                  }}
+                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs transition-colors shrink-0 shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>Ознакомиться</span>
+                </button>
               </div>
             )}
           </div>
@@ -1461,7 +1495,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
           <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-purple-100">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleCloseModal}
               className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold transition-colors"
             >
               Отмена
@@ -1649,52 +1683,13 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                 <div className="flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                   <span>
-                    Найдено заявок по адресу: <strong>{matchingHouseTickets.length}</strong>
-                    {matchingFullAddressTickets.length > 0 && (
-                      <span className="ml-1 text-amber-900 font-bold">
-                        (из них с полным совпадением кв./места: {matchingFullAddressTickets.length})
-                      </span>
-                    )}
+                    Найдено совпадающих заявок по адресу и {locationType === 'apartment' ? `кв. ${apartmentNumber}` : 'месту'}: <strong>{matchingFullAddressTickets.length}</strong>
                   </span>
                 </div>
               </div>
 
-              {/* Tabs for switching between all house tickets and full match tickets */}
-              {matchingFullAddressTickets.length > 0 && (
-                <div className="flex items-center gap-2 border-b border-amber-100 pb-2">
-                  <button
-                    type="button"
-                    onClick={() => setReviewFilter('all')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                      reviewFilter === 'all'
-                        ? 'bg-amber-600 text-white shadow-2xs'
-                        : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
-                    }`}
-                  >
-                    Все по дому ({matchingHouseTickets.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setReviewFilter('full')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                      reviewFilter === 'full'
-                        ? 'bg-amber-600 text-white shadow-2xs'
-                        : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
-                    }`}
-                  >
-                    <span>⭐ Полное совпадение: кв./место</span>
-                    <span className="px-1.5 py-0.2 rounded-full bg-white text-amber-900 font-extrabold text-[10px]">
-                      {matchingFullAddressTickets.length}
-                    </span>
-                  </button>
-                </div>
-              )}
-
               <div className="overflow-y-auto pr-1 space-y-2.5 flex-1 min-h-0 max-h-[50vh]">
-                {(reviewFilter === 'full' && matchingFullAddressTickets.length > 0
-                  ? matchingFullAddressTickets
-                  : matchingHouseTickets
-                ).map((t: Ticket) => {
+                {matchingFullAddressTickets.map((t: Ticket) => {
                   const isFullMatch = isSameFullAddressTicket(
                     t,
                     street,

@@ -3168,30 +3168,32 @@ export default function App() {
           </div>
         </div>
 
-      {/* New Ticket Modal (+ Заявка) */}
-      <NewTicketModal
-        isOpen={isNewTicketModalOpen}
-        onClose={() => {
-          setIsNewTicketModalOpen(false);
-          setNewTicketPrefilledDate(undefined);
-          setIsNewTicketPlanned(false);
-        }}
-        theme={theme}
-        gradient={currentGradient}
-        showFlatFallback={showFlatFallback}
-        houses={currentOrgHouses}
-        streets={streets}
-        people={personalPeople}
-        tickets={tickets}
-        prefilledDate={newTicketPrefilledDate}
-        isPlannedDefault={isNewTicketPlanned}
-        onCreateTicket={handleCreateTicket}
-        onAddStreet={handleAddStreet}
-        canInspectWorker={canViewEmployeeCard}
-        canViewEmployeePhone={canViewEmployeePhone}
-        onCreatePerson={handleCreatePersonalPerson}
-        currentUser={currentUser}
-      />
+      {/* New Ticket Modal (+ Заявка) — всегда открывается с чистыми полями */}
+      {isNewTicketModalOpen && (
+        <NewTicketModal
+          isOpen={isNewTicketModalOpen}
+          onClose={() => {
+            setIsNewTicketModalOpen(false);
+            setNewTicketPrefilledDate(undefined);
+            setIsNewTicketPlanned(false);
+          }}
+          theme={theme}
+          gradient={currentGradient}
+          showFlatFallback={showFlatFallback}
+          houses={currentOrgHouses}
+          streets={streets}
+          people={personalPeople}
+          tickets={tickets}
+          prefilledDate={newTicketPrefilledDate}
+          isPlannedDefault={isNewTicketPlanned}
+          onCreateTicket={handleCreateTicket}
+          onAddStreet={handleAddStreet}
+          canInspectWorker={canViewEmployeeCard}
+          canViewEmployeePhone={canViewEmployeePhone}
+          onCreatePerson={handleCreatePersonalPerson}
+          currentUser={currentUser}
+        />
+      )}
 
       {/* Ticket Details / Edit Form Modal (Opens on Double Click) */}
       <TicketDetailModal
