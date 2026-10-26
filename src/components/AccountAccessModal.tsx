@@ -113,9 +113,10 @@ export const AccountAccessModal: React.FC<AccountAccessModalProps> = ({
     // Действия с заявками
     { key: 'new_request', label: 'Подать новую заявку', group: 'Действия с заявками' },
     { key: 'send_messenger', label: 'Отправка в Telegram/Viber', group: 'Действия с заявками' },
-    { key: 'accept_request', label: 'Принять заявку в работу', group: 'Действия с заявками' },
-    { key: 'edit_request', label: 'Редактировать заявку и акты', group: 'Действия с заявками' },
+    { key: 'accept_request', label: 'Принять заявку', group: 'Действия с заявками' },
+    { key: 'in_progress_request', label: 'Изменение статуса «В работу»', group: 'Действия с заявками' },
     { key: 'complete_request', label: 'Завершить заявку', group: 'Действия с заявками' },
+    { key: 'edit_request', label: 'Редактировать заявку и акты', group: 'Действия с заявками' },
     { key: 'delete_request', label: 'Удалить / Снять заявку', group: 'Действия с заявками' },
 
     // Дома и сотрудники

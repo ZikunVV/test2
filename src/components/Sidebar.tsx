@@ -24,6 +24,7 @@ import {
   Volume2,
   Palette,
   RotateCw,
+  User,
 } from 'lucide-react';
 import { APP_VERSION, APP_BUILD_NUMBER, APP_VERSION_LABEL } from '../version';
 
@@ -44,6 +45,7 @@ interface SidebarProps {
   currentOrganizationId?: string;
   onSelectOrganization?: (id: string) => void;
   onLogout?: () => void;
+  onOpenProfileEdit?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -63,6 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentOrganizationId = 'org-1',
   onSelectOrganization,
   onLogout,
+  onOpenProfileEdit,
 }) => {
   const { t } = useLanguage();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -97,19 +100,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'admin', label: t('Администрирование'), icon: Settings, perm: 'admin' },
   ];
 
-  // Filter items by current user permissions
+  // Filter items: режим ограничений "Права" отключен — все разделы открыты, а 10 уровней телефонов остаются активными
   const navItems = rawNavItems.filter((item) => {
-    if (!item.perm) return true;
-    if (!currentUser) return true;
-    if (currentUser.role === 'admin') return true;
-    if (item.perm === 'people_view') {
-      return (
-        currentUser.permissions?.includes('people_view') ||
-        currentUser.permissions?.includes('internal') ||
-        currentUser.permissions?.includes('add_employee')
-      );
+    if (item.id === 'admin') {
+      return currentUser?.role === 'admin';
     }
-    return currentUser.permissions?.includes(item.perm);
+    return true;
   });
 
   return (
@@ -421,6 +417,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <span className="tracking-tight font-extrabold">{t('Звуки')}</span>
                     </div>
                   </button>
+
+                  {/* 3. Редактор личных данных */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onOpenProfileEdit) onOpenProfileEdit();
+                      onCloseMobile();
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all group relative overflow-hidden cursor-pointer text-slate-700 hover:text-purple-950 bg-white/70 hover:bg-white border border-purple-200/70 hover:border-purple-300 hover:shadow-xs"
+                  >
+                    <div className="flex items-center gap-2 z-10">
+                      <User className="w-4 h-4 text-purple-700 stroke-2 transition-transform group-hover:scale-110" />
+                      <span className="tracking-tight font-extrabold">{t('Редактор личных данных')}</span>
+                    </div>
+                  </button>
                 </div>
               )}
             </div>
@@ -510,8 +521,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </>
                 )}
 
+                {/* Edit personal data button for current user */}
+                <div className={currentUser?.role === 'admin' ? 'pt-1 mt-1 border-t border-purple-100' : ''}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      if (onOpenProfileEdit) onOpenProfileEdit();
+                    }}
+                    className="w-full text-left p-2 rounded-lg text-xs font-bold text-purple-900 hover:bg-purple-50 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <User className="w-3.5 h-3.5 text-purple-700" />
+                    <span>{t('Редактировать личные данные')}</span>
+                  </button>
+                </div>
+
                 {onLogout && (
-                  <div className={currentUser?.role === 'admin' ? 'pt-1 mt-1 border-t border-purple-100' : ''}>
+                  <div className="pt-1 mt-1 border-t border-purple-100">
                     <button
                       type="button"
                       onClick={() => {

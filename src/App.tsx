@@ -45,7 +45,7 @@ import { TicketCard } from './components/TicketCard';
 import { NewTicketModal } from './components/NewTicketModal';
 import { TicketDetailModal } from './components/TicketDetailModal';
 import { EditTicketModal } from './components/EditTicketModal';
-import { TicketStatusConfirmModal } from './components/TicketStatusConfirmModal';
+import { TicketStatusConfirmModal, StatusConfirmTarget } from './components/TicketStatusConfirmModal';
 import { DeleteTicketConfirmModal } from './components/DeleteTicketConfirmModal';
 import { NotificationsPopover } from './components/NotificationsPopover';
 import { downloadProjectArchive } from './utils/exportProject';
@@ -83,6 +83,8 @@ import {
   DatabaseBackupPayload,
 } from './components/DatabaseBackupModal';
 import { VoiceControlModal } from './components/VoiceControlModal';
+import { ProfileEditModal } from './components/ProfileEditModal';
+import { GitHubUploadModal } from './components/GitHubUploadModal';
 
 import {
   Search,
@@ -394,7 +396,7 @@ export default function App() {
         : u.password || '123';
       
       const adminPerms = isAdminUser
-        ? Array.from(new Set([...(u.permissions || []), 'manage_user_access', 'view_phone_statuses']))
+        ? Array.from(new Set([...(u.permissions || []), 'manage_user_access', 'view_phone_statuses', 'accept_request', 'in_progress_request', 'complete_request']))
         : (u.permissions || []);
 
       return {
@@ -594,43 +596,37 @@ export default function App() {
   }, [currentUser, currentOrganizationId]);
   const isAdmin = currentUser.role === 'admin';
   const isApproved = currentUser?.approved ?? false;
-  const hasPermission = (key: string) => {
-    if (!isApproved) return false;
-    if (isAdmin) return true;
-    return Boolean(currentUser.permissions?.includes(key));
+  // Режим ограничений «Права» отключен по запросу: все разделы и функции открыты, а 10 уровней секретности телефонов остаются активными
+  const hasPermission = (_key: string) => {
+    return true;
   };
 
-  // Granular permissions for sections and actions
-  const canCreateTicket = hasPermission('new_request');
-  const canSendMessenger = hasPermission('send_messenger') || hasPermission('new_request');
-  const canAcceptTicket = hasPermission('accept_request') || hasPermission('new_request');
-  const canEditTickets = hasPermission('edit_request') || hasPermission('new_request');
-  const canCompleteTicket = hasPermission('complete_request') || hasPermission('new_request');
-  const canDeleteTicket = isAdmin || hasPermission('delete_request');
+  // Granular ticket status change permissions per user request
+  const canAcceptTicket = isAdmin || Boolean(currentUser?.permissions?.includes('accept_request'));
+  const canSetInProgressTicket = isAdmin || Boolean(currentUser?.permissions?.includes('in_progress_request'));
+  const canCompleteTicket = isAdmin || Boolean(currentUser?.permissions?.includes('complete_request'));
 
-  const canAddHouses = hasPermission('new_house');
-  const canEditHouses = hasPermission('edit_house') || hasPermission('new_house');
-  const canDeleteHouse = isAdmin || hasPermission('delete_house');
-  const canEditCoordinates = hasPermission('edit_house') || (currentUser.role === 'editor' && hasPermission('map'));
+  const canCreateTicket = true;
+  const canSendMessenger = true;
+  const canEditTickets = true;
+  const canDeleteTicket = isAdmin || Boolean(currentUser?.permissions?.includes('delete_request'));
 
-  const canViewPeople = hasPermission('people_view') || hasPermission('internal') || hasPermission('add_employee');
-  const canViewEmployeeCard =
-    isAdmin ||
-    hasPermission('view_employee_card') ||
-    (currentUser.role !== 'viewer' &&
-      (hasPermission('people_view') ||
-        hasPermission('internal') ||
-        hasPermission('add_employee')));
-  const canViewEmployeePhone =
-    isAdmin || hasPermission('view_employee_phone');
-  const canAddPeople = isAdmin || hasPermission('add_employee') || hasPermission('internal');
-  const canEditPeople = isAdmin || hasPermission('internal');
-  const canDeletePeople = isAdmin || hasPermission('delete_employee') || hasPermission('internal');
-  const canViewPersonalTasks = hasPermission('my_tasks_view');
-  const canUseVoiceControl = hasPermission('voice_control');
-  const canUseVoiceReminder = isAdmin || hasPermission('voice_reminder');
-  const canAccessDatabase = isAdmin || hasPermission('database_backup');
-  const canAccessProject = isAdmin || hasPermission('project_download');
+  const canAddHouses = true;
+  const canEditHouses = true;
+  const canDeleteHouse = true;
+  const canEditCoordinates = true;
+
+  const canViewPeople = true;
+  const canViewEmployeeCard = true;
+  const canViewEmployeePhone = true;
+  const canAddPeople = true;
+  const canEditPeople = true;
+  const canDeletePeople = true;
+  const canViewPersonalTasks = true;
+  const canUseVoiceControl = true;
+  const canUseVoiceReminder = true;
+  const canAccessDatabase = true;
+  const canAccessProject = true;
 
   // Planned ticket modal prefill state
   const [newTicketPrefilledDate, setNewTicketPrefilledDate] = useState<
@@ -1268,12 +1264,100 @@ export default function App() {
   const [isVoiceControlOpen, setIsVoiceControlOpen] =
     useState<boolean>(false);
   const [isInsightsOpen, setIsInsightsOpen] = useState<boolean>(false);
+  const [isProfileEditModalOpen, setIsProfileEditModalOpen] = useState<boolean>(false);
+  const [isGitHubModalOpen, setIsGitHubModalOpen] = useState<boolean>(false);
 
-  // Status action confirmation modal (Принять в работу / Завершить с подтверждением)
+  const handleSaveUserProfile = (updates: {
+    username: string;
+    password?: string;
+    phone: string;
+  }): { success: boolean; error?: string } => {
+    if (!currentUser) return { success: false, error: 'Пользователь не найден' };
+
+    const cleanUsername = updates.username.trim();
+    if (!cleanUsername) {
+      return { success: false, error: 'Логин не может быть пустым' };
+    }
+
+    // Check if new username is already taken by another user
+    const usernameTaken = users.some(
+      (u) => u.id !== currentUser.id && u.username.toLowerCase() === cleanUsername.toLowerCase()
+    );
+    if (usernameTaken) {
+      return { success: false, error: `Логин «${cleanUsername}» уже занят другим пользователем` };
+    }
+
+    const changedFields: string[] = [];
+    if (cleanUsername !== currentUser.username) changedFields.push(`логин: ${cleanUsername}`);
+    if (updates.password && updates.password.trim() !== currentUser.password) changedFields.push('пароль изменён');
+    if (updates.phone.trim() !== (currentUser.phone || '')) changedFields.push(`телефон: ${updates.phone.trim() || 'удалён'}`);
+
+    // Update users state
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === currentUser.id) {
+          return {
+            ...u,
+            username: cleanUsername,
+            password: updates.password && updates.password.trim() ? updates.password.trim() : u.password,
+            phone: updates.phone.trim(),
+          };
+        }
+        return u;
+      })
+    );
+
+    if (changedFields.length > 0) {
+      setAuditLogs((prev) => [
+        {
+          id: Date.now(),
+          action: 'Редактирование профиля',
+          entity: 'Пользователь',
+          entity_id: currentUser.id,
+          user_name: currentUser.full_name || currentUser.username,
+          details: `Пользователь обновил личные данные: ${changedFields.join(', ')}`,
+          created_at: new Date().toLocaleString('ru-RU'),
+          can_undo: false,
+        },
+        ...prev,
+      ]);
+
+      setNotifications((prev) => [
+        {
+          id: `notif-profile-${Date.now()}`,
+          title: 'Личные данные обновлены',
+          description: `Ваш профиль успешно сохранён (${changedFields.join(', ')}).`,
+          time: 'Только что',
+          unread: true,
+          type: 'info',
+        },
+        ...prev,
+      ]);
+    }
+
+    return { success: true };
+  };
+
+  // Status action confirmation modal (Принять заявку / В работу / Завершить с подтверждением)
   const [confirmStatusModalTicket, setConfirmStatusModalTicket] = useState<Ticket | null>(null);
-  const [confirmStatusModalTarget, setConfirmStatusModalTarget] = useState<TicketStatus | null>(null);
+  const [confirmStatusModalTarget, setConfirmStatusModalTarget] = useState<StatusConfirmTarget | null>(null);
 
   const handleRequestAcceptTicket = (ticketId: string) => {
+    if (!canAcceptTicket) {
+      alert('У вас нет разрешения для принятия заявки.');
+      return;
+    }
+    const t = tickets.find((item) => item.id === ticketId);
+    if (!t) return;
+    setConfirmStatusModalTicket(t);
+    setConfirmStatusModalTarget('accept');
+  };
+
+  const handleRequestSetInProgressTicket = (ticketId: string) => {
+    if (!canSetInProgressTicket) {
+      alert('У вас нет разрешения для перевода заявки «В работу».');
+      return;
+    }
     const t = tickets.find((item) => item.id === ticketId);
     if (!t) return;
     setConfirmStatusModalTicket(t);
@@ -1281,6 +1365,10 @@ export default function App() {
   };
 
   const handleRequestCompleteTicket = (ticketId: string) => {
+    if (!canCompleteTicket) {
+      alert('У вас нет разрешения для завершения заявки.');
+      return;
+    }
     const t = tickets.find((item) => item.id === ticketId);
     if (!t) return;
     setConfirmStatusModalTicket(t);
@@ -1477,16 +1565,68 @@ export default function App() {
   }, [currentOrgTickets, activeFilter, searchQuery, selectedAddressFilter]);
 
   // Handlers for Ticket Actions
-  const handleUpdateStatus = (ticketId: string, newStatus: Ticket['status']) => {
-    if (newStatus === 'in_progress' && !canAcceptTicket && !canEditTickets) {
-      alert('У вас нет разрешения для принятия заявки в работу.');
+  const handleAcceptTicketDirect = (ticketId: string) => {
+    if (!canAcceptTicket) {
+      alert('У вас нет разрешения для принятия заявки.');
       return;
     }
-    if (newStatus === 'completed' && !canCompleteTicket && !canEditTickets) {
+    const now = new Date();
+    const acceptedAt = now.toLocaleString('ru-RU');
+
+    setTickets((prev) =>
+      prev.map((t) =>
+        t.id === ticketId
+          ? {
+              ...t,
+              accepted: true,
+              accepted_by: currentUser.full_name,
+              accepted_at: acceptedAt,
+            }
+          : t
+      )
+    );
+    if (selectedTicketForDetail?.id === ticketId) {
+      setSelectedTicketForDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              accepted: true,
+              accepted_by: currentUser.full_name,
+              accepted_at: acceptedAt,
+            }
+          : null
+      );
+    }
+    setAuditLogs((prev) => [
+      {
+        id: Date.now(),
+        action: 'Принята заявка',
+        entity: 'Заявка',
+        entity_id: ticketId,
+        user_name: currentUser.full_name,
+        details: `Заявка #${ticketId} принята сотрудником ${currentUser.full_name}`,
+        created_at: acceptedAt,
+        can_undo: false,
+      },
+      ...prev,
+    ]);
+    triggerAlertSignal(
+      'ticket_status',
+      'Заявка принята',
+      `${currentUser.full_name} принял заявку #${ticketId}`
+    );
+  };
+
+  const handleUpdateStatus = (ticketId: string, newStatus: Ticket['status']) => {
+    if (newStatus === 'in_progress' && !canSetInProgressTicket) {
+      alert('У вас нет разрешения для перевода заявки «В работу».');
+      return;
+    }
+    if (newStatus === 'completed' && !canCompleteTicket) {
       alert('У вас нет разрешения для завершения заявки.');
       return;
     }
-    if (newStatus === 'in_waiting' && !canEditTickets) {
+    if (newStatus === 'in_waiting' && !canAcceptTicket && !canEditTickets) {
       alert('У вас нет разрешения для изменения статуса заявки.');
       return;
     }
@@ -1665,6 +1805,7 @@ export default function App() {
           auditLogs,
         },
       });
+      setIsGitHubModalOpen(true);
     } catch (err) {
       console.error('Failed to download project archive:', err);
       alert('Не удалось создать архив проекта. Пожалуйста, попробуйте снова.');
@@ -2164,6 +2305,7 @@ export default function App() {
             'new_request',
             'send_messenger',
             'accept_request',
+            'in_progress_request',
             'edit_request',
             'complete_request',
             'delete_request',
@@ -2192,6 +2334,7 @@ export default function App() {
             'new_request',
             'send_messenger',
             'accept_request',
+            'in_progress_request',
             'edit_request',
             'complete_request',
             'planned',
@@ -2239,6 +2382,7 @@ export default function App() {
             'new_request',
             'send_messenger',
             'accept_request',
+            'in_progress_request',
             'edit_request',
             'complete_request',
             'delete_request',
@@ -2267,6 +2411,7 @@ export default function App() {
             'new_request',
             'send_messenger',
             'accept_request',
+            'in_progress_request',
             'edit_request',
             'complete_request',
             'planned',
@@ -2662,6 +2807,7 @@ export default function App() {
             currentOrganizationId={currentOrganizationId}
             onSelectOrganization={handleSelectOrganization}
             onLogout={handleLogout}
+            onOpenProfileEdit={() => setIsProfileEditModalOpen(true)}
           />
 
           {/* 3. MAIN WORKSPACE */}
@@ -2681,6 +2827,7 @@ export default function App() {
               canAccessProject={canAccessProject}
               onOpenBackupModal={canAccessDatabase ? () => setIsBackupModalOpen(true) : undefined}
               onDownloadProject={canAccessProject ? handleDownloadProject : undefined}
+              onOpenGitHubGuide={() => setIsGitHubModalOpen(true)}
               isDownloadingProject={isDownloadingProject}
               currentUser={currentUser}
             />
@@ -2748,11 +2895,13 @@ export default function App() {
                   onOpenTicket={(t) => setSelectedTicketForDetail(t)}
                   onEditTicket={(t) => handleOpenEditTicket(t)}
                   onAccept={(id) => handleRequestAcceptTicket(id)}
+                  onSetInProgress={(id) => handleRequestSetInProgressTicket(id)}
                   onComplete={(id) => handleRequestCompleteTicket(id)}
                   onUpdateTicketPhoneStatus={handleUpdateTicketPhoneStatus}
                   canEdit={canEditTickets}
                   canCreate={canCreateTicket}
                   canAccept={canAcceptTicket}
+                  canSetInProgress={canSetInProgressTicket}
                   canComplete={canCompleteTicket}
                   canSendMessenger={canSendMessenger}
                   canDelete={canDeleteTicket}
@@ -2916,6 +3065,7 @@ export default function App() {
                   }}
                   onNavigateToColors={() => setActiveSidebarNav('colors')}
                   onBackToHome={() => setActiveSidebarNav('home')}
+                  onOpenProfileEdit={() => setIsProfileEditModalOpen(true)}
                 />
               )}
 
@@ -2939,6 +3089,7 @@ export default function App() {
                   currentUser={currentUser}
                   onNavigateToSounds={() => setActiveSidebarNav('sounds')}
                   onBackToHome={() => setActiveSidebarNav('home')}
+                  onOpenProfileEdit={() => setIsProfileEditModalOpen(true)}
                 />
               )}
 
@@ -3120,6 +3271,7 @@ export default function App() {
                           isSelected={selectedTicketId === ticket.id}
                           canEdit={canEditTickets}
                           canAccept={canAcceptTicket}
+                          canSetInProgress={canSetInProgressTicket}
                           canComplete={canCompleteTicket}
                           canSendMessenger={canSendMessenger}
                           canDelete={canDeleteTicket}
@@ -3130,6 +3282,7 @@ export default function App() {
                             );
                           }}
                           onAccept={(id) => handleRequestAcceptTicket(id)}
+                          onSetInProgress={(id) => handleRequestSetInProgressTicket(id)}
                           onComplete={(id) => handleRequestCompleteTicket(id)}
                           onOpenDetails={(t) => setSelectedTicketForDetail(t)}
                           onEditTicket={(t) => handleOpenEditTicket(t)}
@@ -3203,11 +3356,13 @@ export default function App() {
         currentUser={currentUser}
         isAdmin={canEditTickets}
         canAccept={canAcceptTicket}
+        canSetInProgress={canSetInProgressTicket}
         canComplete={canCompleteTicket}
         canEdit={canEditTickets}
         canSendMessenger={canSendMessenger}
         canDelete={canDeleteTicket}
         onDeleteTicket={(id) => handleRequestDeleteTicket(id)}
+        onAccept={(id) => handleAcceptTicketDirect(id)}
         tickets={tickets}
         streets={streets}
         onSelectTicket={(t) => setSelectedTicketForDetail(t)}
@@ -3323,7 +3478,11 @@ export default function App() {
           setConfirmStatusModalTarget(null);
         }}
         onConfirm={(ticketId, status) => {
-          handleUpdateStatus(ticketId, status);
+          if (status === 'accept') {
+            handleAcceptTicketDirect(ticketId);
+          } else {
+            handleUpdateStatus(ticketId, status);
+          }
         }}
         theme={theme}
       />
@@ -3337,6 +3496,29 @@ export default function App() {
           handleConfirmDeleteTicket(ticketId);
           setConfirmDeleteTicket(null);
         }}
+      />
+
+      {/* Редактор личных данных (логин, пароль, номер телефона) */}
+      <ProfileEditModal
+        isOpen={isProfileEditModalOpen}
+        onClose={() => setIsProfileEditModalOpen(false)}
+        currentUser={currentUser}
+        users={users}
+        theme={theme}
+        gradient={currentGradient}
+        showFlatFallback={showFlatFallback}
+        onSaveProfile={handleSaveUserProfile}
+      />
+
+      {/* Инструкция и решение ошибки загрузки на GitHub (Yowza, that's a lot of files) */}
+      <GitHubUploadModal
+        isOpen={isGitHubModalOpen}
+        onClose={() => setIsGitHubModalOpen(false)}
+        theme={theme}
+        gradient={currentGradient}
+        showFlatFallback={showFlatFallback}
+        onDownloadProjectAgain={handleDownloadProject}
+        isDownloading={isDownloadingProject}
       />
 
       {/* Visual Signal-Alert Banner (Всплывающий сигнал-оповещение сверху экрана — компактный на телефоне по ширине заявок) */}

@@ -16,6 +16,7 @@ export interface PhoneBadgeDisplayProps {
   allowCallLinks?: boolean;
   className?: string;
   size?: 'xs' | 'sm' | 'md';
+  forceCanView?: boolean;
 }
 
 export const PhoneBadgeDisplay: React.FC<PhoneBadgeDisplayProps> = ({
@@ -26,9 +27,13 @@ export const PhoneBadgeDisplay: React.FC<PhoneBadgeDisplayProps> = ({
   allowCallLinks = true,
   className = '',
   size = 'sm',
+  forceCanView,
 }) => {
   const currentStatus = typeof status === 'number' && status >= 1 && status <= 10 ? status : 1;
-  const canView = canUserViewPhoneNumber(currentUser, currentStatus);
+  const canView =
+    forceCanView !== undefined
+      ? forceCanView
+      : canUserViewPhoneNumber(currentUser, currentStatus);
   const canSeeStatus = canUserSeePhoneStatusBadge(currentUser);
   const canManage = canUserManageAccessRights(currentUser);
 

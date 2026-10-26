@@ -136,6 +136,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
                         phone={phone}
                         status={status}
                         currentUser={currentUser}
+                        forceCanView={canViewPhone}
                         onUpdateStatus={(newStatus) => {
                           if (worker.id && onUpdatePersonPhoneStatus) {
                             onUpdatePersonPhoneStatus(worker.id, i, newStatus);

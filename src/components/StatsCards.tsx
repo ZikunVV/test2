@@ -63,18 +63,10 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         </div>
 
         <div
-          className="text-3xl font-extrabold tracking-tight tabular-nums mb-1"
+          className="text-3xl font-extrabold tracking-tight tabular-nums"
           style={{ color: '#92400E' }}
         >
           {inProgressCount}
-        </div>
-
-        <div
-          className="text-xs font-medium flex items-center gap-1.5"
-          style={{ color: theme.keyColors.textSecondary }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#F59E0B' }} />
-          <span>в работе</span>
         </div>
       </div>
 
@@ -117,22 +109,14 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         </div>
 
         <div
-          className="text-3xl font-extrabold tracking-tight tabular-nums mb-1"
+          className="text-3xl font-extrabold tracking-tight tabular-nums"
           style={{ color: '#9F1239' }}
         >
           {inWaitingCount}
         </div>
-
-        <div
-          className="text-xs font-medium flex items-center gap-1.5"
-          style={{ color: theme.keyColors.textSecondary }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#F43F5E' }} />
-          <span>ожидают решения</span>
-        </div>
       </div>
 
-      {/* 3. Выполнено - Rich fresh emerald / mint */}
+      {/* 3. Закрыто за сегодня - Rich fresh emerald / mint */}
       <div
         onClick={() => onFilterSelect(activeFilter === 'completed' ? 'all' : 'completed')}
         className={`cursor-pointer rounded-2xl p-5 border transition-all duration-200 relative overflow-hidden group shadow-2xs hover:shadow-xs ${
@@ -156,7 +140,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             className="text-xs font-semibold tracking-wide"
             style={{ color: theme.keyColors.textSecondary }}
           >
-            Выполнено
+            Закрыто за сегодня
           </span>
           <div
             className="w-8 h-8 rounded-xl flex items-center justify-center border"
@@ -171,18 +155,10 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         </div>
 
         <div
-          className="text-3xl font-extrabold tracking-tight tabular-nums mb-1"
+          className="text-3xl font-extrabold tracking-tight tabular-nums"
           style={{ color: '#065F46' }}
         >
           {completedCount}
-        </div>
-
-        <div
-          className="text-xs font-medium flex items-center gap-1.5"
-          style={{ color: theme.keyColors.textSecondary }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#10B981' }} />
-          <span>закрыто за сегодня</span>
         </div>
       </div>
     </div>

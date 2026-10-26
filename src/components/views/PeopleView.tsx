@@ -376,6 +376,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                               phone={phone}
                               status={status}
                               currentUser={currentUser}
+                              forceCanView={canViewPhone}
                               onUpdateStatus={(newStatus) => {
                                 if (onUpdatePersonPhoneStatus) {
                                   onUpdatePersonPhoneStatus(person.id, i, newStatus);
@@ -490,6 +491,7 @@ export const PeopleView: React.FC<PeopleViewProps> = ({
                               phone={phone}
                               status={status}
                               currentUser={currentUser}
+                              forceCanView={canViewPhone}
                               onUpdateStatus={(newStatus) => {
                                 if (onUpdatePersonPhoneStatus) {
                                   onUpdatePersonPhoneStatus(person.id, i, newStatus);

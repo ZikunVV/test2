@@ -28,6 +28,7 @@ import {
   Moon,
   Coffee,
   ArrowUp,
+  User,
 } from 'lucide-react';
 
 interface ColorSettingsViewProps {
@@ -48,6 +49,7 @@ interface ColorSettingsViewProps {
   currentUser?: UserItem;
   onNavigateToSounds: () => void;
   onBackToHome: () => void;
+  onOpenProfileEdit?: () => void;
 }
 
 const getBgModeName = (mode: BackgroundMode = 'palette'): string => {
@@ -88,6 +90,7 @@ export const ColorSettingsView: React.FC<ColorSettingsViewProps> = ({
   onToggleDisplayFilters,
   currentUser,
   onNavigateToSounds,
+  onOpenProfileEdit,
 }) => {
   const allGradients = Object.values(GRADIENT_VARIANTS);
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false);
@@ -104,24 +107,35 @@ export const ColorSettingsView: React.FC<ColorSettingsViewProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* GLOBAL SETTINGS TABS: [ 🎨 Цветовой режим ]  [ 🔊 Звуки ] */}
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-2 border-2 border-purple-200 shadow-sm flex items-center gap-2">
+      {/* GLOBAL SETTINGS TABS: [ 🎨 Цветовой режим ]  [ 🔊 Звуки ]  [ 👤 Редактор личных данных ] */}
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-2 border-2 border-purple-200 shadow-sm flex flex-wrap sm:flex-nowrap items-center gap-2">
         <button
           type="button"
-          className="flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 cursor-default bg-purple-700 text-white shadow-md ring-2 ring-purple-300"
+          className="flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-default bg-purple-700 text-white shadow-md ring-2 ring-purple-300"
         >
           <Palette className="w-4 h-4 stroke-[2.5]" />
-          <span>🎨 Цветовой режим (Фон, Кнопки, Контраст)</span>
+          <span>🎨 Цветовой режим</span>
         </button>
 
         <button
           type="button"
           onClick={onNavigateToSounds}
-          className="flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-slate-700 hover:text-purple-950 hover:bg-purple-50 transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent hover:border-purple-200"
+          className="flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-slate-700 hover:text-purple-950 hover:bg-purple-50 transition-all flex items-center justify-center gap-2 cursor-pointer border border-transparent hover:border-purple-200"
         >
           <Volume2 className="w-4 h-4 text-purple-700" />
-          <span>🔊 Звуки и оповещения</span>
+          <span>🔊 Звуки</span>
         </button>
+
+        {onOpenProfileEdit && (
+          <button
+            type="button"
+            onClick={onOpenProfileEdit}
+            className="flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-purple-900 bg-purple-50 hover:bg-purple-100 transition-all flex items-center justify-center gap-2 cursor-pointer border border-purple-200 hover:border-purple-300 shadow-2xs"
+          >
+            <User className="w-4 h-4 text-purple-700" />
+            <span>👤 Редактор личных данных</span>
+          </button>
+        )}
       </div>
 
       {/* Header & Breadcrumb ("Настройки" -> "Цветовой режим") */}

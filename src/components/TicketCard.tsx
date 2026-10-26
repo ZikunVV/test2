@@ -1,7 +1,7 @@
 import { Ticket, ThemeConfig, UserItem } from '../types';
 import { MessengerShareButtons } from '../utils/messengers';
 import { PhoneBadgeDisplay } from './PhoneBadgeDisplay';
-import { Check, ArrowRight, MapPin, Edit, User, Trash2 } from 'lucide-react';
+import { Check, ArrowRight, MapPin, Edit, User, Trash2, CheckCircle2 } from 'lucide-react';
 
 interface TicketCardProps {
   ticket: Ticket;
@@ -9,6 +9,7 @@ interface TicketCardProps {
   isSelected?: boolean;
   canEdit?: boolean;
   canAccept?: boolean;
+  canSetInProgress?: boolean;
   canComplete?: boolean;
   canSendMessenger?: boolean;
   canDelete?: boolean;
@@ -21,6 +22,7 @@ interface TicketCardProps {
   ) => void;
   onSelect?: (ticketId: string) => void;
   onAccept: (ticketId: string) => void;
+  onSetInProgress?: (ticketId: string) => void;
   onComplete: (ticketId: string) => void;
   onDelete?: (ticketId: string) => void;
   onOpenDetails: (ticket: Ticket) => void;
@@ -33,14 +35,16 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   theme,
   isSelected = false,
   canEdit = true,
-  canAccept = canEdit,
-  canComplete = canEdit,
+  canAccept = false,
+  canSetInProgress = false,
+  canComplete = false,
   canSendMessenger = canEdit,
   canDelete = false,
   currentUser,
   onUpdatePhoneStatus,
   onSelect,
   onAccept,
+  onSetInProgress,
   onComplete,
   onDelete,
   onOpenDetails,
@@ -278,57 +282,84 @@ export const TicketCard: React.FC<TicketCardProps> = ({
         onDoubleClick={(e) => e.stopPropagation()}
       >
         {canSendMessenger && <MessengerShareButtons ticket={ticket} compact />}
-        {canAccept && ticket.status === 'in_waiting' ? (
-          <button
-            onClick={() => onAccept(ticket.id)}
-            className="px-3.5 py-1.5 text-xs font-semibold rounded-xl border border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50 text-slate-700 transition-all duration-150 flex items-center gap-1.5 shadow-2xs"
-          >
-            <span>Принять заявку</span>
-            <ArrowRight className="w-3 h-3 text-purple-600" />
-          </button>
-        ) : canComplete && ticket.status === 'in_progress' ? (
-          <button
-            onClick={() => onComplete(ticket.id)}
-            className="px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all duration-150 flex items-center gap-1.5 border text-white shadow-xs hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: 'linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%)',
-              borderColor: '#059669',
-              boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)',
-            }}
-          >
-            <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>Завершить</span>
-          </button>
-        ) : (
+
+        {/* Status Actions based on permissions */}
+        {ticket.status === 'in_waiting' && (
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+            {canAccept && !ticket.accepted && (
+              <button
+                type="button"
+                onClick={() => onAccept(ticket.id)}
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-purple-300 hover:border-purple-400 bg-white hover:bg-purple-50 text-purple-900 transition-all duration-150 flex items-center gap-1.5 shadow-2xs hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                title="Принять заявку"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
+                <span>Принять заявку</span>
+              </button>
+            )}
+            {ticket.accepted && (
+              <span
+                className="px-2.5 py-1 text-[11px] font-bold rounded-xl bg-purple-50 text-purple-800 border border-purple-200 flex items-center gap-1"
+                title={ticket.accepted_by ? `Принята: ${ticket.accepted_by}` : 'Заявка принята'}
+              >
+                <Check className="w-3 h-3 text-purple-600 stroke-[2.5]" />
+                <span>Принята</span>
+              </span>
+            )}
+            {canSetInProgress && onSetInProgress && (
+              <button
+                type="button"
+                onClick={() => onSetInProgress(ticket.id)}
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 transition-all duration-150 flex items-center gap-1.5 shadow-2xs hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                title="Перевести заявку в работу"
+              >
+                <span>В работу</span>
+                <ArrowRight className="w-3.5 h-3.5 text-amber-600" />
+              </button>
+            )}
+            {!canAccept && !canSetInProgress && (
+              <span className="px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 border border-rose-200 bg-rose-50 text-rose-800">
+                В ожидании
+              </span>
+            )}
+          </div>
+        )}
+
+        {ticket.status === 'in_progress' && (
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+            {canComplete ? (
+              <button
+                type="button"
+                onClick={() => onComplete(ticket.id)}
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all duration-150 flex items-center gap-1.5 border text-white shadow-xs hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                style={{
+                  background: 'linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%)',
+                  borderColor: '#059669',
+                  boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)',
+                }}
+              >
+                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Завершить</span>
+              </button>
+            ) : (
+              <span className="px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 border border-amber-200 bg-amber-50 text-amber-800">
+                В работе
+              </span>
+            )}
+          </div>
+        )}
+
+        {ticket.status === 'completed' && (
           <span
             className="px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 border"
             style={{
-              background:
-                ticket.status === 'completed'
-                  ? 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 50%, #A7F3D0 100%)'
-                  : ticket.status === 'in_progress'
-                  ? 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 50%, #FDE68A 100%)'
-                  : 'linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 50%, #FECDD3 100%)',
-              borderColor:
-                ticket.status === 'completed'
-                  ? '#A7F3D0'
-                  : ticket.status === 'in_progress'
-                  ? '#FDE68A'
-                  : '#FECDD3',
-              color:
-                ticket.status === 'completed'
-                  ? '#065F46'
-                  : ticket.status === 'in_progress'
-                  ? '#92400E'
-                  : '#9F1239',
+              background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 50%, #A7F3D0 100%)',
+              borderColor: '#A7F3D0',
+              color: '#065F46',
             }}
           >
             <Check className="w-3.5 h-3.5" />
-            {ticket.status === 'completed'
-              ? 'Выполнена'
-              : ticket.status === 'in_progress'
-              ? 'В работе'
-              : 'В ожидании'}
+            <span>Выполнена</span>
           </span>
         )}
 

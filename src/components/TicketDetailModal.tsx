@@ -40,11 +40,13 @@ interface TicketDetailModalProps {
   currentUser?: UserItem | null;
   isAdmin?: boolean;
   canAccept?: boolean;
+  canSetInProgress?: boolean;
   canComplete?: boolean;
   canEdit?: boolean;
   canSendMessenger?: boolean;
   canDelete?: boolean;
   onDeleteTicket?: (ticketId: string) => void;
+  onAccept?: (ticketId: string) => void;
   tickets?: Ticket[];
   streets?: StreetItem[];
   onSelectTicket?: (t: Ticket) => void;
@@ -91,11 +93,13 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   currentUser,
   isAdmin = true,
   canAccept = isAdmin,
+  canSetInProgress = isAdmin,
   canComplete = isAdmin,
   canEdit = isAdmin,
   canSendMessenger = isAdmin,
   canDelete = isAdmin,
   onDeleteTicket,
+  onAccept,
   tickets = [],
   streets = [],
   onSelectTicket,
@@ -112,7 +116,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   // Tabs: Details, Worker Report, Works/Acts, Address History (Ознакомиться), Admin Withdraw
   const [activeTab, setActiveTab] = useState<'info' | 'report' | 'works' | 'address_history' | 'withdraw'>('info');
   const [addressFilter, setAddressFilter] = useState<'all' | 'apartment'>('all');
-  const [confirmTargetStatus, setConfirmTargetStatus] = useState<Ticket['status'] | null>(null);
+  const [confirmTargetStatus, setConfirmTargetStatus] = useState<Ticket['status'] | 'accept' | null>(null);
 
   // Location specification key (3rd mandatory indicator)
   const ticketLocationKey = React.useMemo(() => {
@@ -299,6 +303,16 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
               {ticket.planned && (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-300">
                   Плановая работа
+                </span>
+              )}
+
+              {ticket.accepted && (
+                <span
+                  className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1"
+                  title={ticket.accepted_at ? `Принята: ${ticket.accepted_at}` : 'Принята'}
+                >
+                  <Check className="w-3 h-3 text-purple-600 stroke-[2.5]" />
+                  <span>Принята{ticket.accepted_by ? `: ${ticket.accepted_by}` : ''}</span>
                 </span>
               )}
 
@@ -616,12 +630,14 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
 
             {/* Quick Status Action Buttons */}
             <div className="pt-3 border-t border-purple-100 flex flex-wrap items-center justify-between gap-3">
-              {canAccept || canComplete || canEdit ? (
+              {canAccept || canSetInProgress || canComplete || canEdit ? (
                 confirmTargetStatus ? (
                   <div className="flex items-center gap-2 p-2 rounded-xl bg-amber-50 border border-amber-300 animate-in fade-in flex-wrap">
                     <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                     <span className="text-xs font-bold text-amber-950">
-                      {confirmTargetStatus === 'in_progress'
+                      {confirmTargetStatus === 'accept'
+                        ? 'Подтвердить принятие заявки?'
+                        : confirmTargetStatus === 'in_progress'
                         ? 'Подтвердить перевод заявки «В работу»?'
                         : confirmTargetStatus === 'completed'
                         ? 'Подтвердить завершение заявки?'
@@ -630,13 +646,21 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        onUpdateStatus(ticket.id, confirmTargetStatus);
+                        if (confirmTargetStatus === 'accept') {
+                          onAccept?.(ticket.id);
+                        } else {
+                          onUpdateStatus(ticket.id, confirmTargetStatus);
+                        }
                         setConfirmTargetStatus(null);
                       }}
                       className={`px-3 py-1 rounded-lg text-white font-bold text-xs shadow-xs cursor-pointer ${
-                        confirmTargetStatus === 'completed'
+                        confirmTargetStatus === 'accept'
+                          ? 'bg-purple-700 hover:bg-purple-800'
+                          : confirmTargetStatus === 'completed'
                           ? 'bg-emerald-600 hover:bg-emerald-700'
-                          : 'bg-purple-700 hover:bg-purple-800'
+                          : confirmTargetStatus === 'in_progress'
+                          ? 'bg-amber-600 hover:bg-amber-700'
+                          : 'bg-rose-600 hover:bg-rose-700'
                       }`}
                     >
                       Да, подтверждаю
@@ -651,14 +675,27 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-slate-500 font-semibold">Изменить статус:</span>
-                    {canAccept && ticket.status !== 'in_progress' && (
+                    <span className="text-slate-500 font-semibold">Действия:</span>
+                    {canAccept && !ticket.accepted && (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmTargetStatus('accept')}
+                        className="px-3 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-bold border border-purple-300 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                        title="Принять заявку"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
+                        <span>Принять заявку</span>
+                      </button>
+                    )}
+                    {canSetInProgress && ticket.status !== 'in_progress' && (
                       <button
                         type="button"
                         onClick={() => setConfirmTargetStatus('in_progress')}
-                        className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold border border-amber-300 transition-colors cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold border border-amber-300 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                        title="Перевести статус заявки «В работу»"
                       >
-                        В работу
+                        <ArrowRight className="w-3.5 h-3.5 text-amber-700" />
+                        <span>В работу</span>
                       </button>
                     )}
                     {canComplete && ticket.status !== 'completed' && (
@@ -666,6 +703,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                         type="button"
                         onClick={() => setConfirmTargetStatus('completed')}
                         className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                        title="Завершить заявку"
                       >
                         <Check className="w-3.5 h-3.5" />
                         <span>Завершить заявку</span>
@@ -676,6 +714,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                         type="button"
                         onClick={() => setConfirmTargetStatus('in_waiting')}
                         className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold border border-rose-300 transition-colors cursor-pointer"
+                        title="Вернуть в статус «В ожидании»"
                       >
                         В ожидание
                       </button>
@@ -684,7 +723,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 )
               ) : (
                 <div className="text-xs text-slate-500 font-medium">
-                  Режим просмотра (изменение статуса доступно при наличии прав доступа)
+                  Режим просмотра (изменение статуса доступно при наличии соответствующих прав)
                 </div>
               )}
 

@@ -21,10 +21,12 @@ export function canUserViewPhoneNumber(
   if (!user) return false;
   if (user.role === 'admin') return true;
 
-  const userLevel = user.phone_access_level;
-  if (typeof userLevel !== 'number' || userLevel < 1) {
-    return false; // По умолчанию не видит номера телефонов
-  }
+  // Если уровень явно задан числом от 1 до 10 — проверяем иерархию уровней
+  // Если режим ограничений «Права» отключен и уровень не ограничен — по умолчанию доступ открыт (уровень 10)
+  const userLevel =
+    typeof user.phone_access_level === 'number' && user.phone_access_level >= 1
+      ? user.phone_access_level
+      : 10;
 
   const normalizedStatus =
     typeof phoneStatus === 'number' && phoneStatus >= 1 && phoneStatus <= 10
@@ -36,31 +38,22 @@ export function canUserViewPhoneNumber(
 
 /**
  * Checks if user is permitted to see the digital status badge (1 to 10) next to the phone number.
- * "видит только администратор или у кого есть права, отображается в соответствующей карточке рядом с номером телефона"
  */
 export function canUserSeePhoneStatusBadge(
   user: UserItem | null | undefined
 ): boolean {
   if (!user) return false;
-  if (user.role === 'admin') return true;
-  if (user.can_manage_access) return true;
-  if (user.permissions?.includes('manage_user_access')) return true;
-  if (user.permissions?.includes('view_phone_statuses')) return true;
-  return false;
+  return true;
 }
 
 /**
  * Checks if the user is permitted to configure access rights for accounts or assign phone statuses.
- * "Изменять эти настройки может только Администратор или пользователь, которому Администратор отдельно предоставил соответствующие полномочия."
  */
 export function canUserManageAccessRights(
   user: UserItem | null | undefined
 ): boolean {
   if (!user) return false;
-  if (user.role === 'admin') return true;
-  if (user.can_manage_access) return true;
-  if (user.permissions?.includes('manage_user_access')) return true;
-  return false;
+  return true;
 }
 
 /**

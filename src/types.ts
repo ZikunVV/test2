@@ -118,6 +118,9 @@ export interface Ticket {
   worker_report_type?: string;
   worker_report_recipient?: string;
   worker_report_at?: string;
+  accepted?: boolean;
+  accepted_by?: string;
+  accepted_at?: string;
   withdrawn_by?: string;
   withdrawn_at?: string;
   withdrawn_reason?: string;

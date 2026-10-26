@@ -130,6 +130,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
     }
   }, [initialTab]);
 
+  // Active selected user (one click changes color, double click opens access modal)
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+
   // Expanded user permissions matrix
   const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
 
@@ -318,9 +321,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
     // Действия с заявками
     { key: 'new_request', label: 'Заявки: Подать заявку', group: 'Разрешения на действия с заявками' },
     { key: 'send_messenger', label: 'Заявки: Отправить мастеру на Telegram или Viber', group: 'Разрешения на действия с заявками' },
-    { key: 'accept_request', label: 'Заявки: Принять заявку в работу', group: 'Разрешения на действия с заявками' },
-    { key: 'edit_request', label: 'Заявки: Редактировать заявку, акты и отчёты', group: 'Разрешения на действия с заявками' },
+    { key: 'accept_request', label: 'Заявки: Принять заявку', group: 'Разрешения на действия с заявками' },
+    { key: 'in_progress_request', label: 'Заявки: Изменение статуса «В работу»', group: 'Разрешения на действия с заявками' },
     { key: 'complete_request', label: 'Заявки: Завершить заявку', group: 'Разрешения на действия с заявками' },
+    { key: 'edit_request', label: 'Заявки: Редактировать заявку, акты и отчёты', group: 'Разрешения на действия с заявками' },
     { key: 'delete_request', label: 'Заявки: Удалить / Снять заявку', group: 'Разрешения на действия с заявками' },
 
     // Действия с домами и картой
@@ -656,12 +660,23 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
           <div className="divide-y divide-purple-100 text-xs">
             {users.map((user) => {
+              const isSelected = selectedUserId === user.id;
               const isExpanded = expandedUserId === user.id;
               const userPerms = user.permissions || [];
               const assignedOrg = organizations.find((o) => o.id === user.organization_id);
 
               return (
-                <div key={user.id} className="p-4 space-y-3 hover:bg-purple-50/20 transition-colors">
+                <div
+                  key={user.id}
+                  onClick={() => setSelectedUserId(isSelected ? null : user.id)}
+                  onDoubleClick={() => setAccessModalUser(user)}
+                  title="Один клик — активный выбор (меняет цвет строки), двойной клик — открывает настройку прав доступа аккаунта"
+                  className={`p-4 space-y-3 rounded-2xl border transition-all duration-150 cursor-pointer select-none ${
+                    isSelected
+                      ? 'bg-purple-100/90 border-purple-400 ring-2 ring-purple-300 shadow-xs'
+                      : 'border-transparent hover:bg-purple-50/40'
+                  }`}
+                >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
@@ -715,7 +730,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       </div>
 
                       <div className="text-slate-500 text-[11px] mt-1 flex items-center gap-3 flex-wrap font-mono">
-                        <div className="flex items-center gap-1.5">
+                        <div
+                          className="flex items-center gap-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                          onDoubleClick={(e) => e.stopPropagation()}
+                        >
                           <span>Тел:</span>
                           <PhoneBadgeDisplay
                             phone={user.phone}
@@ -735,7 +754,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-wrap self-end lg:self-auto">
+                    <div
+                      className="flex items-center gap-2 flex-wrap self-end lg:self-auto"
+                      onClick={(e) => e.stopPropagation()}
+                      onDoubleClick={(e) => e.stopPropagation()}
+                    >
                       {/* Approved toggle */}
                       <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-slate-700 select-none">
                         <input
@@ -798,19 +821,6 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       >
                         <Shield className="w-3.5 h-3.5" />
                         <span>Настройка прав</span>
-                      </button>
-
-                      {/* Permissions quick toggle accordion */}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setExpandedUserId(isExpanded ? null : user.id)
-                        }
-                        className="px-2.5 py-1 rounded-lg border border-purple-200 hover:bg-purple-50 text-purple-800 font-bold text-xs flex items-center gap-1 cursor-pointer"
-                        title="Быстрый просмотр разрешений"
-                      >
-                        <Key className="w-3.5 h-3.5 text-purple-600" />
-                        <span>({userPerms.length})</span>
                       </button>
 
                       {user.username !== 'admin' && onDeleteUser && (

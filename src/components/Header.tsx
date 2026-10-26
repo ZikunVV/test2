@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ThemeConfig, GradientOption, UserItem } from '../types';
 import { useLanguage } from '../utils/i18n';
 import { PWAInstallButton } from './PWAInstallButton';
-import { Globe, ChevronDown, Menu, User, Bell, Database, FolderDown, Mic, ChevronLeft, ChevronRight, Palette } from 'lucide-react';
+import { Globe, ChevronDown, Menu, User, Bell, Database, FolderDown, Mic, ChevronLeft, ChevronRight, Palette, Github } from 'lucide-react';
 
 interface HeaderProps {
   theme: ThemeConfig;
@@ -18,6 +18,7 @@ interface HeaderProps {
   canAccessProject?: boolean;
   onOpenBackupModal?: () => void;
   onDownloadProject?: () => void;
+  onOpenGitHubGuide?: () => void;
   isDownloadingProject?: boolean;
   currentUser?: UserItem;
 }
@@ -36,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   canAccessProject = isAdmin,
   onOpenBackupModal,
   onDownloadProject,
+  onOpenGitHubGuide,
   isDownloadingProject = false,
   currentUser,
 }) => {
@@ -208,18 +210,33 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Project Archive Download Button ("проэкт") (Visible ONLY to users with permissions) */}
         {canAccessProject && onDownloadProject && (
-          <button
-            onClick={onDownloadProject}
-            disabled={isDownloadingProject}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-bold transition-all hover:bg-purple-50 text-purple-900 border-purple-200 shadow-2xs cursor-pointer active:scale-95"
-            style={{
-              borderColor: theme.keyColors.cardBorder,
-            }}
-            title="Скачать последнюю версию проекта (ZIP архив для переноса в AI Studio / ChatGPT)"
-          >
-            <FolderDown className="w-3.5 h-3.5 text-purple-700" />
-            <span className="font-bold">{isDownloadingProject ? t('Сборка...') : t('проэкт')}</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onDownloadProject}
+              disabled={isDownloadingProject}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-bold transition-all hover:bg-purple-50 text-purple-900 border-purple-200 shadow-2xs cursor-pointer active:scale-95"
+              style={{
+                borderColor: theme.keyColors.cardBorder,
+              }}
+              title="Скачать последнюю версию проекта (ZIP архив со скриптами для GitHub)"
+            >
+              <FolderDown className="w-3.5 h-3.5 text-purple-700" />
+              <span className="font-bold">{isDownloadingProject ? t('Сборка...') : t('проэкт')}</span>
+            </button>
+            {onOpenGitHubGuide && (
+              <button
+                onClick={onOpenGitHubGuide}
+                className="flex items-center justify-center p-1.5 rounded-lg border font-bold transition-all hover:bg-purple-50 text-slate-700 hover:text-purple-900 border-purple-200 shadow-2xs cursor-pointer active:scale-95"
+                style={{
+                  borderColor: theme.keyColors.cardBorder,
+                }}
+                title="Инструкция: как загрузить проект на GitHub без ошибки 100 файлов"
+                aria-label="Инструкция GitHub"
+              >
+                <Github className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         )}
 
 

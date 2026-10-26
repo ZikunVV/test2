@@ -70,7 +70,11 @@ export async function downloadProjectArchive(options?: ExportProjectOptions): Pr
         '/firestore.rules',
         '/firebase-blueprint.json',
         '/public/icon.svg',
-        '/.env.example'
+        '/.env.example',
+        '/push_to_github.bat',
+        '/push_to_github.sh',
+        '/GITHUB_UPLOAD_GUIDE.md',
+        '/README.md'
       ],
       { query: '?raw', import: 'default' }
     );

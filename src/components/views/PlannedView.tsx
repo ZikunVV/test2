@@ -26,6 +26,7 @@ interface PlannedViewProps {
   onOpenTicket: (ticket: Ticket) => void;
   onEditTicket?: (ticket: Ticket) => void;
   onAccept?: (ticketId: string) => void;
+  onSetInProgress?: (ticketId: string) => void;
   onComplete?: (ticketId: string) => void;
   onUpdateTicketPhoneStatus?: (
     ticketId: string,
@@ -36,6 +37,7 @@ interface PlannedViewProps {
   canEdit?: boolean;
   canCreate?: boolean;
   canAccept?: boolean;
+  canSetInProgress?: boolean;
   canComplete?: boolean;
   canSendMessenger?: boolean;
   canDelete?: boolean;
@@ -54,12 +56,14 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
   onOpenTicket,
   onEditTicket,
   onAccept,
+  onSetInProgress,
   onComplete,
   onUpdateTicketPhoneStatus,
   canEdit = true,
   canCreate = canEdit,
-  canAccept = canEdit,
-  canComplete = canEdit,
+  canAccept = false,
+  canSetInProgress = false,
+  canComplete = false,
   canSendMessenger = canEdit,
   canDelete = false,
   onDelete,
@@ -217,7 +221,7 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
                   ? 'В работе'
                   : statusFilter === 'in_waiting'
                   ? 'В ожидании'
-                  : 'Выполнено'}
+                  : 'Закрыто за сегодня'}
               </span>
               <span className="text-purple-600 font-black">✕</span>
             </button>
@@ -266,7 +270,7 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
         </div>
       </div>
 
-      {/* Summary / Filter Cards: "В работе", "В ожидании", "Выполнено" — активные кликабельные кнопки как на Главной */}
+      {/* Summary / Filter Cards: "В работе", "В ожидании", "Закрыто за сегодня" — активные кликабельные кнопки как на Главной */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* 1. В работе */}
         <div
@@ -290,10 +294,6 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
             }`}>
               <Clock className="w-4 h-4" />
             </div>
-          </div>
-          <div className="mt-2 text-[11px] font-medium flex items-center gap-1.5 text-amber-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            <span>{statusFilter === 'in_progress' ? '● Фильтр активен (клик — сбросить)' : 'нажмите для фильтрации'}</span>
           </div>
         </div>
 
@@ -320,13 +320,9 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
               <AlertCircle className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 text-[11px] font-medium flex items-center gap-1.5 text-rose-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            <span>{statusFilter === 'in_waiting' ? '● Фильтр активен (клик — сбросить)' : 'нажмите для фильтрации'}</span>
-          </div>
         </div>
 
-        {/* 3. Выполнено */}
+        {/* 3. Закрыто за сегодня */}
         <div
           onClick={() => setStatusFilter((prev) => (prev === 'completed' ? 'all' : 'completed'))}
           className={`cursor-pointer rounded-2xl p-4 border transition-all duration-200 relative overflow-hidden group shadow-2xs hover:shadow-xs select-none ${
@@ -334,11 +330,11 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
               ? 'ring-2 ring-emerald-500 bg-emerald-50/80 border-emerald-400 shadow-sm scale-[1.01]'
               : 'border-emerald-200/80 bg-white hover:border-emerald-300 hover:bg-emerald-50/30'
           }`}
-          title={statusFilter === 'completed' ? 'Активен фильтр: Выполнено (клик — сбросить)' : 'Клик — показать только выполненные заявки'}
+          title={statusFilter === 'completed' ? 'Активен фильтр: Закрыто за сегодня (клик — сбросить)' : 'Клик — показать только закрытые заявки'}
         >
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-emerald-900">Выполнено</span>
+              <span className="text-xs font-bold text-emerald-900">Закрыто за сегодня</span>
               <div className="text-2xl font-black text-emerald-950 mt-0.5">
                 {completedCount}
               </div>
@@ -348,10 +344,6 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
             }`}>
               <CheckCircle2 className="w-4 h-4" />
             </div>
-          </div>
-          <div className="mt-2 text-[11px] font-medium flex items-center gap-1.5 text-emerald-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>{statusFilter === 'completed' ? '● Фильтр активен (клик — сбросить)' : 'нажмите для фильтрации'}</span>
           </div>
         </div>
       </div>
@@ -572,6 +564,7 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
               isSelected={selectedTicketId === t.id}
               canEdit={canEdit}
               canAccept={canAccept}
+              canSetInProgress={canSetInProgress}
               canComplete={canComplete}
               canSendMessenger={canSendMessenger}
               canDelete={canDelete}
@@ -580,6 +573,7 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
                 setSelectedTicketId(selectedTicketId === t.id ? null : t.id);
               }}
               onAccept={(id) => onAccept?.(id)}
+              onSetInProgress={(id) => onSetInProgress?.(id)}
               onComplete={(id) => onComplete?.(id)}
               onOpenDetails={(ticket) => onOpenTicket(ticket)}
               onEditTicket={onEditTicket}
