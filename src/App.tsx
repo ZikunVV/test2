@@ -1811,32 +1811,46 @@ export default function App() {
   ) => {
     const reportAt = new Date().toLocaleString('ru-RU');
     setTickets((prev) =>
-      prev.map((t) =>
-        t.id === ticketId
-          ? {
-              ...t,
-              worker_report: reportText,
-              worker_report_type: reportType,
-              worker_report_recipient: recipient,
-              worker_report_at: reportAt,
-              status: reportType === 'completed' ? 'completed' : 'in_progress',
-            }
-          : t
-      )
+      prev.map((t) => {
+        if (t.id !== ticketId) return t;
+        let nextStatus = t.status;
+        if (reportType === 'completed') {
+          nextStatus = 'completed';
+        } else if (reportType === 'in_progress') {
+          nextStatus = 'in_progress';
+        } else if (reportType === 'in_waiting') {
+          nextStatus = 'in_waiting';
+        }
+        return {
+          ...t,
+          worker_report: reportText,
+          worker_report_type: reportType,
+          worker_report_recipient: recipient,
+          worker_report_at: reportAt,
+          status: nextStatus,
+        };
+      })
     );
     if (selectedTicketForDetail?.id === ticketId) {
-      setSelectedTicketForDetail((prev) =>
-        prev
-          ? {
-              ...prev,
-              worker_report: reportText,
-              worker_report_type: reportType,
-              worker_report_recipient: recipient,
-              worker_report_at: reportAt,
-              status: reportType === 'completed' ? 'completed' : 'in_progress',
-            }
-          : null
-      );
+      setSelectedTicketForDetail((prev) => {
+        if (!prev) return null;
+        let nextStatus = prev.status;
+        if (reportType === 'completed') {
+          nextStatus = 'completed';
+        } else if (reportType === 'in_progress') {
+          nextStatus = 'in_progress';
+        } else if (reportType === 'in_waiting') {
+          nextStatus = 'in_waiting';
+        }
+        return {
+          ...prev,
+          worker_report: reportText,
+          worker_report_type: reportType,
+          worker_report_recipient: recipient,
+          worker_report_at: reportAt,
+          status: nextStatus,
+        };
+      });
     }
     setAuditLogs((prev) => [
       {
@@ -1851,11 +1865,17 @@ export default function App() {
       },
       ...prev,
     ]);
-    triggerAlertSignal(
-      'ticket_status',
-      'Сдан отчёт сотрудника',
-      `${currentUser.full_name}: ${reportText}`
-    );
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        title: 'Сдан отчёт сотрудника',
+        description: `${currentUser.full_name}: ${reportText}`,
+        time: 'Только что',
+        unread: true,
+        type: 'info',
+      },
+      ...prev,
+    ]);
   };
   const handleWithdrawTicket = (
     ticketId: string,
