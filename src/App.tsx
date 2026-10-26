@@ -1746,18 +1746,6 @@ export default function App() {
       },
       ...prev,
     ]);
-
-    const isUrgent =
-      newTicket.urgency === 'critical' ||
-      newTicket.urgency === 'high' ||
-      newTicket.title.toLowerCase().includes('авар') ||
-      newTicket.title.toLowerCase().includes('прорыв');
-
-    triggerAlertSignal(
-      isUrgent ? 'urgent_ticket' : 'new_ticket',
-      isUrgent ? 'Внимание! Аварийная заявка' : 'Новая заявка создана',
-      `${newTicket.number}: ${newTicket.title} (${newTicket.address})`
-    );
   };
 
   const handleOpenEditTicket = (ticket: Ticket) => {
