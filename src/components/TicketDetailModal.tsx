@@ -6,6 +6,7 @@ import {
   X,
   MapPin,
   Calendar,
+  CalendarPlus,
   Clock,
   User,
   Phone,
@@ -84,6 +85,7 @@ interface TicketDetailModalProps {
     }
   ) => void;
   onInspectWorker?: (workerName: string) => void;
+  onCreatePlannedTicket?: (ticket: Omit<Ticket, 'id' | 'number'>) => void;
 }
 
 export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
@@ -110,11 +112,12 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   onAddWork,
   onInspectWorker,
   onUpdatePhoneStatus,
+  onCreatePlannedTicket,
 }) => {
   if (!ticket) return null;
 
-  // Tabs: Details, Worker Report, Works/Acts, Address History (Ознакомиться), Admin Withdraw
-  const [activeTab, setActiveTab] = useState<'info' | 'report' | 'works' | 'address_history' | 'withdraw'>('info');
+  // Tabs: Details, Worker Report, Works/Acts, Address History (Ознакомиться), Add Planned Work, Admin Withdraw
+  const [activeTab, setActiveTab] = useState<'info' | 'report' | 'works' | 'address_history' | 'add_planned' | 'withdraw'>('info');
   const [addressFilter, setAddressFilter] = useState<'all' | 'apartment'>('all');
 
   // Location specification key (3rd mandatory indicator)
@@ -266,6 +269,96 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
     setActiveTab('info');
   };
 
+  // Planned Work State
+  const tomorrowStr = React.useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }, []);
+
+  const [plannedTitle, setPlannedTitle] = useState('');
+  const [plannedExecutionDate, setPlannedExecutionDate] = useState(tomorrowStr);
+  const [plannedCategory, setPlannedCategory] = useState<Ticket['category']>('general');
+  const [plannedUrgency, setPlannedUrgency] = useState<Ticket['urgency']>('normal');
+  const [plannedWorker, setPlannedWorker] = useState('');
+  const [plannedDescription, setPlannedDescription] = useState('');
+  const [plannedWorkMaterials, setPlannedWorkMaterials] = useState('');
+  const [plannedSuccessMessage, setPlannedSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (ticket) {
+      setPlannedTitle(
+        ticket.future_plan
+          ? ticket.future_plan
+          : `Плановые работы: ${ticket.title}`
+      );
+      setPlannedCategory(ticket.category || 'general');
+      setPlannedUrgency('normal');
+      setPlannedWorker(
+        ticket.assignees && ticket.assignees.length > 0
+          ? ticket.assignees.join(', ')
+          : ticket.assignee || ''
+      );
+      setPlannedDescription(ticket.description || ticket.work_description || '');
+      setPlannedWorkMaterials(ticket.work_materials || '');
+      setPlannedExecutionDate(tomorrowStr);
+      setPlannedSuccessMessage(null);
+    }
+  }, [ticket, tomorrowStr]);
+
+  const handleCreatePlannedSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!plannedTitle.trim()) return;
+
+    if (onCreatePlannedTicket) {
+      const workers = plannedWorker.trim()
+        ? plannedWorker
+            .split(',')
+            .map((w) => w.trim())
+            .filter(Boolean)
+        : ['Не назначен'];
+
+      onCreatePlannedTicket({
+        date: plannedExecutionDate || tomorrowStr,
+        execution_date: plannedExecutionDate || undefined,
+        title: plannedTitle.trim(),
+        description: plannedDescription.trim() || undefined,
+        status: 'in_waiting',
+        planned: true,
+        address: ticket.address,
+        street: ticket.street,
+        house_number: ticket.house_number,
+        building: ticket.building,
+        apartment: ticket.apartment,
+        location_type: ticket.location_type,
+        location_value: ticket.location_value,
+        category: plannedCategory,
+        urgency: plannedUrgency,
+        assignee: workers.join(', '),
+        assignees: workers,
+        given_by: ticket.given_by || ticket.residentName || undefined,
+        residentName: ticket.residentName,
+        residentPhone: ticket.residentPhone || ticket.phone,
+        phone: ticket.phone,
+        phone_status: ticket.phone_status,
+        additional_phones: ticket.additional_phones,
+        additional_phone_statuses: ticket.additional_phone_statuses,
+        work_description: plannedDescription.trim() || undefined,
+        work_materials: plannedWorkMaterials.trim() || undefined,
+        photos: [],
+        works: [],
+      });
+
+      setPlannedSuccessMessage(
+        'Новая заявка успешно создана со статусом «Плановые» и добавлена в график!'
+      );
+      setTimeout(() => {
+        setPlannedSuccessMessage(null);
+        setActiveTab('info');
+      }, 2000);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto overflow-x-hidden bg-black/60 backdrop-blur-xs flex items-start sm:items-center justify-center px-3 py-3 sm:p-4">
       <div
@@ -368,7 +461,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 border-b border-purple-100 pt-3 pb-2">
+        <div className="flex items-center gap-1 border-b border-purple-100 pt-3 pb-2 flex-wrap">
           <button
             onClick={() => setActiveTab('info')}
             className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
@@ -421,6 +514,19 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
               <span>Ознакомиться ({otherAddressTickets.length})</span>
             </button>
           )}
+
+          {/* TAB: ДОБАВИТЬ В ПЛАНОВЫЕ РАБОТЫ */}
+          <button
+            onClick={() => setActiveTab('add_planned')}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'add_planned'
+                ? 'bg-purple-100 text-purple-900 border border-purple-200'
+                : 'text-slate-600 hover:text-purple-900'
+            }`}
+          >
+            <CalendarPlus className="w-3.5 h-3.5 text-purple-700" />
+            <span>Добавить в плановые работы</span>
+          </button>
 
           {canDelete && (
             <button
@@ -1111,6 +1217,164 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
               </div>
             )}
           </div>
+        )}
+
+        {/* TAB: ДОБАВИТЬ В ПЛАНОВЫЕ РАБОТЫ */}
+        {activeTab === 'add_planned' && (
+          <form onSubmit={handleCreatePlannedSubmit} className="mt-4 space-y-4">
+            <div className="p-4 rounded-xl border border-purple-200 bg-[#F9F8FD] space-y-3.5">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                    <CalendarPlus className="w-5 h-5 text-purple-700" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900 leading-tight">
+                      Создание плановой работы
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      На основе текущей заявки №{ticket.number} будет автоматически создана новая плановая заявка в системе
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-300 shrink-0">
+                  Статус: Плановые
+                </span>
+              </div>
+
+              {/* Linked Object Address (Auto-filled) */}
+              <div className="p-3 rounded-xl bg-white border border-purple-100 flex items-start gap-2.5">
+                <Building className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">
+                    Адрес объекта (связан с заявкой №{ticket.number})
+                  </span>
+                  <div className="font-bold text-slate-900 text-xs mt-0.5">
+                    {ticket.address}
+                    {ticket.apartment ? ` (кв./пом. ${ticket.apartment})` : ''}
+                  </div>
+                </div>
+              </div>
+
+              {/* Date & Category Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold block mb-1 text-slate-700 text-xs">
+                    Дата проведения плановых работ <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={plannedExecutionDate}
+                    onChange={(e) => setPlannedExecutionDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-bold text-xs focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold block mb-1 text-slate-700 text-xs">
+                    Категория плановых работ
+                  </label>
+                  <select
+                    value={plannedCategory}
+                    onChange={(e) => setPlannedCategory(e.target.value as Ticket['category'])}
+                    className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-medium text-xs focus:ring-2 focus:ring-purple-400"
+                  >
+                    <option value="general">Общедомовые работы</option>
+                    <option value="water">Водоснабжение (ХВС / ГВС)</option>
+                    <option value="drain">Водоотведение / Канализация</option>
+                    <option value="roof">Кровельные работы</option>
+                    <option value="entrance">Подъезды и фасады</option>
+                    <option value="electric">Электрооборудование</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Title of Planned Work */}
+              <div>
+                <label className="font-bold block mb-1 text-slate-700 text-xs">
+                  Наименование / Суть плановой работы <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Например: Плановая замена вводного вентиля ХВС, герметизация швов..."
+                  value={plannedTitle}
+                  onChange={(e) => setPlannedTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-bold text-xs focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
+
+              {/* Detailed Work Description */}
+              <div>
+                <label className="font-bold block mb-1 text-slate-700 text-xs">
+                  Подробное описание плановой работы
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Опишите перечень необходимых действий, объем работ, условия допуска..."
+                  value={plannedDescription}
+                  onChange={(e) => setPlannedDescription(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-medium text-xs focus:ring-2 focus:ring-purple-400 resize-none"
+                />
+              </div>
+
+              {/* Workers & Materials Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold block mb-1 text-slate-700 text-xs">
+                    Назначенные исполнители
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ФИО исполнителей через запятую..."
+                    value={plannedWorker}
+                    onChange={(e) => setPlannedWorker(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-medium text-xs focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold block mb-1 text-slate-700 text-xs">
+                    Необходимые материалы / инвентарь
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Трубы, фитинги, муфты, сварочный аппарат..."
+                    value={plannedWorkMaterials}
+                    onChange={(e) => setPlannedWorkMaterials(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-medium text-xs focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Success alert */}
+            {plannedSuccessMessage && (
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{plannedSuccessMessage}</span>
+              </div>
+            )}
+
+            {/* Form Actions */}
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setActiveTab('info')}
+                className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 font-semibold cursor-pointer"
+              >
+                Отмена
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-purple-700 text-white font-bold hover:bg-purple-800 shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <CalendarPlus className="w-4 h-4" />
+                <span>Создать плановую работу</span>
+              </button>
+            </div>
+          </form>
         )}
 
         {/* TAB 4: ADMIN WITHDRAW REQUEST */}

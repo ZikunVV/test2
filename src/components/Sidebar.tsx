@@ -584,10 +584,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="pt-2 mt-1 border-t border-purple-200/60 flex items-center justify-between text-[11px] select-none">
             <div className="flex items-center gap-1.5 font-bold text-slate-700">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Сервер онлайн" />
-              <span>{APP_VERSION_LABEL}</span>
-              <span className="text-[10px] text-purple-800 bg-purple-100 font-extrabold px-1.5 py-0.2 rounded">
-                #{APP_BUILD_NUMBER}
-              </span>
+              <span>Версия № {APP_BUILD_NUMBER}</span>
             </div>
 
             <button

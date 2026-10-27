@@ -3381,6 +3381,7 @@ export default function App() {
         onWithdrawTicket={handleWithdrawTicket}
         onAddWork={handleAddWork}
         onInspectWorker={canViewEmployeeCard ? handleInspectWorker : undefined}
+        onCreatePlannedTicket={handleCreateTicket}
       />
 
       {/* Edit Ticket Modal (for editing ready/completed tickets from Список работ) */}
