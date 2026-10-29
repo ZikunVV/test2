@@ -180,7 +180,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       return;
     }
 
-    // All newly registered users automatically receive "viewer" (Только чтение) status
+    // Newly registered users receive base permissions; Administrator decides additional rights
     const created = onRegisterUser({
       full_name: cleanUsername,
       username: cleanUsername,
@@ -928,6 +928,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   <p className="text-xs text-slate-500 mt-0.5">
                     Укажите логин, пароль и 6-значный код от Администратора для входа.
                   </p>
+                  <div className="mt-2.5 p-2.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-[11px] font-bold flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-purple-700 shrink-0" />
+                    <span>Новый аккаунт создаётся с базовыми правами. Расширенный доступ и полномочия назначает Администратор.</span>
+                  </div>
                 </div>
 
                 {/* 1. Логин */}

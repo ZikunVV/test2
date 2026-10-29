@@ -388,29 +388,75 @@ export default function App() {
   const [users, setUsers] = useState<UserItem[]>(() => {
     const loaded = loadStorage('app_users', INITIAL_USERS);
     return loaded.map((u) => {
-      const isAdminUser = u.username === 'admin';
-      const nextPass = isAdminUser
-        ? !u.password || u.password === 'admin'
-          ? 'Vjqgfhjkm0639444986Admin'
-          : u.password
-        : u.password || '123';
-      
+      const isAdminUser = u.role === 'admin' || u.username === 'admin';
+      const nextPass =
+        isAdminUser && u.username === 'admin'
+          ? !u.password || u.password === 'admin'
+            ? 'Vjqgfhjkm0639444986Admin'
+            : u.password
+          : u.password || '123';
+
       const adminPerms = isAdminUser
-        ? Array.from(new Set([...(u.permissions || []), 'manage_user_access', 'view_phone_statuses', 'accept_request', 'in_progress_request', 'complete_request']))
+        ? Array.from(
+            new Set([
+              ...(u.permissions || []),
+              'home',
+              'map',
+              'houses',
+              'new_house',
+              'edit_house',
+              'delete_house',
+              'new_request',
+              'send_messenger',
+              'accept_request',
+              'in_progress_request',
+              'edit_request',
+              'complete_request',
+              'delete_request',
+              'planned',
+              'my_tasks_view',
+              'people_view',
+              'view_employee_card',
+              'add_employee',
+              'internal',
+              'delete_employee',
+              'search',
+              'audit',
+              'notifications',
+              'messages',
+              'voice_control',
+              'voice_reminder',
+              'admin',
+              'manage_user_access',
+              'view_phone_statuses',
+              'database_backup',
+              'project_download',
+            ])
+          )
         : (u.permissions || []);
 
       return {
         ...u,
+        role: isAdminUser ? 'admin' : u.role,
         organization_id: u.organization_id || (isAdminUser ? 'all' : 'org-1'),
         password: nextPass,
         permissions: adminPerms,
         phone_access_level: isAdminUser
-          ? (typeof u.phone_access_level === 'number' ? u.phone_access_level : 10)
-          : (typeof u.phone_access_level === 'number' ? u.phone_access_level : null),
+          ? 10
+          : typeof u.phone_access_level === 'number'
+          ? u.phone_access_level
+          : null,
         can_manage_access: isAdminUser ? true : Boolean(u.can_manage_access),
-        phone_status: typeof u.phone_status === 'number' ? u.phone_status : (isAdminUser ? 10 : 1),
+        phone_status:
+          typeof u.phone_status === 'number'
+            ? u.phone_status
+            : isAdminUser
+            ? 10
+            : 1,
         personal_tasks_limit:
-          typeof u.personal_tasks_limit === 'number' ? u.personal_tasks_limit : 100,
+          typeof u.personal_tasks_limit === 'number'
+            ? u.personal_tasks_limit
+            : 100,
       };
     });
   });
@@ -2387,6 +2433,7 @@ export default function App() {
             'houses',
             'new_house',
             'edit_house',
+            'delete_house',
             'new_request',
             'send_messenger',
             'accept_request',
@@ -2408,6 +2455,10 @@ export default function App() {
             'voice_control',
             'voice_reminder',
             'admin',
+            'manage_user_access',
+            'view_phone_statuses',
+            'database_backup',
+            'project_download',
           ]
         : newUser.role === 'editor'
         ? [
@@ -2439,6 +2490,22 @@ export default function App() {
       approved: true,
       created_at: new Date().toISOString().split('T')[0],
       permissions: defaultPerms,
+      phone_access_level:
+        newUser.role === 'admin'
+          ? 10
+          : typeof newUser.phone_access_level === 'number'
+          ? newUser.phone_access_level
+          : null,
+      can_manage_access:
+        newUser.role === 'admin'
+          ? true
+          : Boolean(newUser.can_manage_access),
+      phone_status:
+        typeof newUser.phone_status === 'number'
+          ? newUser.phone_status
+          : newUser.role === 'admin'
+          ? 10
+          : 1,
       personal_tasks_limit:
         typeof newUser.personal_tasks_limit === 'number'
           ? newUser.personal_tasks_limit
@@ -2453,7 +2520,7 @@ export default function App() {
         entity: 'Пользователь',
         entity_id: created.id,
         user_name: currentUser?.full_name || 'Система',
-        details: `Создана учётная запись «${created.full_name}» (логин: ${created.username})`,
+        details: `Создана учётная запись «${created.full_name}» (логин: ${created.username}, роль: ${created.role === 'admin' ? 'Администратор' : created.role})`,
         created_at: new Date().toLocaleString('ru-RU'),
         can_undo: false,
       },
