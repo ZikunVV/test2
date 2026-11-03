@@ -218,6 +218,7 @@ export interface PersonalPerson {
   id: string;
   organization_id?: string;
   full_name: string;
+  full_names?: string[]; // Несколько имён на один контакт/адрес
   organization: string;
   position: string;
   residence_address: string;

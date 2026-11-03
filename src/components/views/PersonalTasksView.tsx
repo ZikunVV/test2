@@ -200,11 +200,12 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   // Modal for new/edit personal person
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<PersonalPerson | null>(null);
-  const [personFullName, setPersonFullName] = useState('');
+  const [personFullNames, setPersonFullNames] = useState<string[]>(['']);
   const [personOrg, setPersonOrg] = useState('');
   const [personPos, setPersonPos] = useState('');
   const [personAddress, setPersonAddress] = useState('');
   const [personPhones, setPersonPhones] = useState<string[]>(['']);
+  const [personPhoneStatuses, setPersonPhoneStatuses] = useState<number[]>([1]);
   const [personNotes, setPersonNotes] = useState('');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
 
@@ -325,7 +326,9 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   const filteredPhonebook = myPeople.filter((p) => {
     if (!phonebookSearch.trim()) return true;
     const q = phonebookSearch.toLowerCase();
-    const nameMatch = p.full_name.toLowerCase().includes(q);
+    const nameMatch =
+      p.full_name.toLowerCase().includes(q) ||
+      (p.full_names || []).some((n) => n.toLowerCase().includes(q));
     const orgMatch = (p.organization || '').toLowerCase().includes(q);
     const posMatch = (p.position || '').toLowerCase().includes(q);
     const addrMatch = (p.residence_address || '').toLowerCase().includes(q);
@@ -435,11 +438,12 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   const handleOpenCreatePerson = () => {
     if (!isAuthorized) return;
     setEditingPerson(null);
-    setPersonFullName('');
+    setPersonFullNames(['']);
     setPersonOrg('');
     setPersonPos('');
     setPersonAddress('');
     setPersonPhones(['']);
+    setPersonPhoneStatuses([1]);
     setPersonNotes('');
     setIsPersonModalOpen(true);
   };
@@ -447,28 +451,92 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   const handleOpenEditPerson = (p: PersonalPerson) => {
     if (!isAuthorized || p.owner_user_id !== currentUser?.id) return;
     setEditingPerson(p);
-    setPersonFullName(p.full_name);
-    setPersonOrg(p.organization);
-    setPersonPos(p.position);
-    setPersonAddress(p.residence_address);
-    setPersonPhones(p.phones.length > 0 ? [...p.phones] : ['']);
-    setPersonNotes(p.notes);
+
+    const namesList =
+      p.full_names && p.full_names.length > 0
+        ? [...p.full_names]
+        : p.full_name
+        ? p.full_name
+            .split(/[,;\n]+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [''];
+    setPersonFullNames(namesList.length > 0 ? namesList : ['']);
+
+    setPersonOrg(p.organization || '');
+    setPersonPos(p.position || '');
+    setPersonAddress(p.residence_address || '');
+
+    const phonesList = p.phones && p.phones.length > 0 ? [...p.phones] : [''];
+    setPersonPhones(phonesList);
+    setPersonPhoneStatuses(
+      p.phone_statuses && p.phone_statuses.length > 0
+        ? [...p.phone_statuses]
+        : phonesList.map(() => 1)
+    );
+
+    setPersonNotes(p.notes || '');
     setIsPersonModalOpen(true);
+  };
+
+  const handlePersonNameChange = (idx: number, val: string) => {
+    const updated = [...personFullNames];
+    updated[idx] = val;
+    setPersonFullNames(updated);
+  };
+
+  const handleAddPersonName = () => {
+    setPersonFullNames((prev) => [...prev, '']);
+  };
+
+  const handleRemovePersonName = (idx: number) => {
+    if (personFullNames.length <= 1) {
+      setPersonFullNames(['']);
+    } else {
+      setPersonFullNames((prev) => prev.filter((_, i) => i !== idx));
+    }
+  };
+
+  const handlePersonPhoneChange = (idx: number, val: string) => {
+    const updated = [...personPhones];
+    updated[idx] = val;
+    setPersonPhones(updated);
+  };
+
+  const handleAddPersonPhone = () => {
+    setPersonPhones((prev) => [...prev, '']);
+    setPersonPhoneStatuses((prev) => [...prev, 1]);
+  };
+
+  const handleRemovePersonPhone = (idx: number) => {
+    if (personPhones.length <= 1) {
+      setPersonPhones(['']);
+      setPersonPhoneStatuses([1]);
+    } else {
+      setPersonPhones((prev) => prev.filter((_, i) => i !== idx));
+      setPersonPhoneStatuses((prev) => prev.filter((_, i) => i !== idx));
+    }
   };
 
   const handleSavePerson = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!personFullName.trim() || !currentUser) return;
+    const cleanNames = personFullNames.map((n) => n.trim()).filter(Boolean);
+    if (cleanNames.length === 0 || !currentUser) return;
     const cleanPhones = personPhones.map((ph) => ph.trim()).filter(Boolean);
+    const validStatuses = cleanPhones.map((_, i) => personPhoneStatuses[i] || 1);
+
+    const combinedFullName = cleanNames.join(', ');
 
     if (editingPerson) {
       onUpdatePersonalPerson({
         ...editingPerson,
-        full_name: personFullName.trim(),
+        full_name: combinedFullName,
+        full_names: cleanNames,
         organization: personOrg.trim(),
         position: personPos.trim(),
         residence_address: personAddress.trim(),
         phones: cleanPhones,
+        phone_statuses: validStatuses,
         notes: personNotes.trim(),
         owner_user_id: currentUser.id,
         owner_surname: editingPerson.owner_surname || userSurname,
@@ -476,11 +544,13 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
     } else {
       const newPerson: PersonalPerson = {
         id: `my-pp-${Date.now()}`,
-        full_name: personFullName.trim(),
+        full_name: combinedFullName,
+        full_names: cleanNames,
         organization: personOrg.trim(),
         position: personPos.trim(),
         residence_address: personAddress.trim(),
         phones: cleanPhones,
+        phone_statuses: validStatuses,
         notes: personNotes.trim(),
         owner_user_id: currentUser.id,
         owner_surname: userSurname,
@@ -1056,17 +1126,41 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                   title="Один клик — выделить. Двойной клик — редактировать контакт"
                 >
                   {/* Left: Contact Full Name & Account Badge */}
-                  <div className="flex items-center gap-2.5 sm:min-w-[240px]">
-                    <h4 className="font-extrabold text-sm text-slate-900">
-                      {p.full_name}
-                    </h4>
-                    <span className="px-1.5 py-0.2 rounded-md bg-purple-100 text-purple-900 border border-purple-200 font-bold text-[9px] shrink-0">
-                      {p.owner_surname || userSurname}
-                    </span>
+                  <div className="flex flex-col gap-1 sm:min-w-[240px]">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h4 className="font-extrabold text-sm text-slate-900">
+                        {p.full_name}
+                      </h4>
+                      <span className="px-1.5 py-0.2 rounded-md bg-purple-100 text-purple-900 border border-purple-200 font-bold text-[9px] shrink-0">
+                        {p.owner_surname || userSurname}
+                      </span>
+                    </div>
+
+                    {/* Multiple names badge if more than 1 name */}
+                    {p.full_names && p.full_names.length > 1 && (
+                      <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-600 pt-0.5">
+                        <Users className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                        <span className="text-[10px] text-purple-900 font-bold">Имена по адресу:</span>
+                        {p.full_names.map((nm, nIdx) => (
+                          <span
+                            key={nIdx}
+                            className="px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200 text-[10px] font-semibold"
+                          >
+                            {nm}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Middle: Organization, Position, Address & Notes (Horizontal layout) */}
+                  {/* Middle: Address, Organization, Position & Notes */}
                   <div className="flex items-center gap-3 text-slate-600 flex-1 min-w-0 flex-wrap">
+                    {p.residence_address && (
+                      <span className="flex items-center gap-1 font-semibold text-slate-800 text-[11px] shrink-0">
+                        <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                        <span>{p.residence_address}</span>
+                      </span>
+                    )}
                     {p.organization && (
                       <span className="flex items-center gap-1 font-semibold text-purple-950 shrink-0">
                         <Building className="w-3.5 h-3.5 text-purple-600 shrink-0" />
@@ -1077,12 +1171,6 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                       <span className="flex items-center gap-1 text-slate-500 shrink-0">
                         <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span>{p.position}</span>
-                      </span>
-                    )}
-                    {p.residence_address && (
-                      <span className="hidden lg:flex items-center gap-1 text-slate-500 text-[11px] truncate">
-                        <MapPin className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                        <span>{p.residence_address}</span>
                       </span>
                     )}
                     {p.notes && (
@@ -1434,18 +1522,53 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                 </div>
               )}
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  ФИО <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={personFullName}
-                  onChange={(e) => setPersonFullName(e.target.value)}
-                  placeholder="Иванов Иван Иванович"
-                  className="w-full px-3 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium"
-                />
+              {/* Имена / Жильцы по адресу (несколько имён на один адрес) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 block text-xs">
+                    Имена / Проживающие по адресу <span className="text-rose-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddPersonName}
+                    className="text-[11px] font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 transition-colors cursor-pointer px-2 py-0.5 rounded-lg bg-purple-50 hover:bg-purple-100 border border-purple-200"
+                  >
+                    <Plus className="w-3 h-3 text-purple-700 stroke-[2.5]" />
+                    <span>Добавить имя</span>
+                  </button>
+                </div>
+
+                <div className="space-y-1.5">
+                  {personFullNames.map((name, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        required={idx === 0}
+                        value={name}
+                        onChange={(e) => handlePersonNameChange(idx, e.target.value)}
+                        placeholder={
+                          idx === 0
+                            ? 'Иванов Иван Иванович (основное имя)'
+                            : `Имя ${idx + 1} (родственник / совладелец)`
+                        }
+                        className="w-full px-3 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium text-xs"
+                      />
+                      {personFullNames.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePersonName(idx)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0 cursor-pointer"
+                          title="Удалить это имя"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  На один адрес можно внести несколько имён (семья, совладельцы, контактные лица).
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1483,22 +1606,57 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                   type="text"
                   value={personAddress}
                   onChange={(e) => setPersonAddress(e.target.value)}
-                  placeholder="ул. Ленина, д. 5"
+                  placeholder="ул. Ленина, д. 5, кв. 10"
                   className="w-full px-3 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
                 />
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Телефон
-                </label>
-                <input
-                  type="text"
-                  value={personPhones[0] || ''}
-                  onChange={(e) => setPersonPhones([e.target.value])}
-                  placeholder="+38 (0__) ___-__-__"
-                  className="w-full px-3 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
-                />
+              {/* Номера телефонов (два и более) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 block text-xs">
+                    Номера телефонов
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddPersonPhone}
+                    className="text-[11px] font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 transition-colors cursor-pointer px-2 py-0.5 rounded-lg bg-purple-50 hover:bg-purple-100 border border-purple-200"
+                  >
+                    <Plus className="w-3 h-3 text-purple-700 stroke-[2.5]" />
+                    <span>Добавить номер</span>
+                  </button>
+                </div>
+
+                <div className="space-y-1.5">
+                  {personPhones.map((ph, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={ph}
+                        onChange={(e) => handlePersonPhoneChange(idx, e.target.value)}
+                        placeholder={
+                          idx === 0
+                            ? '+38 (0__) ___-__-__ (основной)'
+                            : `Телефон ${idx + 1}`
+                        }
+                        className="w-full px-3 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 text-xs font-mono"
+                      />
+                      {personPhones.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePersonPhone(idx)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0 cursor-pointer"
+                          title="Удалить этот номер"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  Можно вводить два и более номера (мобильный, домашний, дополнительный).
+                </p>
               </div>
 
               <div>
