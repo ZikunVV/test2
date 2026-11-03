@@ -3455,6 +3455,7 @@ export default function App() {
       <EditTicketModal
         isOpen={isEditTicketModalOpen}
         ticket={editingTicket}
+        tickets={tickets}
         currentUser={currentUser}
         canDelete={canDeleteTicket}
         onDeleteTicket={(id) => handleRequestDeleteTicket(id)}

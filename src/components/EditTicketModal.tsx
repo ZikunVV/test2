@@ -24,6 +24,8 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
+import { SmartSuggestInput } from './SmartSuggestInput';
+import { SmartSuggestTextarea } from './SmartSuggestTextarea';
 
 interface EditTicketModalProps {
   isOpen: boolean;
@@ -35,6 +37,7 @@ interface EditTicketModalProps {
   people?: PersonalPerson[];
   streets?: StreetItem[];
   houses?: House[];
+  tickets?: Ticket[];
   onInspectWorker?: (workerName: string) => void;
   canDelete?: boolean;
   onDeleteTicket?: (ticketId: string) => void;
@@ -50,6 +53,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
   people = [],
   streets = [],
   houses = [],
+  tickets = [],
   onInspectWorker,
   canDelete = false,
   onDeleteTicket,
@@ -446,11 +450,14 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
               <label className="font-bold text-slate-700 block mb-1">
                 Название / Тема заявки <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="text"
+              <SmartSuggestInput
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                onValueChange={(val) => setTitle(val)}
+                context="problem"
+                tickets={tickets}
+                showQuickStarters={true}
                 placeholder="Например: Замена крана на кухне"
                 className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-semibold"
               />
@@ -1025,10 +1032,14 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
             <label className="font-bold text-slate-700 block mb-1">
               Описание проблемы
             </label>
-            <textarea
+            <SmartSuggestTextarea
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              onValueChange={(val) => setDescription(val)}
+              context="problem"
+              tickets={tickets}
+              showQuickStarters={true}
               placeholder="Подробности заявки..."
               className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
             />
@@ -1040,10 +1051,14 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
               <label className="font-bold text-slate-700 block mb-1">
                 Описание выполненных работ
               </label>
-              <textarea
+              <SmartSuggestTextarea
                 rows={2}
                 value={workDescription}
                 onChange={(e) => setWorkDescription(e.target.value)}
+                onValueChange={(val) => setWorkDescription(val)}
+                context="work"
+                tickets={tickets}
+                showQuickStarters={true}
                 placeholder="Что было сделано..."
                 className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
               />
@@ -1053,10 +1068,14 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
               <label className="font-bold text-slate-700 block mb-1">
                 Использованные материалы
               </label>
-              <textarea
+              <SmartSuggestTextarea
                 rows={2}
                 value={workMaterials}
                 onChange={(e) => setWorkMaterials(e.target.value)}
+                onValueChange={(val) => setWorkMaterials(val)}
+                context="materials"
+                tickets={tickets}
+                showQuickStarters={true}
                 placeholder="Трубы, фитинги, муфты..."
                 className="w-full px-3 py-2 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
               />

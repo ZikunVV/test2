@@ -40,6 +40,8 @@ import {
   cleanStreetPrefix,
   normalizeHouseNumber,
 } from '../utils/streets';
+import { SmartSuggestInput } from './SmartSuggestInput';
+import { SmartSuggestTextarea } from './SmartSuggestTextarea';
 
 interface NewTicketModalProps {
   isOpen: boolean;
@@ -991,11 +993,14 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                 Цель заявки / Неисправность{' '}
                 <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="text"
+              <SmartSuggestInput
                 required
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
+                onValueChange={(val) => setGoal(val)}
+                context="problem"
+                tickets={tickets}
+                showQuickStarters={true}
                 placeholder="Например: Забита ливнёвка, течь стояка ХВС, замена ламп..."
                 className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium bg-white"
               />
@@ -1453,10 +1458,14 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                   <label className="font-semibold block mb-1 text-slate-700">
                     Работы по заявке
                   </label>
-                  <textarea
+                  <SmartSuggestTextarea
                     rows={2}
                     value={workDescription}
                     onChange={(e) => setWorkDescription(e.target.value)}
+                    onValueChange={(val) => setWorkDescription(val)}
+                    context="work"
+                    tickets={tickets}
+                    showQuickStarters={true}
                     placeholder="Описание выполняемых действий..."
                     className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-[#F9F8FD] resize-none"
                   />
@@ -1466,10 +1475,14 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                   <label className="font-semibold block mb-1 text-slate-700">
                     Материалы
                   </label>
-                  <textarea
+                  <SmartSuggestTextarea
                     rows={2}
                     value={workMaterials}
                     onChange={(e) => setWorkMaterials(e.target.value)}
+                    onValueChange={(val) => setWorkMaterials(val)}
+                    context="materials"
+                    tickets={tickets}
+                    showQuickStarters={true}
                     placeholder="Трубы, муфты, прокладки, кабель..."
                     className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-[#F9F8FD] resize-none"
                   />
@@ -1479,10 +1492,14 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                   <label className="font-semibold block mb-1 text-slate-700">
                     План на будущее
                   </label>
-                  <textarea
+                  <SmartSuggestTextarea
                     rows={2}
                     value={futurePlan}
                     onChange={(e) => setFuturePlan(e.target.value)}
+                    onValueChange={(val) => setFuturePlan(val)}
+                    context="problem"
+                    tickets={tickets}
+                    showQuickStarters={true}
                     placeholder="Требуется кап. ремонт в следующем сезоне..."
                     className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-[#F9F8FD] resize-none"
                   />

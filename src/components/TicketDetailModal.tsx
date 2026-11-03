@@ -33,6 +33,8 @@ import {
   extractAddressParts,
   getTicketLocationKey,
 } from '../utils/streets';
+import { SmartSuggestTextarea } from './SmartSuggestTextarea';
+import { SmartSuggestInput } from './SmartSuggestInput';
 
 interface TicketDetailModalProps {
   ticket: Ticket | null;
@@ -847,11 +849,15 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 <label className="font-semibold block mb-1 text-slate-700">
                   Текст отчёта о проделанной работе <span className="text-rose-500">*</span>
                 </label>
-                <textarea
+                <SmartSuggestTextarea
                   required
                   rows={4}
                   value={reportText}
                   onChange={(e) => setReportText(e.target.value)}
+                  onValueChange={(val) => setReportText(val)}
+                  context="report"
+                  tickets={tickets}
+                  showQuickStarters={true}
                   placeholder="Опишите фактически выполненные операции..."
                   className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-medium focus:ring-2 focus:ring-purple-400"
                 />
@@ -983,11 +989,14 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   <label className="font-semibold block mb-1 text-slate-700">
                     Описание выполненных работ <span className="text-rose-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <SmartSuggestInput
                     required
                     value={workDesc}
                     onChange={(e) => setWorkDesc(e.target.value)}
+                    onValueChange={(val) => setWorkDesc(val)}
+                    context="work"
+                    tickets={tickets}
+                    showQuickStarters={true}
                     placeholder="Заменен участок трубы ХВС 1/2 дюйма..."
                     className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white"
                   />
@@ -998,10 +1007,13 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                     <label className="font-semibold block mb-1 text-slate-700">
                       Материалы
                     </label>
-                    <input
-                      type="text"
+                    <SmartSuggestInput
                       value={workMats}
                       onChange={(e) => setWorkMats(e.target.value)}
+                      onValueChange={(val) => setWorkMats(val)}
+                      context="materials"
+                      tickets={tickets}
+                      showQuickStarters={true}
                       placeholder="Муфта, труба 1.5м..."
                       className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white"
                     />
@@ -1295,12 +1307,15 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 <label className="font-bold block mb-1 text-slate-700 text-xs">
                   Наименование / Суть плановой работы <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <SmartSuggestInput
                   required
                   placeholder="Например: Плановая замена вводного вентиля ХВС, герметизация швов..."
                   value={plannedTitle}
                   onChange={(e) => setPlannedTitle(e.target.value)}
+                  onValueChange={(val) => setPlannedTitle(val)}
+                  context="problem"
+                  tickets={tickets}
+                  showQuickStarters={true}
                   className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-bold text-xs focus:ring-2 focus:ring-purple-400"
                 />
               </div>
@@ -1310,11 +1325,15 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 <label className="font-bold block mb-1 text-slate-700 text-xs">
                   Подробное описание плановой работы
                 </label>
-                <textarea
+                <SmartSuggestTextarea
                   rows={3}
                   placeholder="Опишите перечень необходимых действий, объем работ, условия допуска..."
                   value={plannedDescription}
                   onChange={(e) => setPlannedDescription(e.target.value)}
+                  onValueChange={(val) => setPlannedDescription(val)}
+                  context="work"
+                  tickets={tickets}
+                  showQuickStarters={true}
                   className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-medium text-xs focus:ring-2 focus:ring-purple-400 resize-none"
                 />
               </div>
@@ -1338,11 +1357,14 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   <label className="font-bold block mb-1 text-slate-700 text-xs">
                     Необходимые материалы / инвентарь
                   </label>
-                  <input
-                    type="text"
+                  <SmartSuggestInput
                     placeholder="Трубы, фитинги, муфты, сварочный аппарат..."
                     value={plannedWorkMaterials}
                     onChange={(e) => setPlannedWorkMaterials(e.target.value)}
+                    onValueChange={(val) => setPlannedWorkMaterials(val)}
+                    context="materials"
+                    tickets={tickets}
+                    showQuickStarters={true}
                     className="w-full px-3 py-2 rounded-xl border border-purple-200 bg-white font-medium text-xs focus:ring-2 focus:ring-purple-400"
                   />
                 </div>
@@ -1407,11 +1429,15 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 <label className="font-semibold block mb-1 text-slate-800">
                   Причина снятия заявки <span className="text-rose-600">*</span>
                 </label>
-                <textarea
+                <SmartSuggestTextarea
                   required
                   rows={3}
                   value={withdrawReason}
                   onChange={(e) => setWithdrawReason(e.target.value)}
+                  onValueChange={(val) => setWithdrawReason(val)}
+                  context="withdraw"
+                  tickets={tickets}
+                  showQuickStarters={true}
                   placeholder="Например: Повторное обращение / Ложный вызов / Устранено силами жильцов..."
                   className="w-full px-3 py-2 rounded-xl border border-rose-300 bg-white resize-none"
                 />

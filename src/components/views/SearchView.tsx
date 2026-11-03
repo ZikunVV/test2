@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ThemeConfig, GradientOption, Ticket, UserItem } from '../../types';
 import { PhoneBadgeDisplay } from '../PhoneBadgeDisplay';
+import { extractAddressParts, normalizeHouseNumber } from '../../utils/streets';
 import {
   Search,
   ArrowLeft,
@@ -48,7 +49,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
   onUpdateTicketPhoneStatus,
   onBackToHome,
 }) => {
-  // v48.16 Search filters for completed work
+  // Search filters for completed work
   const [query, setQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -56,6 +57,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
   const [executor, setExecutor] = useState('');
   const [street, setStreet] = useState('');
   const [houseNo, setHouseNo] = useState('');
+  const [building, setBuilding] = useState('');
+  const [apartment, setApartment] = useState('');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   // Layout mode for Completed work cards: 'compact' (grid) vs 'expanded' (full width rows)
   const [completedCardLayout, setCompletedCardLayout] = useState<'compact' | 'expanded'>(() => {
@@ -84,10 +87,13 @@ export const SearchView: React.FC<SearchViewProps> = ({
     .filter((t) => {
       if (query) {
         const q = query.toLowerCase();
+        const parts = extractAddressParts(t);
         const match =
           t.number.toLowerCase().includes(q) ||
           t.title.toLowerCase().includes(q) ||
           t.address.toLowerCase().includes(q) ||
+          (t.building || parts.building || '').toLowerCase().includes(q) ||
+          (t.apartment || parts.apartment || '').toLowerCase().includes(q) ||
           t.assignee.toLowerCase().includes(q) ||
           (t.description || '').toLowerCase().includes(q);
         if (!match) return false;
@@ -98,9 +104,68 @@ export const SearchView: React.FC<SearchViewProps> = ({
         return false;
       if (executor && !t.assignee.toLowerCase().includes(executor.toLowerCase()))
         return false;
-      if (street && !t.address.toLowerCase().includes(street.toLowerCase()))
-        return false;
-      if (houseNo && !t.address.includes(houseNo)) return false;
+
+      // Address granular filtering: Street, House No, Building, Apartment
+      if (street || houseNo || building || apartment) {
+        const parts = extractAddressParts(t);
+
+        if (street) {
+          const normStreet = street.trim().toLowerCase();
+          const matchStreet =
+            (t.street && t.street.toLowerCase().includes(normStreet)) ||
+            (parts.street && parts.street.toLowerCase().includes(normStreet)) ||
+            (t.address && t.address.toLowerCase().includes(normStreet));
+          if (!matchStreet) return false;
+        }
+
+        if (houseNo) {
+          const cleanHouse = houseNo.trim().toLowerCase();
+          const normHouse = normalizeHouseNumber(cleanHouse);
+          const tHouse = (t.house_number || parts.houseNumber || '').toLowerCase();
+          const matchHouse =
+            tHouse === cleanHouse ||
+            normalizeHouseNumber(tHouse) === normHouse ||
+            tHouse.includes(cleanHouse) ||
+            (t.address && t.address.toLowerCase().includes(cleanHouse));
+          if (!matchHouse) return false;
+        }
+
+        if (building) {
+          const cleanBld = building.trim().toLowerCase();
+          const normBld = normalizeHouseNumber(cleanBld);
+          const tBld = (t.building || parts.building || '').toLowerCase();
+          const addrLower = (t.address || '').toLowerCase();
+          const matchBld =
+            tBld === cleanBld ||
+            normalizeHouseNumber(tBld) === normBld ||
+            tBld.includes(cleanBld) ||
+            addrLower.includes(`корп. ${cleanBld}`) ||
+            addrLower.includes(`корп.${cleanBld}`) ||
+            addrLower.includes(`корпус ${cleanBld}`) ||
+            addrLower.includes(`к. ${cleanBld}`) ||
+            addrLower.includes(`к.${cleanBld}`) ||
+            addrLower.includes(`/${cleanBld}`);
+          if (!matchBld) return false;
+        }
+
+        if (apartment) {
+          const cleanApt = apartment.trim().toLowerCase();
+          const normApt = normalizeHouseNumber(cleanApt);
+          const tApt = (t.apartment || parts.apartment || '').toLowerCase();
+          const addrLower = (t.address || '').toLowerCase();
+          const locValLower = (t.location_value || '').toLowerCase();
+          const matchApt =
+            tApt === cleanApt ||
+            normalizeHouseNumber(tApt) === normApt ||
+            tApt.includes(cleanApt) ||
+            locValLower.includes(cleanApt) ||
+            addrLower.includes(`кв. ${cleanApt}`) ||
+            addrLower.includes(`кв.${cleanApt}`) ||
+            addrLower.includes(`квартира ${cleanApt}`);
+          if (!matchApt) return false;
+        }
+      }
+
       return true;
     })
     .sort((a, b) => {
@@ -118,6 +183,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
     setExecutor('');
     setStreet('');
     setHouseNo('');
+    setBuilding('');
+    setApartment('');
   };
 
   return (
@@ -241,24 +308,40 @@ export const SearchView: React.FC<SearchViewProps> = ({
             />
           </div>
 
-          <div>
+          <div className="sm:col-span-2 lg:col-span-2">
             <label className="font-bold text-slate-700 block mb-1">
-              Улица и № дома
+              Улица, № дома, корпус, квартира
             </label>
-            <div className="flex gap-1.5">
+            <div className="grid grid-cols-12 gap-1.5">
               <input
                 type="text"
                 value={street}
                 onChange={(e) => setStreet(e.target.value)}
                 placeholder="Улица"
-                className="w-2/3 px-2.5 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                className="col-span-12 sm:col-span-5 px-2.5 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
               />
               <input
                 type="text"
                 value={houseNo}
                 onChange={(e) => setHouseNo(e.target.value)}
                 placeholder="Дом"
-                className="w-1/3 px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                className="col-span-4 sm:col-span-2 px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+              />
+              <input
+                type="text"
+                value={building}
+                onChange={(e) => setBuilding(e.target.value)}
+                placeholder="Корпус"
+                title="Номер корпуса"
+                className="col-span-4 sm:col-span-2 px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+              />
+              <input
+                type="text"
+                value={apartment}
+                onChange={(e) => setApartment(e.target.value)}
+                placeholder="Кв."
+                title="Номер квартиры"
+                className="col-span-4 sm:col-span-3 px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
               />
             </div>
           </div>
@@ -359,7 +442,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
                       <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                       <span>
                         {t.address}
-                        {t.apartment && t.apartment !== '—' ? `, кв. ${t.apartment}` : ''}
+                        {t.building && !t.address.toLowerCase().includes('корп') ? ` корп. ${t.building}` : ''}
+                        {t.apartment && t.apartment !== '—' && !t.address.toLowerCase().includes('кв') ? `, кв. ${t.apartment}` : ''}
                       </span>
                     </div>
 
