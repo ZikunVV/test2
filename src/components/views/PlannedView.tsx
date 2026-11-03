@@ -44,6 +44,7 @@ interface PlannedViewProps {
   onDelete?: (ticketId: string) => void;
   onInspectWorker?: (workerName: string) => void;
   onNewPlannedTicket: (prefilledDate?: string) => void;
+  onNavigateToCompleted?: () => void;
   onBackToHome: () => void;
 }
 
@@ -69,9 +70,10 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
   onDelete,
   onInspectWorker,
   onNewPlannedTicket,
+  onNavigateToCompleted,
   onBackToHome,
 }) => {
-  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('list');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   // Month navigation: open on current real month and year
@@ -115,16 +117,33 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
     } catch (e) {}
   };
 
-  // Planned tickets (strictly planned tickets or general category)
-  const plannedTickets = tickets.filter(
+  // User requirement:
+  // "Плановые работы" если есть заявки со статусом "Выполнена" перемещать в "Выполненные работы" сохраняя надпись статус "Плановые".
+  const allPlannedTickets = tickets.filter(
     (t) => t.planned || t.category === 'general'
+  );
+
+  // Active uncompleted planned tickets: shown in main view of "Плановые работы"
+  const activePlannedTickets = allPlannedTickets.filter(
+    (t) => t.status !== 'completed'
+  );
+
+  // Completed planned tickets: moved to "Выполненные работы"
+  const completedPlannedTickets = allPlannedTickets.filter(
+    (t) => t.status === 'completed'
   );
 
   // Active status filter: 'all' | 'in_progress' | 'in_waiting' | 'completed' (active buttons like on Главная)
   const [statusFilter, setStatusFilter] = useState<'all' | 'in_progress' | 'in_waiting' | 'completed'>('all');
 
-  const filteredPlannedTickets = plannedTickets.filter((t) => {
-    if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+  const basePlannedTickets =
+    statusFilter === 'completed'
+      ? completedPlannedTickets
+      : statusFilter === 'all'
+      ? activePlannedTickets
+      : activePlannedTickets.filter((t) => t.status === statusFilter);
+
+  const filteredPlannedTickets = basePlannedTickets.filter((t) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
     return (
@@ -138,15 +157,13 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
     );
   });
 
-  const inWaitingCount = plannedTickets.filter(
+  const inWaitingCount = activePlannedTickets.filter(
     (t) => t.status === 'in_waiting'
   ).length;
-  const inProgressCount = plannedTickets.filter(
+  const inProgressCount = activePlannedTickets.filter(
     (t) => t.status === 'in_progress'
   ).length;
-  const completedCount = plannedTickets.filter(
-    (t) => t.status === 'completed'
-  ).length;
+  const completedCount = completedPlannedTickets.length;
 
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
@@ -322,7 +339,7 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
           </div>
         </div>
 
-        {/* 3. Закрыто за сегодня */}
+        {/* 3. Выполнено (в «Выполненные работы») */}
         <div
           onClick={() => setStatusFilter((prev) => (prev === 'completed' ? 'all' : 'completed'))}
           className={`cursor-pointer rounded-2xl p-4 border transition-all duration-200 relative overflow-hidden group shadow-2xs hover:shadow-xs select-none ${
@@ -330,11 +347,13 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
               ? 'ring-2 ring-emerald-500 bg-emerald-50/80 border-emerald-400 shadow-sm scale-[1.01]'
               : 'border-emerald-200/80 bg-white hover:border-emerald-300 hover:bg-emerald-50/30'
           }`}
-          title={statusFilter === 'completed' ? 'Активен фильтр: Закрыто за сегодня (клик — сбросить)' : 'Клик — показать только закрытые заявки'}
+          title={statusFilter === 'completed' ? 'Показаны выполненные плановые (клик — сбросить фильтр)' : 'Заявки со статусом «Выполнена» перемещаются в «Выполненные работы» с сохранением статуса «Плановые»'}
         >
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-emerald-900">Закрыто за сегодня</span>
+              <span className="text-xs font-bold text-emerald-900">
+                {statusFilter === 'completed' ? 'Выполнено (активен)' : 'Выполнено (в архив)'}
+              </span>
               <div className="text-2xl font-black text-emerald-950 mt-0.5">
                 {completedCount}
               </div>
@@ -399,11 +418,11 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
         <div className="text-xs text-slate-500 font-medium">
           {searchQuery.trim() ? (
             <span>
-              Найдено плановых: <strong className="text-purple-900 font-bold">{filteredPlannedTickets.length}</strong> из {plannedTickets.length}
+              Найдено плановых: <strong className="text-purple-900 font-bold">{filteredPlannedTickets.length}</strong> из {basePlannedTickets.length}
             </span>
           ) : (
             <span>
-              Всего плановых: <strong className="text-purple-900 font-bold">{plannedTickets.length}</strong>
+              Всего плановых: <strong className="text-purple-900 font-bold">{basePlannedTickets.length}</strong>
             </span>
           )}
         </div>
@@ -474,7 +493,7 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
               }
 
               const dayStr = getISODateString(day);
-              const dayTickets = plannedTickets.filter((t) => t.date === dayStr);
+              const dayTickets = (statusFilter === 'completed' ? completedPlannedTickets : activePlannedTickets).filter((t) => t.date === dayStr);
               const hasActivePlanned = dayTickets.some(
                 (t) => t.status !== 'completed'
               );
@@ -555,40 +574,64 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
         </div>
       ) : (
         /* LIST VIEW - COMPACT GRID VS EXPANDED FULL WIDTH */
-        <div className={plannedCardLayout === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5' : 'space-y-3'}>
-          {filteredPlannedTickets.map((t) => (
-            <TicketCard
-              key={t.id}
-              ticket={t}
-              theme={theme}
-              isSelected={selectedTicketId === t.id}
-              canEdit={canEdit}
-              canAccept={canAccept}
-              canSetInProgress={canSetInProgress}
-              canComplete={canComplete}
-              canSendMessenger={canSendMessenger}
-              canDelete={canDelete}
-              onDelete={onDelete}
-              onSelect={() => {
-                setSelectedTicketId(selectedTicketId === t.id ? null : t.id);
-              }}
-              onAccept={(id) => onAccept?.(id)}
-              onSetInProgress={(id) => onSetInProgress?.(id)}
-              onComplete={(id) => onComplete?.(id)}
-              onOpenDetails={(ticket) => onOpenTicket(ticket)}
-              onEditTicket={onEditTicket}
-              onInspectWorker={onInspectWorker}
-              currentUser={currentUser}
-              onUpdatePhoneStatus={onUpdateTicketPhoneStatus}
-            />
-          ))}
-          {filteredPlannedTickets.length === 0 && (
-            <div className="py-12 px-4 text-center rounded-2xl border border-dashed border-purple-200 bg-white/50 text-xs text-slate-500 col-span-full">
-              {searchQuery.trim()
-                ? `По запросу «${searchQuery}» плановых заявок не найдено.`
-                : 'Плановых заявок пока нет.'}
+        <div className="space-y-3">
+          {statusFilter === 'completed' && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  Заявки со статусом <strong>«Выполнена»</strong> перемещаются в <strong>«Выполненные работы»</strong> с сохранением статуса <strong>«Плановые»</strong>.
+                </span>
+              </div>
+              {onNavigateToCompleted && (
+                <button
+                  type="button"
+                  onClick={onNavigateToCompleted}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition-colors shadow-2xs shrink-0 self-start sm:self-auto cursor-pointer"
+                >
+                  Перейти в «Выполненные работы» →
+                </button>
+              )}
             </div>
           )}
+
+          <div className={plannedCardLayout === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5' : 'space-y-3'}>
+            {filteredPlannedTickets.map((t) => (
+              <TicketCard
+                key={t.id}
+                ticket={t}
+                theme={theme}
+                isSelected={selectedTicketId === t.id}
+                canEdit={canEdit}
+                canAccept={canAccept}
+                canSetInProgress={canSetInProgress}
+                canComplete={canComplete}
+                canSendMessenger={canSendMessenger}
+                canDelete={canDelete}
+                onDelete={onDelete}
+                onSelect={() => {
+                  setSelectedTicketId(selectedTicketId === t.id ? null : t.id);
+                }}
+                onAccept={(id) => onAccept?.(id)}
+                onSetInProgress={(id) => onSetInProgress?.(id)}
+                onComplete={(id) => onComplete?.(id)}
+                onOpenDetails={(ticket) => onOpenTicket(ticket)}
+                onEditTicket={onEditTicket}
+                onInspectWorker={onInspectWorker}
+                currentUser={currentUser}
+                onUpdatePhoneStatus={onUpdateTicketPhoneStatus}
+              />
+            ))}
+            {filteredPlannedTickets.length === 0 && (
+              <div className="py-12 px-4 text-center rounded-2xl border border-dashed border-purple-200 bg-white/50 text-xs text-slate-500 col-span-full">
+                {searchQuery.trim()
+                  ? `По запросу «${searchQuery}» плановых заявок не найдено.`
+                  : statusFilter === 'completed'
+                  ? 'Выполненных плановых заявок пока нет.'
+                  : 'Активных плановых заявок пока нет.'}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -615,7 +658,7 @@ export const PlannedView: React.FC<PlannedViewProps> = ({
 
             {/* List of day tickets */}
             {(() => {
-              const dayTickets = plannedTickets.filter(
+              const dayTickets = (statusFilter === 'completed' ? completedPlannedTickets : activePlannedTickets).filter(
                 (t) => t.date === dayModalDate
               );
               if (dayTickets.length === 0) {

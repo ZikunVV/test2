@@ -76,8 +76,8 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   const isAuthorized = Boolean(currentUser && currentUser.approved);
   const userSurname = getUserSurname(currentUser);
 
-  // View mode: 'calendar' | 'list' | 'phonebook' (defaults to calendar as requested)
-  const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'phonebook'>('calendar');
+  // View mode: 'calendar' | 'list' | 'phonebook' (defaults to list as requested)
+  const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'phonebook'>('list');
   const [activeListTab, setActiveListTab] = useState<'current' | 'completed'>('current');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 

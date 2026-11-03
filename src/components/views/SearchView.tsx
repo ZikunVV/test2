@@ -95,7 +95,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
           (t.building || parts.building || '').toLowerCase().includes(q) ||
           (t.apartment || parts.apartment || '').toLowerCase().includes(q) ||
           t.assignee.toLowerCase().includes(q) ||
-          (t.description || '').toLowerCase().includes(q);
+          (t.description || '').toLowerCase().includes(q) ||
+          ((t.planned || t.category === 'general') && 'плановые'.includes(q));
         if (!match) return false;
       }
       if (dateFrom && t.date < dateFrom) return false;
@@ -426,7 +427,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                       {t.number}
                     </span>
 
-                    {t.planned && (
+                    {(t.planned || t.category === 'general') && (
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
                         Плановые
                       </span>

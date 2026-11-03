@@ -2987,6 +2987,7 @@ export default function App() {
                     setIsNewTicketPlanned(true);
                     setIsNewTicketModalOpen(true);
                   }}
+                  onNavigateToCompleted={() => setActiveSidebarNav('completed')}
                   onBackToHome={() => setActiveSidebarNav('home')}
                 />
               )}
