@@ -1,7 +1,17 @@
-import React, { useState } from 'react';
-import { ThemeConfig, GradientOption, Ticket, UserItem } from '../../types';
+import React, { useState, useMemo } from 'react';
+import { ThemeConfig, GradientOption, Ticket, UserItem, StreetItem } from '../../types';
 import { PhoneBadgeDisplay } from '../PhoneBadgeDisplay';
-import { extractAddressParts, normalizeHouseNumber } from '../../utils/streets';
+import {
+  extractAddressParts,
+  normalizeHouseNumber,
+  normalizeStreetName,
+  canonicalStreetKey,
+  cleanStreetPrefix,
+  formatTicketAddressWithNewStreet,
+  replaceOldStreetNamesInTicket,
+  replaceAllOldStreetNamesInTickets,
+  DEFAULT_STREETS,
+} from '../../utils/streets';
 import {
   Search,
   ArrowLeft,
@@ -15,6 +25,9 @@ import {
   StretchHorizontal,
   Trash2,
   ArrowUpDown,
+  Sparkles,
+  RefreshCw,
+  X,
 } from 'lucide-react';
 
 interface SearchViewProps {
@@ -22,6 +35,7 @@ interface SearchViewProps {
   gradient: GradientOption;
   showFlatFallback: boolean;
   tickets: Ticket[];
+  streets?: StreetItem[];
   currentUser?: UserItem | null;
   canDelete?: boolean;
   onDeleteTicket?: (ticketId: string) => void;
@@ -33,6 +47,7 @@ interface SearchViewProps {
     isAdditional?: boolean,
     additionalIndex?: number
   ) => void;
+  onBatchUpdateTickets?: (updatedTickets: Ticket[]) => void;
   onBackToHome: () => void;
 }
 
@@ -41,14 +56,21 @@ export const SearchView: React.FC<SearchViewProps> = ({
   gradient,
   showFlatFallback,
   tickets,
+  streets = [],
   currentUser,
   canDelete = false,
   onDeleteTicket,
   onOpenTicket,
   onInspectWorker,
   onUpdateTicketPhoneStatus,
+  onBatchUpdateTickets,
   onBackToHome,
 }) => {
+  // Base streets combined with default streets
+  const baseStreets = useMemo(() => {
+    return streets && streets.length > 0 ? streets : DEFAULT_STREETS;
+  }, [streets]);
+
   // Search filters for completed work
   const [query, setQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -60,6 +82,11 @@ export const SearchView: React.FC<SearchViewProps> = ({
   const [building, setBuilding] = useState('');
   const [apartment, setApartment] = useState('');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+
+  // Street autocomplete & auto-renaming state
+  const [isStreetSuggestionsOpen, setIsStreetSuggestionsOpen] = useState(false);
+  const [renamedNotice, setRenamedNotice] = useState<{ oldName: string; newName: string } | null>(null);
+
   // Layout mode for Completed work cards: 'compact' (grid) vs 'expanded' (full width rows)
   const [completedCardLayout, setCompletedCardLayout] = useState<'compact' | 'expanded'>(() => {
     try {
@@ -78,7 +105,122 @@ export const SearchView: React.FC<SearchViewProps> = ({
   };
 
   // Only completed requests (v48.10 & v48.16 rule: only completed work, personal tasks excluded)
-  const completedTickets = tickets.filter((t) => t.status === 'completed');
+  // Ensure that every completed ticket immediately has any old street names replaced with new official names!
+  const completedTickets = useMemo(() => {
+    return tickets
+      .filter((t) => t.status === 'completed')
+      .map((t) => replaceOldStreetNamesInTicket(t, baseStreets).ticket);
+  }, [tickets, baseStreets]);
+
+  // Streets known in directory and existing completed tickets
+  const allKnownStreetItems = useMemo(() => {
+    const map = new Map<string, { name: string; oldNames: string }>();
+
+    baseStreets.forEach((s) => {
+      const clean = (s.current_name || '').trim();
+      if (!clean) return;
+      const key = clean.toLocaleLowerCase('ru-RU');
+      map.set(key, {
+        name: clean,
+        oldNames: s.old_names || '',
+      });
+    });
+
+    completedTickets.forEach((t) => {
+      let st = (t.street || '').trim();
+      if (!st && t.address) {
+        const parts = extractAddressParts(t);
+        st = parts.street;
+      }
+      if (st) {
+        const norm = normalizeStreetName(st, baseStreets);
+        const official = norm.officialName || st;
+        const key = official.toLocaleLowerCase('ru-RU');
+        if (!map.has(key)) {
+          map.set(key, { name: official, oldNames: '' });
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [baseStreets, completedTickets]);
+
+  const matchingStreetSuggestions = useMemo(() => {
+    const rawQ = street.trim().toLowerCase();
+    if (!rawQ || rawQ.length < 1) return [];
+
+    return allKnownStreetItems.filter((item) => {
+      const nameMatch = item.name.toLowerCase().includes(rawQ);
+      const oldMatch = item.oldNames.toLowerCase().includes(rawQ);
+      const keyMatch = canonicalStreetKey(item.name).includes(canonicalStreetKey(rawQ));
+      return nameMatch || oldMatch || keyMatch;
+    });
+  }, [street, allKnownStreetItems]);
+
+  const handleStreetChange = (value: string) => {
+    setStreet(value);
+    setIsStreetSuggestionsOpen(true);
+
+    // Instant normalization check: if typed text matches an old street name
+    const norm = normalizeStreetName(value, baseStreets);
+    if (norm.isNormalized && norm.officialName && norm.matchedOldName) {
+      const cleanVal = cleanStreetPrefix(value).toLowerCase();
+      const cleanOld = cleanStreetPrefix(norm.matchedOldName).toLowerCase();
+      // If user typed the full old name or a recognized complete alias
+      if (cleanVal === cleanOld || value.trim().toLowerCase() === norm.matchedOldName.toLowerCase()) {
+        setStreet(norm.officialName);
+        setRenamedNotice({ oldName: norm.matchedOldName, newName: norm.officialName });
+        setIsStreetSuggestionsOpen(false);
+        return;
+      }
+    }
+    if (renamedNotice) {
+      setRenamedNotice(null);
+    }
+  };
+
+  const handleStreetBlur = () => {
+    setTimeout(() => {
+      setIsStreetSuggestionsOpen(false);
+    }, 200);
+
+    if (!street.trim()) return;
+
+    const norm = normalizeStreetName(street, baseStreets);
+    if (norm.isNormalized && norm.officialName && norm.officialName !== street) {
+      setStreet(norm.officialName);
+      setRenamedNotice({
+        oldName: norm.matchedOldName || street,
+        newName: norm.officialName,
+      });
+    }
+  };
+
+  const handleSelectStreetSuggestion = (item: { name: string; oldNames: string }) => {
+    setStreet(item.name);
+    setIsStreetSuggestionsOpen(false);
+    if (item.oldNames) {
+      setRenamedNotice({
+        oldName: item.oldNames.split(/[,;]/)[0]?.trim() || item.oldNames,
+        newName: item.name,
+      });
+    }
+  };
+
+  // Detect completed tickets that contain old street names
+  const completedTicketsWithOldStreets = useMemo(() => {
+    return completedTickets.filter((t) => {
+      const res = replaceOldStreetNamesInTicket(t, baseStreets);
+      return res.changed;
+    });
+  }, [completedTickets, baseStreets]);
+
+  const handleMigrateAllOldStreets = () => {
+    const { updatedTickets, changedCount } = replaceAllOldStreetNamesInTickets(tickets, baseStreets);
+    if (changedCount > 0 && onBatchUpdateTickets) {
+      onBatchUpdateTickets(updatedTickets);
+    }
+  };
 
   // Sorting state: 'desc' (от большего номера к меньшему) vs 'asc' (от меньшего к большему)
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
@@ -111,11 +253,35 @@ export const SearchView: React.FC<SearchViewProps> = ({
         const parts = extractAddressParts(t);
 
         if (street) {
-          const normStreet = street.trim().toLowerCase();
+          const normQuery = street.trim().toLowerCase();
+          const queryNorm = normalizeStreetName(street, baseStreets);
+          const officialKey = canonicalStreetKey(queryNorm.officialName || street);
+
+          // Find street in directory to get all historical aliases
+          const foundStreetItem = baseStreets.find(
+            (s) => canonicalStreetKey(s.current_name) === officialKey
+          );
+          const oldAliases = foundStreetItem?.old_names
+            ? foundStreetItem.old_names.split(/[,;]/).map((a) => cleanStreetPrefix(a).toLowerCase().trim()).filter(Boolean)
+            : [];
+
+          const tOfficialNorm = normalizeStreetName(t.street || parts.street || '', baseStreets);
+          const tOfficialKey = canonicalStreetKey(tOfficialNorm.officialName || t.street || parts.street || '');
+
           const matchStreet =
-            (t.street && t.street.toLowerCase().includes(normStreet)) ||
-            (parts.street && parts.street.toLowerCase().includes(normStreet)) ||
-            (t.address && t.address.toLowerCase().includes(normStreet));
+            // Canonical official key match
+            (officialKey && tOfficialKey && officialKey === tOfficialKey) ||
+            // Direct substring match
+            (t.street && t.street.toLowerCase().includes(normQuery)) ||
+            (parts.street && parts.street.toLowerCase().includes(normQuery)) ||
+            (t.address && t.address.toLowerCase().includes(normQuery)) ||
+            // Or matches any known old alias
+            oldAliases.some(
+              (alias) =>
+                (t.street && t.street.toLowerCase().includes(alias)) ||
+                (t.address && t.address.toLowerCase().includes(alias))
+            );
+
           if (!matchStreet) return false;
         }
 
@@ -314,19 +480,73 @@ export const SearchView: React.FC<SearchViewProps> = ({
               Улица, № дома, корпус, квартира
             </label>
             <div className="grid grid-cols-12 gap-1.5">
-              <input
-                type="text"
-                value={street}
-                onChange={(e) => setStreet(e.target.value)}
-                placeholder="Улица"
-                className="col-span-12 sm:col-span-5 px-2.5 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
-              />
+              <div className="col-span-12 sm:col-span-5 relative">
+                <input
+                  type="text"
+                  value={street}
+                  onChange={(e) => handleStreetChange(e.target.value)}
+                  onFocus={() => setIsStreetSuggestionsOpen(true)}
+                  onBlur={handleStreetBlur}
+                  placeholder="Улица (напр. Левка Лук'яненка)"
+                  className="w-full pl-2.5 pr-7 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium"
+                />
+                {street && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStreet('');
+                      setIsStreetSuggestionsOpen(false);
+                      setRenamedNotice(null);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer text-xs"
+                    title="Очистить улицу"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {/* Выпадающие подсказки улицы */}
+                {isStreetSuggestionsOpen && matchingStreetSuggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white rounded-xl border border-purple-200 shadow-xl max-h-56 overflow-y-auto divide-y divide-purple-50 animate-in fade-in">
+                    <div className="px-2.5 py-1.5 bg-purple-50 text-[10px] font-extrabold text-purple-800 uppercase tracking-wider flex items-center justify-between sticky top-0 backdrop-blur-xs">
+                      <span>Подсказки улиц ({matchingStreetSuggestions.length})</span>
+                      <span className="text-[9px] text-purple-600 font-semibold">Нажмите для выбора</span>
+                    </div>
+                    {matchingStreetSuggestions.map((item) => (
+                      <button
+                        key={item.name}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectStreetSuggestion(item);
+                        }}
+                        className="w-full px-2.5 py-2 text-left text-xs hover:bg-purple-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-extrabold text-slate-900 truncate">
+                            {item.name}
+                          </div>
+                          {item.oldNames && (
+                            <div className="text-[10px] text-slate-400 truncate">
+                              Прежнее назв.: {item.oldNames}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-bold shrink-0">
+                          Выбрать
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <input
                 type="text"
                 value={houseNo}
                 onChange={(e) => setHouseNo(e.target.value)}
                 placeholder="Дом"
-                className="col-span-4 sm:col-span-2 px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                className="col-span-4 sm:col-span-2 px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium"
               />
               <input
                 type="text"
@@ -334,7 +554,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 onChange={(e) => setBuilding(e.target.value)}
                 placeholder="Корпус"
                 title="Номер корпуса"
-                className="col-span-4 sm:col-span-2 px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                className="col-span-4 sm:col-span-2 px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium"
               />
               <input
                 type="text"
@@ -342,8 +562,28 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 onChange={(e) => setApartment(e.target.value)}
                 placeholder="Кв."
                 title="Номер квартиры"
-                className="col-span-4 sm:col-span-3 px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                className="col-span-4 sm:col-span-3 px-2 py-1.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 font-medium"
               />
+
+              {/* Уведомление об автоматической замене старого названия на новое */}
+              {renamedNotice && (
+                <div className="col-span-12 mt-1 text-[11px] text-purple-900 bg-purple-100/90 px-2.5 py-1.5 rounded-xl border border-purple-300 flex items-center justify-between gap-2 font-medium animate-in fade-in">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+                    <span>
+                      Прежнее название «<strong>{renamedNotice.oldName}</strong>» автоматически заменено на актуальное «<strong>{renamedNotice.newName}</strong>».
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRenamedNotice(null)}
+                    className="text-purple-600 hover:text-purple-950 font-bold text-xs p-0.5"
+                    title="Закрыть подсказку"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -375,6 +615,37 @@ export const SearchView: React.FC<SearchViewProps> = ({
         </div>
       </div>
 
+      {/* Баннер: В выполненных работах обнаружены устаревшие названия улиц */}
+      {completedTicketsWithOldStreets.length > 0 && onBatchUpdateTickets && (
+        <div className="p-3.5 bg-gradient-to-r from-purple-50 via-amber-50 to-orange-50 border border-purple-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-xl text-purple-800 shrink-0">
+              <MapPin className="w-4 h-4 text-purple-700" />
+            </div>
+            <div>
+              <div className="font-extrabold text-slate-900 flex items-center gap-1.5 flex-wrap">
+                <span>В «Выполненных работах» найдены заявки со старыми названиями улиц</span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[11px] font-bold">
+                  {completedTicketsWithOldStreets.length}
+                </span>
+              </div>
+              <div className="text-slate-600 text-[11px] mt-0.5">
+                Например: ул. Рокоссовского → просп. Левка Лук'яненка, ул. Ленина → просп. Мира, ул. Деснянская → Доценка и др.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleMigrateAllOldStreets}
+            className="px-3.5 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl transition-all shadow-xs cursor-pointer text-xs whitespace-nowrap self-start sm:self-auto flex items-center gap-1.5 shrink-0 active:scale-95"
+            title="Заменить во всех заявках старые названия улиц на новые"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Заменить старые названия на новые ({completedTicketsWithOldStreets.length})</span>
+          </button>
+        </div>
+      )}
+
       {/* Results List */}
       <div className="space-y-3">
         <div className="flex items-center justify-between text-xs font-bold text-slate-700 flex-wrap gap-2.5">
@@ -403,12 +674,16 @@ export const SearchView: React.FC<SearchViewProps> = ({
         <div className={completedCardLayout === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5' : 'space-y-2.5'}>
           {filteredTickets.map((t) => {
             const isSelected = selectedTicketId === t.id;
+            const checkOld = replaceOldStreetNamesInTicket(t, baseStreets);
+            const hadOldStreet = checkOld.changed;
+            const updatedTicket = checkOld.ticket;
+            const displayAddress = formatTicketAddressWithNewStreet(t, baseStreets);
 
             return (
               <div
                 key={t.id}
                 onClick={() => setSelectedTicketId(isSelected ? null : t.id)}
-                onDoubleClick={() => onOpenTicket(t)}
+                onDoubleClick={() => onOpenTicket(updatedTicket)}
                 className={`w-full p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer text-xs flex ${
                   completedCardLayout === 'compact'
                     ? 'flex-col justify-between items-stretch'
@@ -439,13 +714,21 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   </div>
 
                   <div className="flex items-center gap-4 text-slate-600 text-[11px] flex-wrap">
-                    <div className="flex items-center gap-1.5 font-medium">
+                    <div className="flex items-center gap-1.5 font-medium flex-wrap">
                       <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                       <span>
-                        {t.address}
-                        {t.building && !t.address.toLowerCase().includes('корп') ? ` корп. ${t.building}` : ''}
-                        {t.apartment && t.apartment !== '—' && !t.address.toLowerCase().includes('кв') ? `, кв. ${t.apartment}` : ''}
+                        {displayAddress}
+                        {t.building && !displayAddress.toLowerCase().includes('корп') ? ` корп. ${t.building}` : ''}
+                        {t.apartment && t.apartment !== '—' && !displayAddress.toLowerCase().includes('кв') ? `, кв. ${t.apartment}` : ''}
                       </span>
+                      {hadOldStreet && (
+                        <span
+                          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300"
+                          title={`Старое название в адресе обновлено на новое: ${displayAddress}`}
+                        >
+                          Новое название
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-1.5 flex-wrap">

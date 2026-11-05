@@ -11,7 +11,7 @@ export const DEFAULT_STREETS: StreetItem[] = [
     id: 7,
     current_name: "просп. Левка Лук'яненка",
     old_names:
-      "ул. Рокоссовского, ул.Левка Лук'яненка, ул. Левка Лук'яненка, просп.Левка Лук'яненка, Левка Лук'яненка, Левка Лук’яненка, ул.Левка Лук’яненка, Левка Лукьяненко, Левка Лукьяненка",
+      "ул. Рокоссовского, ул. Рокосовского, Рокоссовского, Рокосовского, ул. Рокоссовського, Рокоссовського, ул. Рокосовського, Рокосовського, ул. Рокоссовская, Рокоссовская, просп. Рокоссовского, просп. Рокосовского, ул.Левка Лук'яненка, ул. Левка Лук'яненка, просп.Левка Лук'яненка, Левка Лук'яненка, Левка Лук’яненка, ул.Левка Лук’яненка, Левка Лукьяненко, Левка Лукьяненка",
   },
 ];
 
@@ -41,13 +41,16 @@ export function cleanStreetPrefix(str: string): string {
 
 /**
  * Generates a canonical lowercase search key for comparing street names,
- * stripping prefixes, normalizing apostrophes and Cyrillic nuances (e.g. Лукьяненка / Лук'яненка).
+ * stripping prefixes, normalizing apostrophes and Cyrillic nuances (e.g. Лукьяненка / Лук'яненка, Рокоссовского / Рокосовского).
  */
 export function canonicalStreetKey(str: string): string {
   if (!str) return '';
   let s = cleanStreetPrefix(str).toLowerCase().trim();
   // Normalize Russian/Ukrainian variations of Lukianenko
   s = s.replace(/лукьянен/g, "лук'янен");
+  // Normalize Russian/Ukrainian variations of Rokossovsky / Rokosovsky
+  s = s.replace(/рокосс/g, 'рокос');
+  s = s.replace(/рокосовськ/g, 'рокосовск');
   return s;
 }
 
@@ -235,9 +238,16 @@ export function normalizeStreetName(
 
   const canonicalInput = canonicalStreetKey(trimmed);
 
-  // If input matches Lukianenko
+  // If input matches Lukianenko or old name Rokossovsky / Rokosovsky in any spelling
   if (canonicalInput === "левка лук'яненка" || canonicalInput.includes("лук'янен")) {
     return { officialName: "просп. Левка Лук'яненка", isNormalized: false };
+  }
+  if (canonicalInput.includes('рокос')) {
+    return {
+      officialName: "просп. Левка Лук'яненка",
+      isNormalized: true,
+      matchedOldName: trimmed,
+    };
   }
 
   for (const s of streets) {
@@ -327,25 +337,14 @@ export function batchReplaceStreetInHousesAndTickets(
       const escapedTarget = targetName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const escapedCleanTarget = cleanStreetPrefix(targetName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-      // 1. Поиск с префиксом "ул. <старая_улица>" или "проспект <старая_улица>"
-      const fullStreetRegex = new RegExp(
-        `(?:ул\\.|улица|вул\\.|вулиця|пр-т|проспект|просп\\.)\\s*(?:${escapedTarget}|${escapedCleanTarget})\\b`,
+      const streetRegex = new RegExp(
+        `(^|[^а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])(?:(?:ул\\.|улица|вул\\.|вулиця|пр-т|проспект|просп\\.)\\s*)?(?:${escapedTarget}|${escapedCleanTarget})(?![а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])`,
         'gi'
       );
 
-      // 2. Поиск только названия без префикса
-      const bareStreetRegex = new RegExp(
-        `\\b(?:${escapedTarget}|${escapedCleanTarget})\\b`,
-        'gi'
-      );
-
-      if (fullStreetRegex.test(ticket.address)) {
-        // Если новое имя — проспект, вместо «ул.» подставляется «просп. ...», «ул.» не пишется
-        const replacement = isNewProspect ? formattedNewStreet : `ул. ${formattedNewStreet}`;
-        newAddress = ticket.address.replace(fullStreetRegex, replacement);
-        changed = true;
-      } else if (bareStreetRegex.test(ticket.address)) {
-        newAddress = ticket.address.replace(bareStreetRegex, formattedNewStreet);
+      if (streetRegex.test(ticket.address)) {
+        const replacement = isNewProspect ? `$1${formattedNewStreet}` : `$1ул. ${formattedNewStreet}`;
+        newAddress = ticket.address.replace(streetRegex, replacement).trim();
         changed = true;
       }
     }
@@ -367,6 +366,205 @@ export function batchReplaceStreetInHousesAndTickets(
     housesChanged,
     ticketsChanged,
   };
+}
+
+/**
+ * Replaces old street names with new official street names in a single ticket's street and address.
+ */
+export function replaceOldStreetNamesInTicket(
+  ticket: Ticket,
+  streets: StreetItem[] = []
+): { ticket: Ticket; changed: boolean } {
+  let changed = false;
+  let newStreet = ticket.street || '';
+  let newAddress = ticket.address || '';
+
+  // Combine default streets and user-defined streets to be 100% comprehensive
+  const allKnownStreets: StreetItem[] = [...DEFAULT_STREETS];
+  for (const s of streets) {
+    if (!allKnownStreets.some((k) => canonicalStreetKey(k.current_name) === canonicalStreetKey(s.current_name))) {
+      allKnownStreets.push(s);
+    }
+  }
+
+  // 1. Check ticket.street
+  if (ticket.street) {
+    const norm = normalizeStreetName(ticket.street, allKnownStreets);
+    if (norm.officialName && norm.officialName !== ticket.street) {
+      newStreet = norm.officialName;
+      changed = true;
+    }
+  }
+
+  // 2. Check ticket.address against all known old street names
+  if (newAddress) {
+    const origAddress = newAddress;
+
+    // Special hardcoded fast checks for standard known Soviet/historical street renamings
+    // a) Рокоссовского / Рокосовского / Рокоссовського / Рокосовського -> просп. Левка Лук'яненка
+    if (/рокос/i.test(newAddress)) {
+      newAddress = newAddress.replace(
+        /(^|[^а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])(?:(?:ул\\.|улица|вул\\.|вулиця|пр-т|проспект|просп\\.)\\s*)?рокос+[а-яёієїґьъ]*(?![а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])/gi,
+        "$1просп. Левка Лук'яненка"
+      );
+      if (!newStreet || /рокос/i.test(newStreet)) {
+        newStreet = "просп. Левка Лук'яненка";
+      }
+    }
+
+    // b) Ленина -> просп. Мира
+    if (/ленин/i.test(newAddress) && !/ленинград/i.test(newAddress)) {
+      newAddress = newAddress.replace(
+        /(^|[^а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])(?:(?:ул\\.|улица|вул\\.|вулиця|пр-т|проспект|просп\\.)\\s*)?ленин[а-яёієїґьъ]*(?![а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])/gi,
+        "$1просп. Мира"
+      );
+      if (!newStreet || /ленин/i.test(newStreet)) {
+        newStreet = 'просп. Мира';
+      }
+    }
+
+    // c) Деснянская -> ул. Доценка
+    if (/деснян/i.test(newAddress)) {
+      newAddress = newAddress.replace(
+        /(^|[^а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])(?:(?:ул\\.|улица|вул\\.|вулиця)\s*)?деснянск[а-яёієїґьъ]*(?![а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])/gi,
+        '$1ул. Доценка'
+      );
+      if (!newStreet || /деснян/i.test(newStreet)) {
+        newStreet = 'Доценка';
+      }
+    }
+
+    // d) Советская / Радянська -> ул. Шевченко
+    if (/советск|радянськ/i.test(newAddress)) {
+      newAddress = newAddress.replace(
+        /(^|[^а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])(?:(?:ул\\.|улица|вул\\.|вулиця)\s*)?(?:советск|радянськ)[а-яёієїґьъ]*(?![а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])/gi,
+        '$1ул. Шевченко'
+      );
+      if (!newStreet || /советск|радянськ/i.test(newStreet)) {
+        newStreet = 'Шевченко';
+      }
+    }
+
+    // e) Гагарина -> ул. Космонавтов
+    if (/гагарин/i.test(newAddress)) {
+      newAddress = newAddress.replace(
+        /(^|[^а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])(?:(?:ул\\.|улица|вул\\.|вулиця)\s*)?гагарин[а-яёієїґьъ]*(?![а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])/gi,
+        '$1ул. Космонавтов'
+      );
+      if (!newStreet || /гагарин/i.test(newStreet)) {
+        newStreet = 'Космонавтов';
+      }
+    }
+
+    // f) Щорса -> ул. Европейская
+    if (/щорс/i.test(newAddress)) {
+      newAddress = newAddress.replace(
+        /(^|[^а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])(?:(?:ул\\.|улица|вул\\.|вулиця)\s*)?щорс[а-яёієїґьъ]*(?![а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])/gi,
+        '$1ул. Европейская'
+      );
+      if (!newStreet || /щорс/i.test(newStreet)) {
+        newStreet = 'Европейская';
+      }
+    }
+
+    // g) Октябрьская / Жовтнева -> ул. Героев
+    if (/октябрьск|жовтнев/i.test(newAddress)) {
+      newAddress = newAddress.replace(
+        /(^|[^а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])(?:(?:ул\\.|улица|вул\\.|вулиця)\s*)?(?:октябрьск|жовтнев)[а-яёієїґьъ]*(?![а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])/gi,
+        '$1ул. Героев'
+      );
+      if (!newStreet || /октябрьск|жовтнев/i.test(newStreet)) {
+        newStreet = 'Героев';
+      }
+    }
+
+    // Loop through all known directory streets (including any user-added renamings)
+    for (const s of allKnownStreets) {
+      const isNewProspect = isProspectStreet(s.current_name);
+      const cleanOfficial = cleanStreetPrefix(s.current_name);
+      const formattedNewStreet = isNewProspect
+        ? formatRenamedStreet(s.current_name, 'prospect')
+        : cleanOfficial;
+
+      const rawOldList = s.old_names ? s.old_names.split(/[,;]/).map((o) => o.trim()).filter(Boolean) : [];
+
+      for (const old of rawOldList) {
+        const cleanOld = cleanStreetPrefix(old).trim();
+        if (cleanOld.length < 3) continue;
+        if (canonicalStreetKey(cleanOld) === canonicalStreetKey(cleanOfficial)) continue;
+
+        const escapedOld = old.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedCleanOld = cleanOld.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        const streetRegex = new RegExp(
+          `(^|[^а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])(?:(?:ул\\.|улица|вул\\.|вулиця|пр-т|проспект|просп\\.)\\s*)?(?:${escapedOld}|${escapedCleanOld})(?![а-яёА-ЯЁіІїЇєЄґҐa-zA-Z0-9])`,
+          'gi'
+        );
+
+        if (streetRegex.test(newAddress)) {
+          const replacement = isNewProspect ? `$1${formattedNewStreet}` : `$1ул. ${formattedNewStreet}`;
+          newAddress = newAddress.replace(streetRegex, replacement);
+        }
+      }
+    }
+
+    // Special rule: if address still has "ул. просп." or "ул. Левка Лук'яненка"
+    if (/(?:ул\.|улица)\s*(?:просп\.|проспект)\s*/i.test(newAddress)) {
+      newAddress = newAddress.replace(/(?:ул\.|улица)\s*(?:просп\.|проспект)\s*/gi, 'просп. ');
+    }
+    if (/(?:ул\.|улица)\s*Левка Лук['’ʼ`]яненка/gi.test(newAddress)) {
+      newAddress = newAddress.replace(/(?:ул\.|улица)\s*Левка Лук['’ʼ`]яненка/gi, "просп. Левка Лук'яненка");
+    }
+
+    newAddress = newAddress.trim();
+    if (newAddress !== origAddress) {
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    return {
+      ticket: {
+        ...ticket,
+        street: newStreet || ticket.street,
+        address: newAddress,
+      },
+      changed: true,
+    };
+  }
+
+  return { ticket, changed: false };
+}
+
+/**
+ * Batch replaces all old street names with new official street names across tickets.
+ */
+export function replaceAllOldStreetNamesInTickets(
+  tickets: Ticket[],
+  streets: StreetItem[] = []
+): { updatedTickets: Ticket[]; changedCount: number } {
+  let changedCount = 0;
+  const updatedTickets = tickets.map((t) => {
+    const res = replaceOldStreetNamesInTicket(t, streets);
+    if (res.changed) {
+      changedCount++;
+      return res.ticket;
+    }
+    return t;
+  });
+
+  return { updatedTickets, changedCount };
+}
+
+/**
+ * Returns formatted address with new official street name for display.
+ */
+export function formatTicketAddressWithNewStreet(
+  ticket: Ticket,
+  streets: StreetItem[] = []
+): string {
+  const res = replaceOldStreetNamesInTicket(ticket, streets);
+  return res.ticket.address;
 }
 
 /**

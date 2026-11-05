@@ -37,6 +37,8 @@ import {
   formatRenamedStreet,
   formatStreetDisplay,
   canonicalStreetKey,
+  replaceAllOldStreetNamesInTickets,
+  replaceOldStreetNamesInTicket,
 } from './utils/streets';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -345,15 +347,7 @@ export default function App() {
       return [];
     }
     const loaded = loadStorage('app_tickets', INITIAL_TICKETS);
-    return loaded.map((t) => {
-      if (t.street && canonicalStreetKey(t.street) === "левка лук'яненка") {
-        const nextAddr = t.address
-          ? t.address.replace(/(?:ул\.|улица)\s*Левка Лук['’ʼ`]яненка/gi, "просп. Левка Лук'яненка")
-          : t.address;
-        return { ...t, street: "просп. Левка Лук'яненка", address: nextAddr };
-      }
-      return t;
-    });
+    return loaded.map((t) => replaceOldStreetNamesInTicket(t, DEFAULT_STREETS).ticket);
   });
   const [houses, setHouses] = useState<House[]>(() => {
     let list: House[] = [];
@@ -486,6 +480,18 @@ export default function App() {
       localStorage.setItem('app_streets', JSON.stringify(streets));
     } catch (e) {}
   }, [streets]);
+
+  // Auto-migrate any old street names across tickets to new official names
+  useEffect(() => {
+    if (!tickets || tickets.length === 0) return;
+    const { updatedTickets, changedCount } = replaceAllOldStreetNamesInTickets(tickets, streets);
+    if (changedCount > 0) {
+      setTickets(updatedTickets);
+      try {
+        localStorage.setItem('app_tickets', JSON.stringify(updatedTickets));
+      } catch (e) {}
+    }
+  }, [tickets, streets]);
 
   // Organizations Directory state (Multi-tenancy foundation)
   const [organizations, setOrganizations] = useState<Organization[]>(() => {
@@ -835,10 +841,13 @@ export default function App() {
           }
           if (cloudData.houses) setHouses(cloudData.houses);
           if (cloudData.tickets) {
+            const normalizedCloudTickets = cloudData.tickets.map(
+              (t) => replaceOldStreetNamesInTicket(t, DEFAULT_STREETS).ticket
+            );
             if (initialCloudCheckDoneRef.current) {
               setTickets((prevTickets) => {
                 const prevIds = new Set(prevTickets.map((t) => t.id));
-                const newlyAdded = cloudData.tickets!.filter((t) => !prevIds.has(t.id));
+                const newlyAdded = normalizedCloudTickets.filter((t) => !prevIds.has(t.id));
                 if (newlyAdded.length > 0) {
                   const latest = newlyAdded[0];
                   const isUrgent =
@@ -855,10 +864,10 @@ export default function App() {
                     );
                   }, 100);
                 }
-                return cloudData.tickets!;
+                return normalizedCloudTickets;
               });
             } else {
-              setTickets(cloudData.tickets);
+              setTickets(normalizedCloudTickets);
             }
           }
           if (cloudData.streets && cloudData.streets.length > 0) {
@@ -2660,6 +2669,24 @@ export default function App() {
     );
   };
 
+  const handleBatchUpdateTickets = (updatedList: Ticket[]) => {
+    setTickets((prev) => {
+      const map = new Map<string, Ticket>(updatedList.map((t) => [t.id, t]));
+      return prev.map((t) => map.get(t.id) || t);
+    });
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        title: 'Улицы обновлены',
+        description: 'Старые названия улиц заменены на актуальные официальные названия',
+        time: 'Только что',
+        unread: true,
+        type: 'info',
+      },
+      ...prev,
+    ]);
+  };
+
   const handleUndoAuditAction = (logId: number) => {
     const targetLog = auditLogs.find((l) => l.id === logId);
     if (targetLog && targetLog.entity_id) {
@@ -3040,6 +3067,8 @@ export default function App() {
                   gradient={currentGradient}
                   showFlatFallback={showFlatFallback}
                   tickets={currentOrgTickets}
+                  streets={streets}
+                  onBatchUpdateTickets={handleBatchUpdateTickets}
                   currentUser={currentUser}
                   canDelete={canDeleteTicket}
                   onDeleteTicket={(id) => handleRequestDeleteTicket(id)}
