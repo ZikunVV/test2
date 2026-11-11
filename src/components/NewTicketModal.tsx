@@ -34,6 +34,8 @@ import {
   formatStreetDisplay,
   findTicketsForAddress,
   findTicketsForFullAddress,
+  findSimilarTicketsForAddress,
+  areProblemsSimilar,
   isSameFullAddressTicket,
   extractAddressParts,
   getStandardLocationKey,
@@ -359,47 +361,41 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     });
   }, [locationType, apartmentNumber, entranceNumber, locationValue]);
 
-  // Exact 4-indicator full match tickets (1. улица + 2. номер дома + 3. место уточнения + 4. номер квартиры / подъезда)
-  // "только при совпадении 4 данных( улица, номер дома, место уточнения,номер квартиры) должно выскакивать сообщение о совпадении заявки"
-  const matchingFullAddressTickets = React.useMemo(() => {
-    if (!street.trim() || !houseNumber.trim() || !targetLocationKey) return [];
-    if (locationType === 'apartment' && !apartmentNumber.trim()) return [];
-    if (locationType !== 'apartment' && !entranceNumber.trim() && !locationValue.trim()) return [];
-
-    return findTicketsForFullAddress(
+  // Comprehensive address, planned works, and problem similarity check
+  const addressSimilarData = React.useMemo(() => {
+    return findSimilarTicketsForAddress(
       tickets,
       {
         street,
         houseNumber,
         building,
         locationKey: targetLocationKey,
+        goal,
       },
       streets
     );
-  }, [
-    tickets,
-    street,
-    houseNumber,
-    building,
-    locationType,
-    apartmentNumber,
-    entranceNumber,
-    locationValue,
-    targetLocationKey,
-    streets,
-  ]);
+  }, [tickets, street, houseNumber, building, targetLocationKey, goal, streets]);
 
-  // Active tickets list for review modal - ONLY when all 4 indicators match
-  const matchingPreviousTickets = matchingFullAddressTickets;
+  const matchingFullAddressTickets = addressSimilarData.exactLocationTickets;
+  const plannedTicketsForAddress = addressSimilarData.plannedTickets;
+  const similarProblemTickets = addressSimilarData.similarProblemTickets;
+  const houseTickets = addressSimilarData.houseTickets;
 
-  const [reviewFilter, setReviewFilter] = useState<'all' | 'full'>('all');
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'planned' | 'exact' | 'similar'>('all');
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [hasReviewed, setHasReviewed] = useState(false);
 
-  // If user edits any of the 3 address indicators, reset reviewed flag
+  const modalTicketsToDisplay = React.useMemo(() => {
+    if (reviewFilter === 'planned') return addressSimilarData.plannedTickets;
+    if (reviewFilter === 'exact') return addressSimilarData.exactLocationTickets;
+    if (reviewFilter === 'similar') return addressSimilarData.similarProblemTickets;
+    return addressSimilarData.houseTickets;
+  }, [reviewFilter, addressSimilarData]);
+
+  // If user edits any of the address indicators or problem goal, reset reviewed flag
   useEffect(() => {
     setHasReviewed(false);
-  }, [street, houseNumber, building, targetLocationKey]);
+  }, [street, houseNumber, building, targetLocationKey, goal]);
 
   // Function to completely reset all form fields to a pristine blank state
   const resetForm = () => {
@@ -622,8 +618,20 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
       return;
     }
 
-    // If there were previous tickets for this address and user hasn't reviewed them yet:
-    if (matchingPreviousTickets.length > 0 && !hasReviewed) {
+    const hasCriticalMatches =
+      addressSimilarData.plannedTickets.length > 0 ||
+      addressSimilarData.exactLocationTickets.length > 0 ||
+      addressSimilarData.similarProblemTickets.length > 0;
+
+    // If there were planned tickets or previous tickets for this address and user hasn't reviewed them yet:
+    if (hasCriticalMatches && !hasReviewed) {
+      if (addressSimilarData.plannedTickets.length > 0) {
+        setReviewFilter('planned');
+      } else if (addressSimilarData.exactLocationTickets.length > 0) {
+        setReviewFilter('exact');
+      } else {
+        setReviewFilter('similar');
+      }
       setShowReviewModal(true);
       return;
     }
@@ -957,30 +965,79 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               </div>
             )}
 
-            {/* Сообщение о совпадении заявки: появляется ТОЛЬКО при совпадении 4 данных (улица, номер дома, место уточнения, номер квартиры/подъезда) */}
-            {matchingFullAddressTickets.length > 0 && (
-              <div className="p-3 rounded-xl bg-amber-50 border-2 border-amber-400 text-amber-950 flex items-center justify-between gap-3 animate-in fade-in shadow-xs mt-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            {/* Предупреждение о сверке с Плановыми работами по адресу */}
+            {addressSimilarData.plannedTickets.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 via-purple-100/80 to-indigo-50 border-2 border-purple-400 text-purple-950 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in mt-3">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-purple-700 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div className="text-xs min-w-0">
+                    <div className="font-extrabold text-purple-950 flex items-center gap-1.5 flex-wrap">
+                      <span>Сверка с «Плановые работы»: по этому адресу есть работы в плане</span>
+                      <span className="px-2 py-0.5 rounded-full bg-purple-700 text-white font-mono font-bold text-[10px]">
+                        {addressSimilarData.plannedTickets.length}
+                      </span>
+                    </div>
+                    <div className="text-purple-800 text-[11px] mt-1 space-y-0.5">
+                      {addressSimilarData.plannedTickets.slice(0, 2).map((pt) => (
+                        <div key={pt.id} className="truncate">
+                          • №{pt.number}: <strong>{pt.title}</strong>{' '}
+                          <span className="opacity-75">
+                            ({pt.status === 'completed' ? 'Выполнена' : pt.status === 'in_progress' ? 'В работе' : 'Запланирована'})
+                          </span>
+                        </div>
+                      ))}
+                      {addressSimilarData.plannedTickets.length > 2 && (
+                        <div className="text-[10px] text-purple-600 font-semibold">
+                          и ещё {addressSimilarData.plannedTickets.length - 2} плановых работ...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReviewFilter('planned');
+                    setShowReviewModal(true);
+                  }}
+                  className="px-3.5 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl text-xs transition-all shrink-0 shadow-xs flex items-center gap-1.5 cursor-pointer self-start sm:self-auto active:scale-95"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>Сверить с плановыми ({addressSimilarData.plannedTickets.length})</span>
+                </button>
+              </div>
+            )}
+
+            {/* Сообщение о совпадении заявки по точному адресу и квартире/месту */}
+            {addressSimilarData.exactLocationTickets.length > 0 && (
+              <div className="p-3 rounded-2xl bg-amber-50 border-2 border-amber-400 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in shadow-xs mt-3">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   <div className="text-xs">
-                    <span className="font-extrabold text-amber-950">
-                      Внимание! По этому адресу и {locationType === 'apartment' ? `квартире №${apartmentNumber}` : 'месту уточнения'} уже есть в базе: {matchingFullAddressTickets.length} {matchingFullAddressTickets.length === 1 ? 'заявка' : 'заявки'}
+                    <span className="font-extrabold text-amber-950 block">
+                      Внимание! По этому адресу и {locationType === 'apartment' ? `квартире №${apartmentNumber}` : 'месту уточнения'} уже есть в базе: {addressSimilarData.exactLocationTickets.length} {addressSimilarData.exactLocationTickets.length === 1 ? 'заявка' : 'заявки'}
                     </span>
-                    <span className="hidden sm:inline text-amber-800 ml-1">
-                      (нажмите для ознакомления)
+                    <span className="text-amber-800 text-[11px] block mt-0.5">
+                      {addressSimilarData.exactLocationTickets.slice(0, 2).map((et) => (
+                        <span key={et.id} className="mr-2 inline-block">
+                          №{et.number}: {et.title} ({et.status === 'completed' ? 'Выполнена' : et.status === 'in_progress' ? 'В работе' : 'В ожидании'})
+                        </span>
+                      ))}
                     </span>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
-                    setReviewFilter('full');
+                    setReviewFilter('exact');
                     setShowReviewModal(true);
                   }}
-                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs transition-colors shrink-0 shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs transition-colors shrink-0 shadow-xs flex items-center gap-1.5 cursor-pointer self-start sm:self-auto active:scale-95"
                 >
                   <History className="w-3.5 h-3.5" />
-                  <span>Ознакомиться</span>
+                  <span>Ознакомиться ({addressSimilarData.exactLocationTickets.length})</span>
                 </button>
               </div>
             )}
@@ -1004,6 +1061,28 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                 placeholder="Например: Забита ливнёвка, течь стояка ХВС, замена ламп..."
                 className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium bg-white"
               />
+
+              {/* Предупреждение о похожей неисправности по адресу/дому */}
+              {addressSimilarData.similarProblemTickets.length > 0 && (
+                <div className="p-2.5 rounded-xl bg-orange-50 border border-orange-300 text-orange-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mt-2 animate-in fade-in text-xs shadow-2xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <AlertCircle className="w-4 h-4 text-orange-600 shrink-0" />
+                    <span className="truncate">
+                      По этому адресу найдена похожая неисправность: <strong>{addressSimilarData.similarProblemTickets[0].title}</strong> (№{addressSimilarData.similarProblemTickets[0].number})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReviewFilter('similar');
+                      setShowReviewModal(true);
+                    }}
+                    className="px-2.5 py-1 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg text-[11px] shrink-0 transition-colors cursor-pointer self-start sm:self-auto active:scale-95 whitespace-nowrap"
+                  >
+                    Сверить заявку ({addressSimilarData.similarProblemTickets.length})
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1660,26 +1739,26 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
             </div>
           </div>
         )}
-        {/* PREVIOUS TICKETS REVIEW MODAL */}
+        {/* PREVIOUS TICKETS & PLANNED WORKS REVIEW MODAL */}
         {showReviewModal && (
           <div
             className="fixed inset-0 z-70 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150"
             onClick={() => setShowReviewModal(false)}
           >
             <div
-              className="bg-white rounded-2xl max-w-2xl w-full p-4 sm:p-6 border border-amber-200 shadow-2xl space-y-4 text-xs animate-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col"
+              className="bg-white rounded-2xl max-w-3xl w-full p-4 sm:p-6 border border-purple-200 shadow-2xl space-y-4 text-xs animate-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-start justify-between border-b border-amber-100 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black shrink-0">
+              <div className="flex items-start justify-between border-b border-purple-100 pb-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black shrink-0">
                     <History className="w-5 h-5" />
                   </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">
-                      История обращений по точному адресу и месту уточнения
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider block">
+                      Сверка с существующими и плановыми заявками
                     </span>
-                    <h3 className="text-base font-extrabold text-slate-900 leading-snug">
+                    <h3 className="text-base font-extrabold text-slate-900 leading-snug truncate">
                       {formatStreetDisplay(street, streets)}, д. {houseNumber}{building ? ` корп. ${building}` : ''}
                       {locationType === 'apartment' && apartmentNumber ? `, кв. ${apartmentNumber}` : ''}
                       {locationType !== 'apartment' && entranceNumber ? `, подъезд ${entranceNumber}` : ''}
@@ -1690,139 +1769,291 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowReviewModal(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-2 shrink-0 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>
-                    Найдено совпадающих заявок по адресу и {locationType === 'apartment' ? `кв. ${apartmentNumber}` : 'месту'}: <strong>{matchingFullAddressTickets.length}</strong>
+              {/* Categorized filter tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 shrink-0 border-b border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setReviewFilter('planned')}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                    reviewFilter === 'planned'
+                      ? 'bg-purple-700 text-white shadow-xs'
+                      : 'bg-purple-50 text-purple-900 hover:bg-purple-100 border border-purple-200'
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Плановые работы</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      reviewFilter === 'planned'
+                        ? 'bg-white text-purple-900'
+                        : 'bg-purple-200 text-purple-900'
+                    }`}
+                  >
+                    {addressSimilarData.plannedTickets.length}
                   </span>
-                </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReviewFilter('similar')}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                    reviewFilter === 'similar'
+                      ? 'bg-orange-600 text-white shadow-xs'
+                      : 'bg-orange-50 text-orange-900 hover:bg-orange-100 border border-orange-200'
+                  }`}
+                >
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>Похожая неисправность</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      reviewFilter === 'similar'
+                        ? 'bg-white text-orange-900'
+                        : 'bg-orange-200 text-orange-900'
+                    }`}
+                  >
+                    {addressSimilarData.similarProblemTickets.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReviewFilter('exact')}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                    reviewFilter === 'exact'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200'
+                  }`}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>
+                    По {locationType === 'apartment' ? 'квартире' : 'месту'}
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      reviewFilter === 'exact'
+                        ? 'bg-white text-amber-900'
+                        : 'bg-amber-200 text-amber-900'
+                    }`}
+                  >
+                    {addressSimilarData.exactLocationTickets.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReviewFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                    reviewFilter === 'all'
+                      ? 'bg-slate-800 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-200'
+                  }`}
+                >
+                  <span>Все по дому</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      reviewFilter === 'all'
+                        ? 'bg-white text-slate-900'
+                        : 'bg-slate-200 text-slate-800'
+                    }`}
+                  >
+                    {addressSimilarData.houseTickets.length}
+                  </span>
+                </button>
               </div>
 
+              {/* Informative category description banner */}
+              <div
+                className={`p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2 shrink-0 flex-wrap ${
+                  reviewFilter === 'planned'
+                    ? 'bg-purple-50/80 border-purple-200 text-purple-950'
+                    : reviewFilter === 'similar'
+                    ? 'bg-orange-50/80 border-orange-200 text-orange-950'
+                    : reviewFilter === 'exact'
+                    ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+                    : 'bg-slate-50 border-slate-200 text-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {reviewFilter === 'planned' && (
+                    <Calendar className="w-4 h-4 text-purple-600 shrink-0" />
+                  )}
+                  {reviewFilter === 'similar' && (
+                    <AlertCircle className="w-4 h-4 text-orange-600 shrink-0" />
+                  )}
+                  {reviewFilter === 'exact' && (
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  )}
+                  {reviewFilter === 'all' && (
+                    <History className="w-4 h-4 text-slate-600 shrink-0" />
+                  )}
+                  <span>
+                    {reviewFilter === 'planned' &&
+                      'Плановые работы по этому дому: проверьте, возможно ремонт уже запланирован.'}
+                    {reviewFilter === 'similar' &&
+                      'Похожие проблемы по описанию в этом доме: исключите создание дубликата.'}
+                    {reviewFilter === 'exact' &&
+                      `Заявки по точному адресу (${locationType === 'apartment' ? `кв. ${apartmentNumber}` : 'этому объекту/месту'}).`}
+                    {reviewFilter === 'all' &&
+                      `Все зарегистрированные заявки по адресу: ${addressSimilarData.houseTickets.length} шт.`}
+                  </span>
+                </div>
+                <span className="font-bold">
+                  Показано: {modalTicketsToDisplay.length}
+                </span>
+              </div>
+
+              {/* Tickets list */}
               <div className="overflow-y-auto pr-1 space-y-2.5 flex-1 min-h-0 max-h-[50vh]">
-                {matchingFullAddressTickets.map((t: Ticket) => {
-                  const isFullMatch = isSameFullAddressTicket(
-                    t,
-                    street,
-                    houseNumber,
-                    building,
-                    targetLocationKey,
-                    streets
-                  );
+                {modalTicketsToDisplay.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200 p-4">
+                    <p className="font-medium text-xs mb-1">
+                      В этой категории заявок не обнаружено.
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      Вы можете переключить вкладки выше, чтобы просмотреть другие обращения по этому адресу.
+                    </p>
+                  </div>
+                ) : (
+                  modalTicketsToDisplay.map((t: Ticket) => {
+                    const isFullMatch = isSameFullAddressTicket(
+                      t,
+                      street,
+                      houseNumber,
+                      building,
+                      targetLocationKey,
+                      streets
+                    );
 
-                  const statusBadgeClass =
-                    t.status === 'completed'
-                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                      : t.status === 'in_progress'
-                      ? 'bg-amber-100 text-amber-800 border-amber-300'
-                      : 'bg-rose-100 text-rose-800 border-rose-300';
+                    const isProblemMatch =
+                      goal.trim().length >= 3 &&
+                      areProblemsSimilar(goal, `${t.title || ''} ${t.description || ''}`);
 
-                  const statusText =
-                    t.status === 'completed'
-                      ? 'Выполнена'
-                      : t.status === 'in_progress'
-                      ? 'В работе'
-                      : 'В ожидании';
+                    const isPlannedTicket = Boolean(t.planned || t.category === 'general');
 
-                  return (
-                    <div
-                      key={t.id}
-                      className={`p-3 rounded-xl border transition-all ${
-                        isFullMatch
-                          ? 'border-amber-400 bg-amber-50/70 shadow-xs ring-2 ring-amber-300'
-                          : 'border-slate-200 bg-white hover:border-purple-200'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono font-bold text-slate-900 text-xs">
-                            № {t.number}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusBadgeClass}`}
-                          >
-                            {statusText}
-                          </span>
-                          {t.planned && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
-                              Плановая
+                    const statusBadgeClass =
+                      t.status === 'completed'
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : t.status === 'in_progress'
+                        ? 'bg-amber-100 text-amber-800 border-amber-300'
+                        : 'bg-rose-100 text-rose-800 border-rose-300';
+
+                    const statusText =
+                      t.status === 'completed'
+                        ? 'Выполнена'
+                        : t.status === 'in_progress'
+                        ? 'В работе'
+                        : 'В ожидании';
+
+                    return (
+                      <div
+                        key={t.id}
+                        className={`p-3 rounded-xl border transition-all ${
+                          isPlannedTicket
+                            ? 'border-purple-300 bg-purple-50/50 hover:border-purple-400'
+                            : isFullMatch
+                            ? 'border-amber-400 bg-amber-50/70 shadow-xs ring-2 ring-amber-300'
+                            : isProblemMatch
+                            ? 'border-orange-300 bg-orange-50/50 hover:border-orange-400'
+                            : 'border-slate-200 bg-white hover:border-purple-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono font-bold text-slate-900 text-xs">
+                              № {t.number}
                             </span>
-                          )}
-                          {isFullMatch ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-600 text-white shadow-2xs flex items-center gap-1">
-                              <span>⭐ Полное совпадение адреса!</span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusBadgeClass}`}
+                            >
+                              {statusText}
                             </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                              {t.apartment ? `кв. ${t.apartment}` : t.location_value || 'Другое место в доме'}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-slate-400 font-mono">
-                          {t.date} {t.createdTime || ''}
-                        </div>
-                      </div>
-
-                      <div className="font-bold text-slate-800 text-xs mb-1">
-                        {t.title}
-                      </div>
-
-                      {t.description && t.description !== t.title && (
-                        <div className="text-slate-600 text-[11px] mb-1.5 line-clamp-2">
-                          {t.description}
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-slate-500 pt-1.5 border-t border-slate-100">
-                        <div>
-                          <span className="text-slate-400">Место:</span>{' '}
-                          <span className="font-semibold text-slate-700">
-                            {t.apartment ? `кв. ${t.apartment}` : t.location_value || 'Общедомовая'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400">Исполнитель:</span>{' '}
-                          <span className="font-semibold text-slate-700">
-                            {t.assignee || 'Не назначен'}
-                          </span>
-                        </div>
-                        {(t.residentName || t.given_by) && (
-                          <div className="sm:col-span-2">
-                            <span className="text-slate-400">Заявитель:</span>{' '}
-                            <span className="font-semibold text-slate-700">
-                              {t.residentName || t.given_by}
-                            </span>
-                            {t.phone && (
-                              <span className="font-mono text-purple-700 ml-1 font-bold">
-                                ({t.phone})
+                            {isPlannedTicket && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                <span>Плановые работы</span>
+                              </span>
+                            )}
+                            {isProblemMatch && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-900 border border-orange-300 flex items-center gap-1">
+                                <span>⚠️ Похожая проблема</span>
+                              </span>
+                            )}
+                            {isFullMatch ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-600 text-white shadow-2xs flex items-center gap-1">
+                                <span>⭐ Совпадение кв./места</span>
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                                {t.apartment ? `кв. ${t.apartment}` : t.location_value || 'Общедомовая'}
                               </span>
                             )}
                           </div>
-                        )}
-                        {t.worker_report && (
-                          <div className="sm:col-span-2 text-emerald-800 bg-emerald-50/70 p-1.5 rounded-lg border border-emerald-100 mt-1">
-                            <span className="font-bold">Отчёт:</span> {t.worker_report}
+                          <div className="text-[11px] text-slate-400 font-mono">
+                            {t.date} {t.createdTime || ''}
+                          </div>
+                        </div>
+
+                        <div className="font-bold text-slate-800 text-xs mb-1">
+                          {t.title}
+                        </div>
+
+                        {t.description && t.description !== t.title && (
+                          <div className="text-slate-600 text-[11px] mb-1.5 line-clamp-2">
+                            {t.description}
                           </div>
                         )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-slate-500 pt-1.5 border-t border-slate-100">
+                          <div>
+                            <span className="text-slate-400">Место:</span>{' '}
+                            <span className="font-semibold text-slate-700">
+                              {t.apartment ? `кв. ${t.apartment}` : t.location_value || 'Общедомовая'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400">Исполнитель:</span>{' '}
+                            <span className="font-semibold text-slate-700">
+                              {t.assignee || 'Не назначен'}
+                            </span>
+                          </div>
+                          {(t.residentName || t.given_by) && (
+                            <div className="sm:col-span-2">
+                              <span className="text-slate-400">Заявитель:</span>{' '}
+                              <span className="font-semibold text-slate-700">
+                                {t.residentName || t.given_by}
+                              </span>
+                              {t.phone && (
+                                <span className="font-mono text-purple-700 ml-1 font-bold">
+                                  ({t.phone})
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {t.worker_report && (
+                            <div className="sm:col-span-2 text-emerald-800 bg-emerald-50/70 p-1.5 rounded-lg border border-emerald-100 mt-1">
+                              <span className="font-bold">Отчёт:</span> {t.worker_report}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-3 border-t border-amber-100 shrink-0">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-3 border-t border-purple-100 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowReviewModal(false)}
-                  className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold transition-colors text-xs"
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold transition-colors text-xs cursor-pointer"
                 >
-                  ← Вернуться к заявке
+                  ← Вернуться к редактированию
                 </button>
                 <button
                   type="button"
@@ -1831,7 +2062,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                     setShowReviewModal(false);
                     executeCreateTicket();
                   }}
-                  className="w-full sm:w-auto px-5 py-2 rounded-xl text-white font-bold transition-all shadow-md hover:opacity-95 text-xs flex items-center justify-center gap-1.5"
+                  className="w-full sm:w-auto px-5 py-2 rounded-xl text-white font-bold transition-all shadow-md hover:opacity-95 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   style={{
                     background: showFlatFallback ? '#7652B5' : gradient.cssGradient,
                   }}

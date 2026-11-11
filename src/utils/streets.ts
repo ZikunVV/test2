@@ -628,7 +628,44 @@ export function extractAddressParts(ticket: Ticket): {
 }
 
 /**
+ * Checks if two maintenance problems / work goals are semantically similar based on keywords/stems.
+ */
+export function areProblemsSimilar(problem1: string, problem2: string): boolean {
+  if (!problem1 || !problem2) return false;
+  const stopWords = new Set([
+    'для', 'или', 'что', 'нет', 'под', 'при', 'все', 'без', 'над', 'про',
+    'это', 'как', 'так', 'дом', 'кв', 'нужно', 'надо', 'срочно', 'номер'
+  ]);
+  const t1 = problem1
+    .toLowerCase()
+    .replace(/[^а-яёієїґa-z0-9]/gi, ' ')
+    .split(/\s+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length >= 3 && !stopWords.has(w));
+  const t2 = problem2
+    .toLowerCase()
+    .replace(/[^а-яёієїґa-z0-9]/gi, ' ')
+    .split(/\s+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length >= 3 && !stopWords.has(w));
+
+  if (t1.length === 0 || t2.length === 0) return false;
+
+  for (const w1 of t1) {
+    const stem1 = w1.slice(0, Math.min(w1.length, 5));
+    for (const w2 of t2) {
+      const stem2 = w2.slice(0, Math.min(w2.length, 5));
+      if (w1 === w2 || (stem1.length >= 4 && stem1 === stem2)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
  * Checks if a ticket strictly matches the specified address (street, house number, and building/корпус).
+ * Normalizes all street aliases and historical names.
  */
 export function isSameAddressTicket(
   ticket: Ticket,
@@ -644,13 +681,13 @@ export function isSameAddressTicket(
 
   if (!ticketStreetRaw || !ticketHouseRaw) return false;
 
-  const normTargetStreet = cleanStreetPrefix(
+  const normTargetStreet = canonicalStreetKey(
     normalizeStreetName(targetStreet, streets).officialName || targetStreet
-  ).trim().toLowerCase();
+  );
 
-  const normTicketStreet = cleanStreetPrefix(
+  const normTicketStreet = canonicalStreetKey(
     normalizeStreetName(ticketStreetRaw, streets).officialName || ticketStreetRaw
-  ).trim().toLowerCase();
+  );
 
   if (normTargetStreet !== normTicketStreet) return false;
 
@@ -662,8 +699,96 @@ export function isSameAddressTicket(
   const normTargetBuilding = normalizeHouseNumber(targetBuilding || '');
   const normTicketBuilding = normalizeHouseNumber(ticketBldRaw || '');
 
-  // Полное совпадение: корпус должен совпадать (оба пустые либо равны)
-  return normTargetBuilding === normTicketBuilding;
+  // If building is specified in target, it must match.
+  if (normTargetBuilding && normTicketBuilding && normTargetBuilding !== normTicketBuilding) {
+    return false;
+  }
+
+  return true;
+}
+
+export interface AddressSimilarTicketsResult {
+  houseTickets: Ticket[];
+  exactLocationTickets: Ticket[];
+  plannedTickets: Ticket[];
+  similarProblemTickets: Ticket[];
+  similarPlannedTickets: Ticket[];
+}
+
+/**
+ * Finds and categorizes all existing tickets for a house address,
+ * checking against exact apartment/location, planned works, and similar problems.
+ */
+export function findSimilarTicketsForAddress(
+  allTickets: Ticket[],
+  params: {
+    street: string;
+    houseNumber: string;
+    building?: string;
+    locationKey?: string | null;
+    goal?: string;
+    excludeTicketId?: string;
+  },
+  streets: StreetItem[] = []
+): AddressSimilarTicketsResult {
+  if (!allTickets || allTickets.length === 0 || !params.street || !params.houseNumber) {
+    return {
+      houseTickets: [],
+      exactLocationTickets: [],
+      plannedTickets: [],
+      similarProblemTickets: [],
+      similarPlannedTickets: [],
+    };
+  }
+
+  // 1. All tickets matching this house
+  const houseTickets = allTickets
+    .filter((t) => {
+      if (params.excludeTicketId && t.id === params.excludeTicketId) return false;
+      return isSameAddressTicket(t, params.street, params.houseNumber, params.building, streets);
+    })
+    .sort((a, b) => {
+      const dateCmp = (b.date || '').localeCompare(a.date || '');
+      if (dateCmp !== 0) return dateCmp;
+      return (b.number || '').localeCompare(a.number || '', undefined, { numeric: true });
+    });
+
+  // 2. Exact location matches (apartment or specific entrance/sub-location)
+  const exactLocationTickets = params.locationKey
+    ? houseTickets.filter((t) => {
+        const tLocKey = getTicketLocationKey(t);
+        return tLocKey && tLocKey === params.locationKey;
+      })
+    : [];
+
+  // 3. Planned works tickets for this address / house (ticket.planned || ticket.category === 'general')
+  const plannedTickets = houseTickets.filter(
+    (t) => t.planned || t.category === 'general'
+  );
+
+  // 4. Similar problem matches among all house tickets
+  const similarProblemTickets =
+    params.goal && params.goal.trim().length >= 3
+      ? houseTickets.filter((t) => {
+          const textToCompare = `${t.title || ''} ${t.description || ''}`;
+          return areProblemsSimilar(params.goal!, textToCompare);
+        })
+      : [];
+
+  // 5. Similar planned tickets (matching either problem or general planned works for the house)
+  const similarPlannedTickets = plannedTickets.filter((t) => {
+    if (!params.goal || params.goal.trim().length < 3) return true;
+    const textToCompare = `${t.title || ''} ${t.description || ''}`;
+    return areProblemsSimilar(params.goal, textToCompare);
+  });
+
+  return {
+    houseTickets,
+    exactLocationTickets,
+    plannedTickets,
+    similarProblemTickets,
+    similarPlannedTickets,
+  };
 }
 
 export interface LocationSpecification {
