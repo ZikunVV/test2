@@ -32,6 +32,7 @@ import {
   MicOff,
   LayoutGrid,
   StretchHorizontal,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface PersonalTasksViewProps {
@@ -208,6 +209,10 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
   const [personPhoneStatuses, setPersonPhoneStatuses] = useState<number[]>([1]);
   const [personNotes, setPersonNotes] = useState('');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+
+  // Confirmation modal states for deleting a task or person
+  const [confirmDeleteTask, setConfirmDeleteTask] = useState<PersonalTask | null>(null);
+  const [confirmDeletePerson, setConfirmDeletePerson] = useState<PersonalPerson | null>(null);
 
   // Voice dictation (SpeechRecognition) for notes
   const { lang } = useLanguage();
@@ -994,9 +999,10 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
-                        onClick={() => onDeleteTask(task.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Удалить запись"
+                        type="button"
+                        onClick={() => setConfirmDeleteTask(task)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Удалить запись (требуется подтверждение)"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1216,17 +1222,10 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                         <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `Действительно удалить запись «${p.full_name}»?`
-                            )
-                          ) {
-                            onDeletePersonalPerson(p.id);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Удалить запись"
+                        type="button"
+                        onClick={() => setConfirmDeletePerson(p)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Удалить запись (требуется подтверждение)"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1452,21 +1451,37 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-purple-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold transition-all shadow-xs flex items-center gap-1"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Сохранить</span>
-                </button>
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-purple-100 flex-wrap">
+                {editingTask ? (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteTask(editingTask)}
+                    className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs text-xs"
+                    title="Удалить запись из личного списка дел"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Удалить</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
+
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Сохранить</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1696,23 +1711,262 @@ export const PersonalTasksView: React.FC<PersonalTasksViewProps> = ({
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-purple-100">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-purple-100 flex-wrap">
+                {editingPerson ? (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeletePerson(editingPerson)}
+                    className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs text-xs"
+                    title="Удалить контакт из телефонной книги"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Удалить контакт</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
+
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsPersonModalOpen(false)}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Сохранить контакт</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Deleting Personal Task */}
+      {confirmDeleteTask && (
+        <div
+          className="fixed inset-0 z-70 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150"
+          onClick={() => setConfirmDeleteTask(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-md w-full border border-rose-200 shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-rose-700 via-rose-600 to-red-800 text-white flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-white/15 border border-white/20 text-white shrink-0">
+                  <Trash2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base leading-tight">
+                    Удаление из личного списка дел
+                  </h3>
+                  <p className="text-[11px] text-white/80 mt-0.5">
+                    Личный список: {userSurname}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteTask(null)}
+                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-colors cursor-pointer"
+                title="Отмена"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4 text-xs">
+              {/* Task Info Card */}
+              <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-100 space-y-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                      confirmDeleteTask.status === 'completed'
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : confirmDeleteTask.status === 'in_progress'
+                        ? 'bg-amber-100 text-amber-800 border-amber-300'
+                        : 'bg-rose-100 text-rose-800 border-rose-300'
+                    }`}
+                  >
+                    {confirmDeleteTask.status === 'completed'
+                      ? 'Выполнено'
+                      : confirmDeleteTask.status === 'in_progress'
+                      ? 'В работе'
+                      : 'В ожидании'}
+                  </span>
+                  {(confirmDeleteTask.task_date || confirmDeleteTask.reminder_time_label) && (
+                    <span className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
+                      <CalendarIcon className="w-3 h-3 text-slate-400" />
+                      <span>
+                        {confirmDeleteTask.task_date || 'Без даты'}
+                        {confirmDeleteTask.reminder_time_label ? ` · ${confirmDeleteTask.reminder_time_label}` : ''}
+                      </span>
+                    </span>
+                  )}
+                </div>
+
+                <h4 className="font-extrabold text-sm text-slate-900 leading-snug">
+                  {confirmDeleteTask.title}
+                </h4>
+
+                {confirmDeleteTask.description && (
+                  <p className="text-slate-600 text-[11px] leading-relaxed line-clamp-3">
+                    {confirmDeleteTask.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Destructive Warning */}
+              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 flex items-start gap-2.5 leading-relaxed">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-xs text-amber-900">
+                    Вы действительно хотите удалить эту запись/заявку?
+                  </p>
+                  <p className="mt-1 text-[11px] text-amber-800">
+                    Запись будет безвозвратно удалена из вашего личного списка дел.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-1">
                 <button
                   type="button"
-                  onClick={() => setIsPersonModalOpen(false)}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold"
+                  onClick={() => setConfirmDeleteTask(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
                 >
                   Отмена
                 </button>
+
                 <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold transition-all shadow-xs flex items-center gap-1"
+                  type="button"
+                  onClick={() => {
+                    onDeleteTask(confirmDeleteTask.id);
+                    if (editingTask?.id === confirmDeleteTask.id) {
+                      setIsModalOpen(false);
+                      setEditingTask(null);
+                    }
+                    setConfirmDeleteTask(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Сохранить контакт</span>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Да, удалить</span>
                 </button>
               </div>
-            </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Deleting Personal Person */}
+      {confirmDeletePerson && (
+        <div
+          className="fixed inset-0 z-70 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150"
+          onClick={() => setConfirmDeletePerson(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-md w-full border border-rose-200 shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-rose-700 via-rose-600 to-red-800 text-white flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-white/15 border border-white/20 text-white shrink-0">
+                  <Trash2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base leading-tight">
+                    Удаление контакта
+                  </h3>
+                  <p className="text-[11px] text-white/80 mt-0.5">
+                    Телефонная книга: {userSurname}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setConfirmDeletePerson(null)}
+                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-colors cursor-pointer"
+                title="Отмена"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-100 space-y-1.5">
+                <h4 className="font-extrabold text-sm text-slate-900 leading-snug">
+                  {confirmDeletePerson.full_name}
+                </h4>
+                {confirmDeletePerson.organization && (
+                  <div className="text-[11px] text-slate-600 font-medium">
+                    Организация: {confirmDeletePerson.organization}
+                  </div>
+                )}
+                {confirmDeletePerson.residence_address && (
+                  <div className="text-[11px] text-slate-600 font-medium">
+                    Адрес: {confirmDeletePerson.residence_address}
+                  </div>
+                )}
+                {confirmDeletePerson.phones && confirmDeletePerson.phones.length > 0 && (
+                  <div className="text-[11px] text-purple-700 font-mono font-bold">
+                    {confirmDeletePerson.phones.filter(Boolean).join(', ')}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 flex items-start gap-2.5 leading-relaxed">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-xs text-amber-900">
+                    Вы действительно хотите удалить контакт «{confirmDeletePerson.full_name}»?
+                  </p>
+                  <p className="mt-1 text-[11px] text-amber-800">
+                    Запись будет удалена из вашей личной телефонной книги.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeletePerson(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Отмена
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDeletePersonalPerson(confirmDeletePerson.id);
+                    if (editingPerson?.id === confirmDeletePerson.id) {
+                      setIsPersonModalOpen(false);
+                      setEditingPerson(null);
+                    }
+                    setConfirmDeletePerson(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Да, удалить</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
